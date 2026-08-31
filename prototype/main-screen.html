@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="iM 파트너 메인 대시보드 UI 프로토타입">
+  <title>iM 파트너 · 메인 대시보드</title>
+  <style>
+    :root {
+      --navy-950: #143f49;
+      --navy-800: #1d675f;
+      --blue-600: #3f9b8d;
+      --blue-100: #e8f6f2;
+      --ink: #18333d;
+      --muted: #71818c;
+      --line: #e3eceb;
+      --surface: #ffffff;
+      --canvas: #f4f8f7;
+      --green: #249b79;
+      --green-bg: #e9f8f1;
+      --orange: #ea8b2d;
+      --orange-bg: #fff4e6;
+      --red: #d9545d;
+      --red-bg: #fff0f1;
+      --shadow: 0 16px 42px rgba(34, 86, 83, 0.08);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 248px;
+      flex: 0 0 248px;
+      min-height: 100vh;
+      padding: 26px 18px;
+      color: var(--ink);
+      background: #fbfdfc;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      transition: width 180ms ease, flex-basis 180ms ease, padding 180ms ease;
+    }
+
+    .brand {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 6px 30px;
+      color: var(--navy-950);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .brand > span {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .sidebar-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      min-width: 64px;
+      height: 32px;
+      margin-left: auto;
+      padding: 0 8px;
+      border: 1px solid #d9ece8;
+      border-radius: 10px;
+      color: #317f78;
+      background: #f4fbf9;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .sidebar-toggle:hover { background: #e8f6f2; }
+
+    .toggle-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      color: #fff;
+      background: linear-gradient(135deg, #4d9f91, #a6dc78);
+      font-size: 17px;
+      font-weight: 900;
+      box-shadow: 0 7px 16px rgba(76, 160, 143, 0.2);
+    }
+
+    .demo-label {
+      margin: 0 11px 22px;
+      padding: 9px 11px;
+      border: 1px solid #d9ece8;
+      border-radius: 10px;
+      color: #317f78;
+      background: #eff9f6;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .nav-title {
+      padding: 0 12px 9px;
+      color: #7d9995;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 5px;
+    }
+
+    .nav-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 0;
+      border-radius: 12px;
+      color: #60747b;
+      background: transparent;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .nav-label { white-space: nowrap; }
+
+    .nav-item:hover,
+    .nav-item.active {
+      color: #176b67;
+      background: #e8f6f2;
+    }
+
+    .nav-item.active::before {
+      width: 3px;
+      height: 20px;
+      margin-left: -12px;
+      margin-right: 2px;
+      border-radius: 999px;
+      background: #50aa91;
+      content: "";
+    }
+
+    .nav-icon {
+      width: 20px;
+      display: inline-grid;
+      place-items: center;
+      color: currentColor;
+      font-size: 16px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 17px 12px 3px;
+      border-top: 1px solid #dcebe8;
+      color: #78918d;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .app-shell.sidebar-collapsed .sidebar {
+      width: 82px;
+      flex-basis: 82px;
+      padding-right: 12px;
+      padding-left: 12px;
+    }
+
+    .app-shell.sidebar-collapsed .brand {
+      justify-content: center;
+      padding-right: 0;
+      padding-left: 0;
+    }
+
+    .app-shell.sidebar-collapsed .brand > span,
+    .app-shell.sidebar-collapsed .demo-label,
+    .app-shell.sidebar-collapsed .nav-title,
+    .app-shell.sidebar-collapsed .nav-label,
+    .app-shell.sidebar-collapsed .sidebar-footer {
+      display: none;
+    }
+
+    .app-shell.sidebar-collapsed .sidebar-toggle {
+      position: absolute;
+      top: 2px;
+      right: -8px;
+      width: 27px;
+      min-width: 27px;
+      padding: 0;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 3px 10px rgba(34, 86, 83, 0.12);
+    }
+
+    .app-shell.sidebar-collapsed .toggle-label { display: none; }
+
+    .app-shell.sidebar-collapsed .nav-item {
+      justify-content: center;
+      padding-right: 8px;
+      padding-left: 8px;
+    }
+
+    .app-shell.sidebar-collapsed .nav-item.active::before { display: none; }
+
+    .app-shell.sidebar-collapsed .main {
+      width: auto;
+    }
+
+    .main {
+      width: auto;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .ai-panel {
+      width: 0;
+      flex: 0 0 0;
+      min-height: 100vh;
+      overflow: hidden;
+      border-left: 1px solid transparent;
+      background: var(--surface);
+      opacity: 0;
+      transition: width 220ms ease, flex-basis 220ms ease, opacity 160ms ease;
+    }
+
+    .app-shell.chat-open .ai-panel {
+      width: 360px;
+      flex-basis: 360px;
+      border-left-color: var(--line);
+      opacity: 1;
+    }
+
+    .topbar {
+      min-height: 82px;
+      padding: 0 42px;
+      color: #fff;
+      background: linear-gradient(102deg, #4b9e90 0%, #67b99b 53%, #a9df78 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 38px;
+      min-width: 0;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #fff;
+      font-size: 21px;
+      font-weight: 850;
+      letter-spacing: -0.06em;
+      white-space: nowrap;
+    }
+
+    .topbar-brand-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 35px;
+      height: 35px;
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      border-radius: 11px;
+      color: #347e75;
+      background: rgba(255, 255, 255, 0.95);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+    }
+
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .top-nav-item {
+      position: relative;
+      padding: 8px 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .top-nav-item.active { color: #fff; }
+
+    .top-nav-item.active::after {
+      position: absolute;
+      right: 0;
+      bottom: -9px;
+      left: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      content: "";
+    }
+
+    .mobile-menu {
+      display: none;
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 12px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.13);
+      font-size: 18px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 13px;
+    }
+
+    .breadcrumb strong { color: #fff; }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .ai-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ai-toggle:hover { background: rgba(255, 255, 255, 0.24); }
+
+    .ai-toggle-icon { color: #fff8c8; font-size: 15px; }
+
+    .data-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      color: #39766d;
+      background: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .data-chip::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3f9b8d;
+      content: "";
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #317f78;
+      background: rgba(255, 255, 255, 0.92);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ai-panel-inner {
+      width: 360px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #fbfdfc;
+    }
+
+    .ai-header {
+      min-height: 83px;
+      padding: 20px 18px;
+      color: #fff;
+      background: linear-gradient(125deg, #397f78, #65b99b 60%, #9fda78);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ai-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-orb {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 12px;
+      color: #fff8c8;
+      background: rgba(255, 255, 255, 0.15);
+      font-size: 17px;
+    }
+
+    .ai-title strong {
+      display: block;
+      font-size: 16px;
+      letter-spacing: -0.04em;
+    }
+
+    .ai-title p {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 10px;
+    }
+
+    .ai-close {
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 9px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .ai-close:hover { background: rgba(255, 255, 255, 0.22); }
+
+    .ai-context {
+      margin: 16px 16px 4px;
+      padding: 10px 12px;
+      border: 1px solid #dcebe8;
+      border-radius: 11px;
+      color: #477a74;
+      background: #eff9f6;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .ai-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 15px 16px 10px;
+    }
+
+    .ai-message {
+      max-width: 88%;
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .ai-message.bot {
+      margin-right: auto;
+      border: 1px solid #e1ecea;
+      border-top-left-radius: 4px;
+      color: #355159;
+      background: #fff;
+    }
+
+    .ai-message.user {
+      margin-left: auto;
+      border-top-right-radius: 4px;
+      color: #fff;
+      background: #4c9e8f;
+    }
+
+    .ai-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 0 16px 12px;
+    }
+
+    .ai-suggestion {
+      padding: 8px 10px;
+      border: 1px solid #cfe5df;
+      border-radius: 999px;
+      color: #347d75;
+      background: #fff;
+      font-size: 10px;
+      font-weight: 750;
+    }
+
+    .ai-suggestion:hover { background: #eff9f6; }
+
+    .ai-form {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 16px;
+      padding: 6px 7px 6px 12px;
+      border: 1px solid #cfe2df;
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .ai-input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      font-size: 12px;
+    }
+
+    .ai-input::placeholder { color: #9aabb0; }
+
+    .ai-send {
+      width: 31px;
+      height: 31px;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: #4c9e8f;
+      font-size: 15px;
+    }
+
+    .ai-send:hover { background: #347f78; }
+
+    .ai-disclaimer {
+      padding: 9px 16px 15px;
+      color: #91a0a4;
+      font-size: 10px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .content {
+      max-width: 1450px;
+      margin: 0 auto;
+      padding: 36px 42px 52px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 27px;
+    }
+
+    .eyebrow {
+      margin-bottom: 9px;
+      color: var(--blue-600);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      color: var(--navy-950);
+      font-size: clamp(25px, 3vw, 34px);
+      letter-spacing: -0.06em;
+      line-height: 1.18;
+    }
+
+    .page-description {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .period-select {
+      min-width: 146px;
+      padding: 11px 34px 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 15px;
+      margin-bottom: 19px;
+    }
+
+    .card {
+      border: 1px solid rgba(224, 232, 242, 0.92);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .metric-card {
+      min-height: 144px;
+      padding: 20px;
+    }
+
+    .metric-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .metric-info {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #9aa7b9;
+      background: #f2f5f9;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .metric-value {
+      margin-top: 16px;
+      color: var(--navy-950);
+      font-size: 28px;
+      font-weight: 850;
+      letter-spacing: -0.05em;
+    }
+
+    .metric-foot {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .trend-down { color: var(--red); font-weight: 800; }
+    .trend-up { color: var(--green); font-weight: 800; }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.85fr);
+      gap: 19px;
+      align-items: stretch;
+    }
+
+    .insight-card {
+      position: relative;
+      min-height: 245px;
+      overflow: hidden;
+      padding: 26px 28px;
+      color: #fff;
+      border: 0;
+      background: linear-gradient(124deg, #367f79 0%, #52a894 53%, #9bd777 100%);
+      box-shadow: 0 18px 38px rgba(54, 139, 117, 0.22);
+    }
+
+    .insight-card::after {
+      position: absolute;
+      right: -34px;
+      bottom: -64px;
+      width: 220px;
+      height: 220px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      box-shadow: 0 0 0 22px rgba(255, 255, 255, 0.04), 0 0 0 46px rgba(255, 255, 255, 0.035);
+      content: "";
+    }
+
+    .insight-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      color: #dcecff;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .insight-kicker::before {
+      content: "✦";
+      color: #ffd56a;
+    }
+
+    .insight-card h2 {
+      max-width: 570px;
+      margin-top: 18px;
+      color: #fff;
+      font-size: clamp(22px, 2.5vw, 30px);
+      letter-spacing: -0.06em;
+      line-height: 1.25;
+    }
+
+    .insight-card p {
+      max-width: 600px;
+      margin-top: 12px;
+      color: #d9eaff;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .ghost-button {
+      position: relative;
+      z-index: 1;
+      margin-top: 20px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ghost-button:hover { background: rgba(255, 255, 255, 0.18); }
+
+    .section-card { padding: 22px; }
+
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-heading h2 {
+      color: var(--navy-950);
+      font-size: 17px;
+      letter-spacing: -0.045em;
+    }
+
+    .section-heading p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .text-button {
+      padding: 0;
+      border: 0;
+      color: var(--blue-600);
+      background: transparent;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chart-card {
+      grid-row: span 2;
+      min-height: 486px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; }
+    .legend .traffic { background: var(--blue-600); }
+    .legend .spend { background: var(--orange); }
+
+    .chart-wrap {
+      width: 100%;
+      margin-top: 17px;
+      padding: 4px 0 0;
+    }
+
+    .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart-grid-line { stroke: #edf1f6; stroke-width: 1; }
+    .chart-label { fill: #8c99aa; font-size: 10px; font-family: inherit; }
+    .traffic-line { fill: none; stroke: var(--blue-600); stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+    .spend-line { fill: none; stroke: var(--orange); stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+    .traffic-area { fill: url(#trafficFill); }
+    .chart-point-blue { fill: #fff; stroke: var(--blue-600); stroke-width: 2; }
+    .chart-point-orange { fill: #fff; stroke: var(--orange); stroke-width: 2; }
+
+    .chart-callout {
+      position: relative;
+      margin: 6px 2px 0;
+      padding: 12px 14px;
+      border-radius: 11px;
+      color: #785322;
+      background: var(--orange-bg);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .chart-callout strong { color: #a35e15; }
+
+    .insight-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .insight-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 11px;
+      align-items: start;
+    }
+
+    .insight-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: var(--blue-600);
+      background: var(--blue-100);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .insight-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .insight-row p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 19px;
+      margin-top: 19px;
+    }
+
+    .cashflow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .mini-stat {
+      padding: 13px 12px;
+      border-radius: 12px;
+      background: #f7f9fc;
+    }
+
+    .mini-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .mini-stat strong {
+      display: block;
+      margin-top: 7px;
+      color: var(--navy-950);
+      font-size: 16px;
+      letter-spacing: -0.04em;
+    }
+
+    .mini-stat strong.negative { color: var(--red); }
+
+    .policy-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 13px;
+      padding: 13px 0 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .policy-item:first-of-type { padding-top: 0; border-top: 0; }
+
+    .policy-tag {
+      display: inline-block;
+      margin-bottom: 5px;
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .policy-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .policy-item p {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .arrow {
+      flex: 0 0 auto;
+      color: var(--blue-600);
+      font-size: 19px;
+    }
+
+    .footer-note {
+      margin-top: 22px;
+      color: #8a97a8;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1120px) {
+      .topbar, .content { padding-left: 28px; padding-right: 28px; }
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .chart-card { grid-row: auto; min-height: auto; }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .app-shell { display: block; }
+      .sidebar {
+        position: fixed;
+        z-index: 10;
+        top: 0;
+        left: 0;
+        width: 248px;
+        transform: translateX(-100%);
+        transition: transform 180ms ease;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { width: 100%; }
+      .ai-panel {
+        position: fixed;
+        z-index: 20;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(92vw, 360px);
+        max-width: 360px;
+        min-height: 100vh;
+        border-left-color: var(--line);
+        opacity: 1;
+        box-shadow: -18px 0 44px rgba(24, 80, 75, 0.16);
+        transform: translateX(100%);
+      }
+      .app-shell.chat-open .ai-panel {
+        width: min(92vw, 360px);
+        flex-basis: auto;
+        transform: translateX(0);
+      }
+      .ai-panel-inner { width: 100%; min-height: 100%; }
+      .topbar { height: 68px; padding: 0 18px; }
+      .mobile-menu { display: inline-grid; place-items: center; }
+      .topbar-left { gap: 0; }
+      .top-nav { display: none; }
+      .breadcrumb { gap: 6px; font-size: 12px; }
+      .breadcrumb span { display: none; }
+      .data-chip { display: none; }
+      .profile span { display: none; }
+      .content { padding: 28px 18px 38px; }
+      .page-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+      .period-select { width: 100%; }
+      .metric-card { min-height: 132px; padding: 17px; }
+      .metric-value { font-size: 24px; }
+      .insight-card { min-height: 275px; padding: 22px; }
+      .section-card { padding: 18px; }
+      .chart-callout { margin-top: 3px; }
+      .cashflow { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 420px) {
+      .metric-grid { gap: 10px; }
+      .metric-label { font-size: 12px; }
+      .metric-foot { font-size: 10px; }
+      .insight-card h2 { font-size: 24px; }
+      .chart-card .section-heading { display: block; }
+      .chart-card .text-button { display: inline-block; margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
+      <div class="brand">
+        <div class="brand-mark">iM</div>
+        <span>파트너 메뉴</span>
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="파트너 메뉴 접기">
+          <span class="toggle-icon">‹</span><span class="toggle-label">접기</span>
+        </button>
+      </div>
+
+      <div class="demo-label">프로토타입 미리보기<br>AI 생성 더미 데이터</div>
+
+      <div class="nav-title">MY BUSINESS</div>
+      <nav class="nav-list">
+        <button class="nav-item active" type="button"><span class="nav-icon">⌂</span><span class="nav-label">대시보드</span></button>
+        <button class="nav-item" type="button"><span class="nav-icon">▥</span><span class="nav-label">매출·지출 분석</span></button>
+        <button class="nav-item" type="button"><span class="nav-icon">◉</span><span class="nav-label">골목금융 체온계</span></button>
+        <button class="nav-item" type="button"><span class="nav-icon">♧</span><span class="nav-label">정책·지원사업</span></button>
+        <button class="nav-item" type="button"><span class="nav-icon">✦</span><span class="nav-label">AI 리포트</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        분석 대상<br>
+        <strong>대구 서문시장 · 음식점</strong>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu" id="menuButton" type="button" aria-label="메뉴 열기">☰</button>
+          <div class="topbar-brand">
+            <span class="topbar-brand-mark">iM</span>
+            <span>iM 파트너</span>
+          </div>
+          <nav class="top-nav" aria-label="서비스 바로가기">
+            <span class="top-nav-item active">대시보드</span>
+            <span class="top-nav-item">상권 인사이트</span>
+            <span class="top-nav-item">금융·지원</span>
+          </nav>
+        </div>
+        <div class="topbar-actions">
+          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false">
+            <span class="ai-toggle-icon">✦</span><span>AI 비서</span>
+          </button>
+          <span class="data-chip">시연용 데이터</span>
+          <div class="profile"><div class="avatar">이소</div><span>이소현</span></div>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow">오늘의 골목상권 리포트</div>
+            <h1>이소현님, 가게 현황을 확인해 보세요.</h1>
+            <p class="page-description">대구 서문시장 · 음식점 · 최근 2년 데이터를 기준으로 분석했습니다.</p>
+          </div>
+          <select class="period-select" aria-label="분석 기간 선택">
+            <option>최근 2년</option>
+            <option>최근 1년</option>
+            <option>최근 6개월</option>
+          </select>
+        </section>
+
+        <section class="metric-grid" aria-label="핵심 지표">
+          <article class="card metric-card">
+            <div class="metric-label">최근 매출 <span class="metric-info">i</span></div>
+            <div class="metric-value">-12.4%</div>
+            <div class="metric-foot"><span class="trend-down">▼ 12.4%</span><span>이전 기간 대비</span></div>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-label">카드소비 변화 <span class="metric-info">i</span></div>
+            <div class="metric-value">-8.1%</div>
+            <div class="metric-foot"><span class="trend-down">▼ 8.1%</span><span>최근 2년 비교</span></div>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-label">유동인구 변화 <span class="metric-info">i</span></div>
+            <div class="metric-value">+3.2%</div>
+            <div class="metric-foot"><span class="trend-up">▲ 3.2%</span><span>최근 2년 비교</span></div>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-label">금융 체온 <span class="metric-info">i</span></div>
+            <div class="metric-value">62°</div>
+            <div class="metric-foot"><span class="trend-down">주의</span><span>업종 평균 대비</span></div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="card insight-card">
+            <span class="insight-kicker">가장 중요한 인사이트</span>
+            <h2>사람은 늘었지만,<br>지갑은 덜 열렸습니다.</h2>
+            <p>유동인구는 증가했지만 카드소비는 감소했습니다. 특히 12~14시에는 방문객 대비 소비가 낮아지는 소비 전환 공백이 확인됩니다.</p>
+            <button class="ghost-button" type="button">상세 인사이트 보기&nbsp; →</button>
+          </article>
+
+          <article class="card section-card chart-card">
+            <div class="section-heading">
+              <div>
+                <h2>유동인구와 카드소비 비교</h2>
+                <p>요일·시간대별 상대 지수</p>
+                <div class="legend"><span><i class="traffic"></i>유동인구</span><span><i class="spend"></i>카드소비</span></div>
+              </div>
+              <button class="text-button" type="button">상세 보기 →</button>
+            </div>
+
+            <div class="chart-wrap" aria-label="유동인구와 카드소비 비교 그래프">
+              <svg viewBox="0 0 680 280" role="img">
+                <defs>
+                  <linearGradient id="trafficFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#2c6bed" stop-opacity="0.16" />
+                    <stop offset="100%" stop-color="#2c6bed" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <line class="chart-grid-line" x1="42" y1="30" x2="658" y2="30" />
+                <line class="chart-grid-line" x1="42" y1="83" x2="658" y2="83" />
+                <line class="chart-grid-line" x1="42" y1="136" x2="658" y2="136" />
+                <line class="chart-grid-line" x1="42" y1="189" x2="658" y2="189" />
+                <line class="chart-grid-line" x1="42" y1="242" x2="658" y2="242" />
+                <text class="chart-label" x="10" y="34">높음</text>
+                <text class="chart-label" x="10" y="246">낮음</text>
+                <path class="traffic-area" d="M48 158 C88 129 110 119 143 138 S196 150 232 99 S286 59 321 91 S376 137 410 111 S461 54 501 72 S556 124 594 83 S630 62 648 70 L648 242 L48 242 Z" />
+                <path class="traffic-line" d="M48 158 C88 129 110 119 143 138 S196 150 232 99 S286 59 321 91 S376 137 410 111 S461 54 501 72 S556 124 594 83 S630 62 648 70" />
+                <path class="spend-line" d="M48 188 C85 183 111 177 143 188 S198 204 232 169 S286 139 321 151 S375 182 410 161 S459 121 501 136 S554 176 594 147 S630 132 648 139" />
+                <circle class="chart-point-blue" cx="232" cy="99" r="5" />
+                <circle class="chart-point-orange" cx="232" cy="169" r="5" />
+                <line x1="232" y1="99" x2="232" y2="169" stroke="#ea8b2d" stroke-width="1.5" stroke-dasharray="4 4" />
+                <text class="chart-label" x="42" y="265">10시</text>
+                <text class="chart-label" x="182" y="265">12시</text>
+                <text class="chart-label" x="316" y="265">14시</text>
+                <text class="chart-label" x="450" y="265">16시</text>
+                <text class="chart-label" x="590" y="265">18시</text>
+              </svg>
+            </div>
+            <div class="chart-callout"><strong>12~14시 소비 전환 공백</strong> · 유동인구는 높지만 카드소비가 상대적으로 낮은 시간대입니다.</div>
+          </article>
+
+          <article class="card section-card">
+            <div class="section-heading">
+              <div>
+                <h2>핵심 인사이트</h2>
+                <p>데이터가 알려주는 세 가지 변화</p>
+              </div>
+              <button class="text-button" type="button">전체 보기 →</button>
+            </div>
+            <div class="insight-list">
+              <div class="insight-row">
+                <div class="insight-number">01</div>
+                <div><strong>소비 전환 공백이 있습니다.</strong><p>12~14시 방문객 대비 카드소비가 낮습니다.</p></div>
+              </div>
+              <div class="insight-row">
+                <div class="insight-number">02</div>
+                <div><strong>피크 시간이 서로 다릅니다.</strong><p>유동인구와 실제 소비가 가장 많은 시간이 일치하지 않습니다.</p></div>
+              </div>
+              <div class="insight-row">
+                <div class="insight-number">03</div>
+                <div><strong>고객층에 차이가 있습니다.</strong><p>방문 고객층과 실제 소비 고객층을 비교해 보세요.</p></div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="card section-card">
+            <div class="section-heading">
+              <div><h2>이번 달 자금 흐름</h2><p>매출·지출 입력값 기준 예상</p></div>
+              <button class="text-button" type="button">자세히 보기 →</button>
+            </div>
+            <div class="cashflow">
+              <div class="mini-stat"><span>현재 보유 현금</span><strong>3,240,000원</strong></div>
+              <div class="mini-stat"><span>예상 매출</span><strong>8,600,000원</strong></div>
+              <div class="mini-stat"><span>예상 잔액</span><strong class="negative">1,180,000원</strong></div>
+            </div>
+          </article>
+
+          <article class="card section-card">
+            <div class="section-heading">
+              <div><h2>맞춤 정책·지원사업</h2><p>대구 · 음식점 · 매출 범위 기준</p></div>
+              <button class="text-button" type="button">더 찾아보기 →</button>
+            </div>
+            <div class="policy-item">
+              <div><span class="policy-tag">신청 조건 일치</span><strong>소상공인 경영안정 지원사업</strong><p>운영자금 및 경영 지원</p></div>
+              <span class="arrow">›</span>
+            </div>
+          </article>
+        </section>
+
+        <p class="footer-note">※ 현재 화면은 프로토타입용 AI 생성 더미 데이터를 사용합니다. 실제 분석 결과는 허용된 범위에서 교체하여 활용합니다.</p>
+      </div>
+    </main>
+
+    <aside class="ai-panel" id="aiPanel" aria-label="AI 비서 채팅창">
+      <div class="ai-panel-inner">
+        <header class="ai-header">
+          <div class="ai-title">
+            <span class="ai-orb">✦</span>
+            <div><strong>AI 비서</strong><p>이소현님의 골목상권 파트너</p></div>
+          </div>
+          <button class="ai-close" id="aiClose" type="button" aria-label="AI 비서 접기">×</button>
+        </header>
+        <div class="ai-context">대구 서문시장 · 음식점 · 최근 2년</div>
+        <div class="ai-messages" id="aiMessages" aria-live="polite">
+          <div class="ai-message bot">안녕하세요, 이소현님. 현재 상권 데이터를 바탕으로 매출 변화와 운영 방향을 함께 살펴볼게요.</div>
+          <div class="ai-message user">최근 매출이 왜 떨어졌나요?</div>
+          <div class="ai-message bot">유동인구는 3.2% 증가했지만 카드소비는 8.1% 감소했습니다. 특히 12~14시에 방문객 대비 소비가 낮은 공백이 확인됩니다.</div>
+        </div>
+        <div class="ai-suggestions" aria-label="추천 질문">
+          <button class="ai-suggestion" type="button">매출 감소 원인</button>
+          <button class="ai-suggestion" type="button">추천 운영 시간대</button>
+          <button class="ai-suggestion" type="button">지원사업 찾아줘</button>
+        </div>
+        <form class="ai-form" id="aiForm">
+          <input class="ai-input" id="aiInput" type="text" placeholder="상권이나 매출에 대해 물어보세요" autocomplete="off">
+          <button class="ai-send" type="submit" aria-label="질문 보내기">↑</button>
+        </form>
+        <div class="ai-disclaimer">현재는 화면 확인을 위한 더미 응답입니다.</div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const menuButton = document.querySelector('#menuButton');
+    const sidebar = document.querySelector('#sidebar');
+    const appShell = document.querySelector('.app-shell');
+    const sidebarToggle = document.querySelector('#sidebarToggle');
+    const aiToggle = document.querySelector('#aiToggle');
+    const aiClose = document.querySelector('#aiClose');
+    const aiForm = document.querySelector('#aiForm');
+    const aiInput = document.querySelector('#aiInput');
+    const aiMessages = document.querySelector('#aiMessages');
+
+    sidebarToggle?.addEventListener('click', () => {
+      const collapsed = appShell.classList.toggle('sidebar-collapsed');
+      sidebarToggle.setAttribute('aria-label', collapsed ? '파트너 메뉴 펼치기' : '파트너 메뉴 접기');
+      sidebarToggle.querySelector('.toggle-icon').textContent = collapsed ? '›' : '‹';
+    });
+
+    const setChatOpen = (open) => {
+      appShell.classList.toggle('chat-open', open);
+      aiToggle.setAttribute('aria-expanded', String(open));
+      if (open) aiInput.focus();
+    };
+
+    aiToggle?.addEventListener('click', () => setChatOpen(true));
+    aiClose?.addEventListener('click', () => setChatOpen(false));
+
+    menuButton?.addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach((nav) => nav.classList.remove('active'));
+        item.classList.add('active');
+        sidebar.classList.remove('open');
+      });
+    });
+
+    const appendMessage = (text, type) => {
+      const message = document.createElement('div');
+      message.className = `ai-message ${type}`;
+      message.textContent = text;
+      aiMessages.appendChild(message);
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+    };
+
+    const demoAnswer = (question) => {
+      if (question.includes('지원') || question.includes('정책')) {
+        return '대구·음식점·매출 범위 조건에 맞는 정책과 지원사업을 확인해 보세요. 자세한 추천은 정책·지원사업 메뉴에서 볼 수 있습니다.';
+      }
+      if (question.includes('시간') || question.includes('운영')) {
+        return '현재 카드소비가 상대적으로 높은 시간대를 중심으로 운영과 홍보 시간을 검토해 보세요. 12~14시는 소비 전환 공백 구간으로 확인됩니다.';
+      }
+      return '현재 더미 데이터 기준으로 유동인구와 카드소비의 차이를 우선 확인해 보세요. 유동인구는 늘었지만 카드소비는 감소한 상황입니다.';
+    };
+
+    aiForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const question = aiInput.value.trim();
+      if (!question) return;
+      appendMessage(question, 'user');
+      aiInput.value = '';
+      window.setTimeout(() => appendMessage(demoAnswer(question), 'bot'), 220);
+    });
+
+    document.querySelectorAll('.ai-suggestion').forEach((button) => {
+      button.addEventListener('click', () => {
+        aiInput.value = button.textContent;
+        aiForm.requestSubmit();
+      });
+    });
+  </script>
+</body>
+</html>
