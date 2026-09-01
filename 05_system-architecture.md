@@ -520,8 +520,13 @@ pandas·numpy 분석
 
 ## 15. 권장 프로젝트 구조
 
+현재 정적 프로토타입은 `prototype/` 폴더에서 실행합니다. 아래 구조는 이후 Django 백엔드로 확장할 때의 권장 구조입니다.
+
 ```text
 iM-partner/
+├── prototype/
+│   ├── main-screen.html
+│   └── mock-data.js
 ├── manage.py
 ├── config/
 │   ├── settings.py

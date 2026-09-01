@@ -39,6 +39,8 @@ AI 비서에게 추가 질문
 
 - 메인 화면: 구현 완료
 - 화면 데이터: 더미 데이터 기반
+- Mock Data 분리: `prototype/mock-data.js` 구현 완료
+- 메뉴 선택에 따른 관련 영역 이동: 구현 완료
 - 골목상권 회복 플랜: 근거 수치 기반 운영 행동·참고용 금융 효과 표시
 - AI 비서: 외부 AI 연결 없이 더미 답변 사용
 - 백엔드 API: 설계 완료, 구현 예정
@@ -73,7 +75,7 @@ AI 비서에게 추가 질문
 - `django-environ`: 환경변수 및 API 키 관리
 - `pandas`, `numpy`: 데이터 분석
 - `httpx`: 공공데이터 API 호출
-- `Pillow`: 이미지 업로드 처리
+- `Pillow`: 향후 영수증 업로드·OCR 처리
 - `pytest`, `pytest-django`: 테스트
 - `ruff`: 코드 검사 및 포맷팅
 
@@ -90,9 +92,11 @@ iM-partner/
 ├── 07_db-schema.md
 ├── 08_api-spec.md
 ├── 09_test-plan.md
+├── 10_mvp-review.md
 ├── README.md
 └── prototype/
-    └── main-screen.html
+    ├── main-screen.html
+    └── mock-data.js
 ```
 
 ## 8. 데이터 원칙
@@ -138,6 +142,7 @@ HTML 화면과 API 연결
 - [데이터베이스 스키마](07_db-schema.md)
 - [API 명세서](08_api-spec.md)
 - [테스트 계획서](09_test-plan.md)
+- [MVP 점검 및 구현 결과](10_mvp-review.md)
 
 ## 11. 현재 범위에 포함하지 않는 기능
 

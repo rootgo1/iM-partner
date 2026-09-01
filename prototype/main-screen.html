@@ -1185,17 +1185,17 @@
 
       <div class="nav-title">MY BUSINESS</div>
       <nav class="nav-list">
-        <button class="nav-item active" type="button"><span class="nav-icon">⌂</span><span class="nav-label">대시보드</span></button>
-        <button class="nav-item" type="button"><span class="nav-icon">▥</span><span class="nav-label">매출·지출 분석</span></button>
-        <button class="nav-item" type="button"><span class="nav-icon">◉</span><span class="nav-label">골목금융 체온계</span></button>
-        <button class="nav-item" type="button"><span class="nav-icon">↗</span><span class="nav-label">골목상권 회복 플랜</span></button>
-        <button class="nav-item" type="button"><span class="nav-icon">♧</span><span class="nav-label">정책·지원사업</span></button>
-        <button class="nav-item" type="button"><span class="nav-icon">✦</span><span class="nav-label">AI 리포트</span></button>
+        <button class="nav-item active" data-target="dashboard" type="button"><span class="nav-icon">⌂</span><span class="nav-label">대시보드</span></button>
+        <button class="nav-item" data-target="cashflowSummary" type="button"><span class="nav-icon">▥</span><span class="nav-label">매출·지출 분석</span></button>
+        <button class="nav-item" data-target="financeTemperature" type="button"><span class="nav-icon">◉</span><span class="nav-label">골목금융 체온계</span></button>
+        <button class="nav-item" data-target="recoveryPlan" type="button"><span class="nav-icon">↗</span><span class="nav-label">골목상권 회복 플랜</span></button>
+        <button class="nav-item" data-target="policies" type="button"><span class="nav-icon">♧</span><span class="nav-label">정책·지원사업</span></button>
+        <button class="nav-item" data-target="aiPanel" type="button"><span class="nav-icon">✦</span><span class="nav-label">AI 리포트</span></button>
       </nav>
 
       <div class="sidebar-footer">
         분석 대상<br>
-        <strong>대구 서문시장 · 음식점</strong>
+        <strong data-mock="store-context-short">대구 서문시장 · 음식점</strong>
       </div>
     </aside>
 
@@ -1218,16 +1218,16 @@
             <span class="ai-toggle-icon">✦</span><span>AI 비서</span>
           </button>
           <span class="data-chip">시연용 데이터</span>
-          <div class="profile"><div class="avatar">이소</div><span>이소현</span></div>
+          <div class="profile"><div class="avatar" data-mock="user-initials">이소</div><span data-mock="user-name">이소현</span></div>
         </div>
       </header>
 
-      <div class="content">
-        <section class="page-heading">
+      <div class="content" id="dashboard">
+        <section class="page-heading" id="storeOverview">
           <div>
             <div class="eyebrow">오늘의 골목상권 리포트</div>
-            <h1>이소현님, 가게 현황을 확인해 보세요.</h1>
-            <p class="page-description">대구 서문시장 · 음식점 · 최근 2년 데이터를 기준으로 분석했습니다.</p>
+            <h1 data-mock="user-greeting">이소현님, 가게 현황을 확인해 보세요.</h1>
+            <p class="page-description" data-mock="analysis-context-description">대구 서문시장 · 음식점 · 최근 2년 데이터를 기준으로 분석했습니다.</p>
           </div>
           <select class="period-select" aria-label="분석 기간 선택">
             <option>최근 2년</option>
@@ -1237,33 +1237,33 @@
         </section>
 
         <section class="metric-grid" aria-label="핵심 지표">
-          <article class="card metric-card">
+          <article class="card metric-card" id="salesSummary">
             <div class="metric-label">최근 매출 <span class="metric-info">i</span></div>
-            <div class="metric-value">-12.4%</div>
-            <div class="metric-foot"><span class="trend-down">▼ 12.4%</span><span>이전 기간 대비</span></div>
+            <div class="metric-value" data-mock="sales-change">-12.4%</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="sales-delta">▼ 12.4%</span><span>이전 기간 대비</span></div>
           </article>
           <article class="card metric-card">
             <div class="metric-label">카드소비 변화 <span class="metric-info">i</span></div>
-            <div class="metric-value">-8.1%</div>
-            <div class="metric-foot"><span class="trend-down">▼ 8.1%</span><span>최근 2년 비교</span></div>
+            <div class="metric-value" data-mock="card-change">-8.1%</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="card-delta">▼ 8.1%</span><span>최근 2년 비교</span></div>
           </article>
           <article class="card metric-card">
             <div class="metric-label">유동인구 변화 <span class="metric-info">i</span></div>
-            <div class="metric-value">+3.2%</div>
-            <div class="metric-foot"><span class="trend-up">▲ 3.2%</span><span>최근 2년 비교</span></div>
+            <div class="metric-value" data-mock="traffic-change">+3.2%</div>
+            <div class="metric-foot"><span class="trend-up" data-mock="traffic-delta">▲ 3.2%</span><span>최근 2년 비교</span></div>
           </article>
-          <article class="card metric-card">
+          <article class="card metric-card" id="financeTemperature">
             <div class="metric-label">금융 체온 <span class="metric-info">i</span></div>
-            <div class="metric-value">62°</div>
-            <div class="metric-foot"><span class="trend-down">주의</span><span>업종 평균 대비</span></div>
+            <div class="metric-value" data-mock="finance-temperature">62°</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="finance-status">주의</span><span>업종 평균 대비</span></div>
           </article>
         </section>
 
         <section class="dashboard-grid">
           <article class="card insight-card">
             <span class="insight-kicker">가장 중요한 인사이트</span>
-            <h2>사람은 늘었지만,<br>지갑은 덜 열렸습니다.</h2>
-            <p>유동인구는 증가했지만 카드소비는 감소했습니다. 특히 12~14시에는 방문객 대비 소비가 낮아지는 소비 전환 공백이 확인됩니다.</p>
+            <h2 data-mock="insight-headline">사람은 늘었지만,<br>지갑은 덜 열렸습니다.</h2>
+            <p data-mock="insight-description">유동인구는 증가했지만 카드소비는 감소했습니다. 특히 12~14시에는 방문객 대비 소비가 낮아지는 소비 전환 공백이 확인됩니다.</p>
             <button class="ghost-button" id="recoveryPlanButton" type="button">회복 플랜 확인&nbsp; →</button>
           </article>
 
@@ -1305,7 +1305,7 @@
                 <text class="chart-label" x="590" y="265">18시</text>
               </svg>
             </div>
-            <div class="chart-callout"><strong>12~14시 소비 전환 공백</strong> · 유동인구는 높지만 카드소비가 상대적으로 낮은 시간대입니다.</div>
+            <div class="chart-callout"><strong data-mock="chart-callout-title">12~14시 소비 전환 공백</strong> · <span data-mock="chart-callout-description">유동인구는 높지만 카드소비가 상대적으로 낮은 시간대입니다.</span></div>
           </article>
 
           <article class="card section-card">
@@ -1337,40 +1337,40 @@
           <div>
             <span class="recovery-kicker">골목상권 회복 플랜</span>
             <h2>발견한 공백을<br>실행할 행동으로 바꿔보세요.</h2>
-            <p>12~14시는 방문객이 많지만 카드소비가 낮습니다. 이 시간대와 핵심 고객층에 맞춰 운영·홍보를 집중하는 시나리오를 제안합니다.</p>
-            <span class="recovery-note">분석 근거: 유동인구 +3.2% · 카드소비 -8.1% · 12~14시 소비 전환 공백</span>
+            <p data-mock="recovery-description">12~14시는 방문객이 많지만 카드소비가 낮습니다. 이 시간대와 핵심 고객층에 맞춰 운영·홍보를 집중하는 시나리오를 제안합니다.</p>
+            <span class="recovery-note" data-mock="recovery-evidence">분석 근거: 유동인구 +3.2% · 카드소비 -8.1% · 12~14시 소비 전환 공백</span>
           </div>
           <div class="plan-content">
             <div class="plan-stats">
-              <div class="plan-stat"><span>집중 시간대</span><strong>12~14시</strong></div>
-              <div class="plan-stat"><span>추천 고객층</span><strong>20~30대<br>인근 직장인</strong></div>
-              <div class="plan-stat"><span>참고용 금융 효과</span><strong>+650,000원<br><small>예상 자금 흐름</small></strong></div>
+              <div class="plan-stat"><span>집중 시간대</span><strong data-mock="recovery-focus-time">12~14시</strong></div>
+              <div class="plan-stat"><span>추천 고객층</span><strong data-mock="recovery-customer">20~30대<br>인근 직장인</strong></div>
+              <div class="plan-stat"><span>참고용 금융 효과</span><strong><span data-mock="recovery-cashflow">+650,000원</span><br><small>예상 자금 흐름</small></strong></div>
             </div>
-            <div class="plan-action"><span><strong>추천 실행</strong><br>점심 대표 메뉴와 홍보 노출을 집중하고 배달 운영 조건을 점검하세요.</span><button class="plan-button" id="planDetailButton" type="button">플랜 자세히 보기 →</button></div>
+            <div class="plan-action"><span><strong>추천 실행</strong><br><span data-mock="recovery-action">점심 대표 메뉴와 홍보 노출을 집중하고 배달 운영 조건을 점검하세요.</span></span><button class="plan-button" id="planDetailButton" type="button">플랜 자세히 보기 →</button></div>
             <p class="plan-disclaimer">※ 비교지표 기반 참고용 시나리오이며 실제 매출이나 금융 결과를 보장하지 않습니다.</p>
           </div>
         </section>
 
         <section class="bottom-grid">
-          <article class="card section-card">
+          <article class="card section-card" id="cashflowSummary">
             <div class="section-heading">
               <div><h2>이번 달 자금 흐름</h2><p>매출·지출 입력값 기준 예상</p></div>
               <button class="text-button" type="button">자세히 보기 →</button>
             </div>
             <div class="cashflow">
-              <div class="mini-stat"><span>현재 보유 현금</span><strong>3,240,000원</strong></div>
-              <div class="mini-stat"><span>예상 매출</span><strong>8,600,000원</strong></div>
-              <div class="mini-stat"><span>예상 잔액</span><strong class="negative">1,180,000원</strong></div>
+              <div class="mini-stat"><span>현재 보유 현금</span><strong data-mock="current-cash">3,240,000원</strong></div>
+              <div class="mini-stat"><span>예상 매출</span><strong data-mock="expected-sales">8,600,000원</strong></div>
+              <div class="mini-stat"><span>예상 잔액</span><strong class="negative" data-mock="expected-balance">1,180,000원</strong></div>
             </div>
           </article>
 
-          <article class="card section-card">
+          <article class="card section-card" id="policies">
             <div class="section-heading">
               <div><h2>맞춤 정책·지원사업</h2><p>대구 · 음식점 · 매출 범위 기준</p></div>
               <button class="text-button" type="button">더 찾아보기 →</button>
             </div>
             <div class="policy-item">
-              <div><span class="policy-tag">신청 조건 일치</span><strong>소상공인 경영안정 지원사업</strong><p>운영자금 및 경영 지원</p></div>
+              <div><span class="policy-tag" data-mock="policy-tag">신청 조건 일치</span><strong data-mock="policy-name">소상공인 경영안정 지원사업</strong><p data-mock="policy-description">운영자금 및 경영 지원</p></div>
               <span class="arrow">›</span>
             </div>
           </article>
@@ -1389,7 +1389,7 @@
           </div>
           <button class="ai-close" id="aiClose" type="button" aria-label="AI 비서 접기">×</button>
         </header>
-        <div class="ai-context">대구 서문시장 · 음식점 · 최근 2년</div>
+        <div class="ai-context" data-mock="ai-context">대구 서문시장 · 음식점 · 최근 2년</div>
         <div class="ai-messages" id="aiMessages" aria-live="polite">
           <div class="ai-message bot">안녕하세요, 이소현님. 현재 상권 데이터를 바탕으로 매출 변화와 운영 방향을 함께 살펴볼게요.</div>
           <div class="ai-message user">최근 매출이 왜 떨어졌나요?</div>
@@ -1410,7 +1410,62 @@
     </aside>
   </div>
 
+  <script src="./mock-data.js"></script>
   <script>
+    const mock = window.IM_PARTNER_MOCK || {};
+    const setMockText = (key, value, preserveLineBreaks = false) => {
+      const element = document.querySelector(`[data-mock="${key}"]`);
+      if (!element || value === undefined || value === null) return;
+      if (preserveLineBreaks) {
+        element.innerHTML = String(value).replace(/\n/g, '<br>');
+      } else {
+        element.textContent = value;
+      }
+    };
+
+    const renderMockData = () => {
+      const user = mock.user || {};
+      const store = mock.store || {};
+      const metrics = mock.metrics || {};
+      const insight = mock.insight || {};
+      const plan = mock.recoveryPlan || {};
+      const cashflow = mock.cashflow || {};
+      const policy = mock.policy || {};
+
+      setMockText('user-name', user.name);
+      setMockText('user-initials', user.initials);
+      setMockText('store-context-short', `${store.region || ''} · ${store.industry || ''}`);
+      setMockText('user-greeting', `${user.name || ''}님, 가게 현황을 확인해 보세요.`);
+      setMockText('analysis-context-description', `${store.context || ''} 데이터를 기준으로 분석했습니다.`);
+      setMockText('ai-context', store.context);
+      setMockText('sales-change', metrics.salesChange);
+      setMockText('sales-delta', metrics.salesDelta);
+      setMockText('card-change', metrics.cardChange);
+      setMockText('card-delta', metrics.cardDelta);
+      setMockText('traffic-change', metrics.trafficChange);
+      setMockText('traffic-delta', metrics.trafficDelta);
+      setMockText('finance-temperature', metrics.financeTemperature);
+      setMockText('finance-status', metrics.financeStatus);
+      setMockText('insight-headline', insight.headline, true);
+      setMockText('insight-description', insight.description);
+      setMockText('chart-callout-title', insight.chartCalloutTitle);
+      setMockText('chart-callout-description', insight.chartCalloutDescription);
+      setMockText('recovery-description', plan.description);
+      setMockText('recovery-evidence', plan.evidence);
+      setMockText('recovery-focus-time', plan.focusTime);
+      setMockText('recovery-customer', plan.customer, true);
+      setMockText('recovery-cashflow', plan.referenceCashflow);
+      setMockText('recovery-action', plan.action);
+      setMockText('current-cash', cashflow.currentCash);
+      setMockText('expected-sales', cashflow.expectedSales);
+      setMockText('expected-balance', cashflow.expectedBalance);
+      setMockText('policy-tag', policy.tag);
+      setMockText('policy-name', policy.name);
+      setMockText('policy-description', policy.description);
+    };
+
+    renderMockData();
+
     const menuButton = document.querySelector('#menuButton');
     const sidebar = document.querySelector('#sidebar');
     const appShell = document.querySelector('.app-shell');
@@ -1445,6 +1500,13 @@
         document.querySelectorAll('.nav-item').forEach((nav) => nav.classList.remove('active'));
         item.classList.add('active');
         sidebar.classList.remove('open');
+
+        const targetId = item.dataset.target;
+        if (targetId === 'aiPanel') {
+          setChatOpen(true);
+          return;
+        }
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     });
 
@@ -1463,18 +1525,18 @@
     planDetailButton?.addEventListener('click', () => {
       setChatOpen(true);
       appendMessage('회복 플랜을 자세히 설명해줘', 'user');
-      window.setTimeout(() => appendMessage('12~14시 소비 전환 공백을 개선하기 위해 점심 대표 메뉴와 홍보 노출을 집중하는 플랜입니다. 표시된 +650,000원은 비교지표를 활용한 참고용 자금 흐름 시나리오입니다.', 'bot'), 220);
+      window.setTimeout(() => appendMessage(`${mock.recoveryPlan?.focusTime || '12~14시'} 소비 전환 공백을 개선하기 위해 ${mock.recoveryPlan?.action || '운영과 홍보를 점검하는'} 플랜입니다. 표시된 ${mock.recoveryPlan?.referenceCashflow || '+650,000원'}은 비교지표를 활용한 참고용 자금 흐름 시나리오입니다.`, 'bot'), 220);
     });
 
     const demoAnswer = (question) => {
       if (question.includes('회복') || question.includes('플랜')) {
-        return '12~14시 소비 전환 공백을 개선하기 위해 점심 대표 메뉴와 홍보 노출을 집중하는 플랜입니다. 표시된 금융 효과는 비교지표 기반 참고용 시나리오입니다.';
+        return `${mock.recoveryPlan?.focusTime || '12~14시'} 소비 전환 공백을 개선하기 위해 ${mock.recoveryPlan?.action || '운영과 홍보를 점검하는'} 플랜입니다. 표시된 금융 효과는 비교지표 기반 참고용 시나리오입니다.`;
       }
       if (question.includes('지원') || question.includes('정책')) {
         return '대구·음식점·매출 범위 조건에 맞는 정책과 지원사업을 확인해 보세요. 자세한 추천은 정책·지원사업 메뉴에서 볼 수 있습니다.';
       }
       if (question.includes('시간') || question.includes('운영')) {
-        return '현재 카드소비가 상대적으로 높은 시간대를 중심으로 운영과 홍보 시간을 검토해 보세요. 12~14시는 소비 전환 공백 구간으로 확인됩니다.';
+        return `현재 카드소비가 상대적으로 높은 시간대를 중심으로 운영과 홍보 시간을 검토해 보세요. ${mock.recoveryPlan?.focusTime || '12~14시'}는 소비 전환 공백 구간으로 확인됩니다.`;
       }
       return '현재 더미 데이터 기준으로 유동인구와 카드소비의 차이를 우선 확인해 보세요. 유동인구는 늘었지만 카드소비는 감소한 요인 후보가 확인됩니다.';
     };
