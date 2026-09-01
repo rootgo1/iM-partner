@@ -20,7 +20,7 @@ iM 파트너의 다음 기능에 필요한 데이터를 저장하고 조회합�
 - 매출·지출 및 자금 흐름
 - 골목금융 체온계
 - 정책·지원사업 추천
-- AI 리포트 생성
+- AI 리포트·골목상권 회복 플랜 생성
 
 ---
 
@@ -58,7 +58,7 @@ policy_support_programs
 event_weather_data
 ```
 
-카드소비, 유동인구, 금융상태, 정책 데이터는 지역·업종·기간 등의 조건을 기준으로 분석에 사용합니다.
+카드소비, 유동인구, 금융상태, 정책 데이터는 지역·업종·기간 등의 조건을 기준으로 분석에 사용합니다. 회복 플랜은 별도 원천 테이블을 만들지 않고 분석 결과와 인사이트를 이용해 생성합니다.
 
 ---
 
@@ -76,7 +76,7 @@ event_weather_data
 | `policy_support_programs` | 정책 및 지원사업 | 정책 추천 |
 | `event_weather_data` | 행사·날씨 데이터 | 소비 변화 비교 |
 | `analysis_runs` | 분석 실행 기록 | 분석 조건 관리 |
-| `analysis_insights` | 분석 결과 및 인사이트 | AI 리포트 |
+| `analysis_insights` | 분석 결과 및 인사이트 | AI 리포트·회복 플랜 |
 
 ---
 
@@ -126,7 +126,7 @@ event_weather_data
 
 | display_name | region | industry | revenue_range | is_demo |
 |---|---|---|---|---|
-| 이소현 | 대구 서문시장 | 음식점 | 5천만~1억 | TRUE |
+| 이소현 | 대구 서문시장 | 음식점 | 월 2,000만~3,000만 원 | TRUE |
 
 ---
 
@@ -141,7 +141,7 @@ event_weather_data
 | `id` | BIGINT | O | 기본키 |
 | `region` | VARCHAR(100) | O | 소비 지역 |
 | `industry` | VARCHAR(100) | O | 소비 업종 |
-| `analysis_month` | DATE | O | 분석 월 |
+| `analysis_month` | DATE | O | 분석 월. 해당 월의 1일을 저장 |
 | `weekday` | TINYINT | X | 요일 숫자 |
 | `time_slot` | VARCHAR(20) | X | 시간대 |
 | `consumption_value` | DECIMAL(18,2) | O | 카드소비 금액 또는 지수 |
@@ -173,7 +173,7 @@ event_weather_data
 |---|---|---|---|
 | `id` | BIGINT | O | 기본키 |
 | `region` | VARCHAR(100) | O | 유동인구 지역 |
-| `analysis_month` | DATE | O | 분석 월 |
+| `analysis_month` | DATE | O | 분석 월. 해당 월의 1일을 저장 |
 | `weekday` | TINYINT | X | 요일 숫자 |
 | `time_slot` | VARCHAR(20) | X | 시간대 |
 | `traffic_value` | DECIMAL(18,2) | O | 유동인구 수 또는 지수 |
@@ -303,7 +303,10 @@ event_weather_data
 | 컬럼명 | 자료형 | 필수 | 설명 |
 |---|---|---|---|
 | `id` | BIGINT | O | 기본키 |
+| `external_id` | VARCHAR(100) | X | 외부 정책 데이터의 고유 ID |
 | `program_name` | VARCHAR(200) | O | 지원사업명 |
+| `organization` | VARCHAR(150) | X | 지원 기관 |
+| `support_type` | VARCHAR(50) | X | 지원 유형 |
 | `target_description` | TEXT | X | 지원 대상 |
 | `support_description` | TEXT | X | 지원 내용 |
 | `region` | VARCHAR(100) | X | 적용 지역 |
@@ -313,6 +316,9 @@ event_weather_data
 | `summary` | TEXT | X | 정책 또는 기사 요약 |
 | `application_start` | DATE | X | 신청 시작일 |
 | `application_end` | DATE | X | 신청 종료일 |
+| `published_at` | DATE | X | 공고 게시일 |
+| `source_url` | VARCHAR(500) | X | 정책 원문 링크 |
+| `status` | VARCHAR(30) | X | 모집 상태 |
 | `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
 | `created_at` | DATETIME | O | 생성일시 |
 | `updated_at` | DATETIME | O | 수정일시 |
@@ -352,6 +358,7 @@ event_weather_data
 | `period_end` | DATE | O | 분석 종료일 |
 | `status` | VARCHAR(20) | O | 분석 상태 |
 | `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
+| `completed_at` | DATETIME | X | 분석 완료일시 |
 | `created_at` | DATETIME | O | 분석 실행일시 |
 | `updated_at` | DATETIME | O | 수정일시 |
 
@@ -395,6 +402,7 @@ event_weather_data
 | `customer_difference` | 방문·소비 고객층 차이 |
 | `financial_status` | 금융상태 |
 | `policy_recommendation` | 정책 추천 |
+| `recovery_plan` | 골목상권 회복 플랜 |
 
 ---
 
@@ -473,6 +481,8 @@ foot_traffic
 ```text
 (region, industry)
 (revenue_range)
+(external_id)
+(status, application_end)
 ```
 
 ### `analysis_runs`
@@ -511,7 +521,7 @@ pandas·numpy 분석
         ↓
 analysis_insights 저장
         ↓
-화면과 AI 리포트에 결과 전달
+회복 플랜과 AI 리포트에 결과 전달
 ```
 
 ### 10-3. 정책 추천
@@ -525,6 +535,20 @@ policy_support_programs 조건 검색
         ↓
 화면에 추천 목록 표시
 ```
+
+### 10-4. 골목상권 회복 플랜
+
+```text
+analysis_insights의 소비 전환 공백 조회
+        ↓
+집중 시간대·고객층·추천 행동 연결
+        ↓
+참고용 소비 기회 지수와 자금 효과 계산
+        ↓
+화면과 AI 리포트에 회복 플랜 표시
+```
+
+회복 플랜은 프로토타입에서 별도 테이블을 만들지 않고 `analysis_insights`와 관련 매출·지출 데이터를 이용해 계산합니다.
 
 ---
 
@@ -606,6 +630,7 @@ policy_support_programs 조건 검색
 - 금융상태와 업종 평균 데이터가 정의되어야 함
 - 정책·지원사업 검색 조건이 정의되어야 함
 - 분석 실행과 인사이트 결과 저장 방식이 정의되어야 함
+- 회복 플랜을 분석 결과에서 생성하는 방식이 정의되어야 함
 - 더미 데이터 입력 방식이 정의되어야 함
 - 실제 원본 데이터 저장 금지 기준이 포함되어야 함
 - Django 모델로 구현할 수 있어야 함

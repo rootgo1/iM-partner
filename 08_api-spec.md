@@ -97,6 +97,7 @@
 | A-12 | GET | `/analysis-runs/{analysis_run_id}/report` | AI 리포트 조회 |
 | A-13 | POST | `/assistant/messages` | AI 비서 질문·답변 |
 | A-14 | POST | `/stores/{store_profile_id}/receipts` | 영수증 업로드 |
+| A-15 | GET | `/analysis-runs/{analysis_run_id}/recovery-plan` | 골목상권 회복 플랜 조회 |
 
 ## 4. 분석 실행 API
 
@@ -123,7 +124,8 @@
 2. 가게 정보와 분석 대상 기간을 저장한다.
 3. 카드소비·유동인구·매출·지출 더미 데이터를 조회한다.
 4. 매출 변화, 소비 변화, 유동인구 변화, 시간대별 격차를 계산한다.
-5. `analysis_run`과 인사이트를 저장한다.
+5. 소비 전환 공백을 기반으로 회복 플랜을 생성한다.
+6. `analysis_run`과 인사이트를 저장한다.
 
 프로토타입에서는 요청 후 즉시 `completed` 상태를 반환한다. 실제 데이터 연계 시 `pending` → `running` → `completed` 또는 `failed` 상태로 확장한다.
 
@@ -181,10 +183,11 @@
       "financial_temperature": {"value": 62, "unit": "점", "comparison_label": "동일 업종 평균 68점"}
     },
     "peak_times": [
-      {"value": "11:00-13:00", "unit": "시간대"},
+      {"value": "12:00-14:00", "unit": "시간대"},
       {"value": "17:00-19:00", "unit": "시간대"}
     ],
-    "hero_insight": "유동인구는 유지되고 있지만 점심 시간대 카드소비 전환이 낮아 매출이 감소했습니다.",
+    "hero_insight": "유동인구는 유지되고 있지만 점심 시간대 카드소비 전환이 낮은 요인 후보가 확인되었습니다.",
+    "recovery_plan_available": true,
     "source_type": "dummy",
     "data_status": "분석 완료"
   },
@@ -204,16 +207,17 @@
   "data": {
     "time_series": [
       {
-        "analysis_month": "2025-12",
-        "weekday": "토요일",
-        "time_slot": "12:00-13:00",
+        "analysis_month": "2025-12-01",
+        "weekday": 6,
+        "weekday_label": "토요일",
+        "time_slot": "12:00-14:00",
         "value": 820,
         "unit": "명",
         "metric_type": "foot_traffic"
       }
     ],
     "conversion_gap": {
-      "high_traffic_low_spend_time": "12:00-13:00",
+      "high_traffic_low_spend_time": "12:00-14:00",
       "traffic_value": 820,
       "traffic_unit": "명",
       "card_spend_value": 540000,
@@ -233,14 +237,15 @@
     },
     "insights": [
       {
-        "category": "매출 원인",
+        "category": "매출 원인 후보",
         "title": "유동인구 대비 소비 전환 부족",
-        "description": "유동인구는 전년 대비 증가했으나 카드소비는 감소했습니다.",
+        "description": "유동인구는 전년 대비 증가했으나 카드소비는 감소한 요인 후보가 확인되었습니다.",
         "metric_value": -8.1,
         "metric_unit": "%",
         "priority": "high"
       }
     ],
+    "recovery_plan_available": true,
     "source_type": "dummy"
   },
   "meta": {"request_id": "req_20260901_0202"},
@@ -266,9 +271,9 @@
       "operating_margin": {"value": 25.3, "unit": "%"}
     },
     "expense_categories": [
-      {"category": "재료비", "value": 7200000, "unit": "원"},
-      {"category": "인건비", "value": 5800000, "unit": "원"},
-      {"category": "임대료", "value": 3500000, "unit": "원"}
+      {"expense_category": "재료비", "value": 7200000, "unit": "원"},
+      {"expense_category": "인건비", "value": 5800000, "unit": "원"},
+      {"expense_category": "임대료", "value": 3500000, "unit": "원"}
     ],
     "transactions": [],
     "source_type": "dummy"
@@ -286,20 +291,22 @@
 {
   "transaction_date": "2025-12-15",
   "transaction_type": "expense",
-  "category": "재료비",
+  "expense_category": "재료비",
   "description": "식재료 구매",
   "amount": 180000,
-  "source": "manual"
+  "input_source": "manual"
 }
 ```
 
-응답은 생성된 거래 ID와 저장 시각을 반환한다. `amount`는 0보다 큰 정수(원 단위)만 허용한다.
+응답은 생성된 거래 ID와 저장 시각을 반환한다. `amount`는 0보다 큰 숫자(원 단위)만 허용한다. 요청 필드명은 DB의 `expense_category`, `input_source`와 동일하게 사용한다.
 
 ## 7. 자금 흐름 API
 
 ### A-07. 자금 흐름 조회
 
 `GET /api/v1/stores/{store_profile_id}/cashflow?month=2025-12`
+
+조회 조건 `month`는 DB의 `snapshot_date`에서 해당 월을 조회하기 위한 화면용 조건입니다. DB에는 해당 월의 1일을 저장합니다.
 
 ```json
 {
@@ -328,13 +335,14 @@
 
 ```json
 {
-  "month": "2025-12",
+  "snapshot_date": "2025-12-01",
   "current_cash": 8500000,
   "expected_sales": 24500000,
-  "rent": 3500000,
-  "material_cost": 7200000,
-  "labor_cost": 5800000,
-  "other_expenses": 800000
+  "expected_expenses": 18300000,
+  "rent_expense": 3500000,
+  "material_expense": 7200000,
+  "labor_expense": 5800000,
+  "other_expense": 800000
 }
 ```
 
@@ -417,12 +425,12 @@
   "data": [
     {
       "policy_id": 201,
-      "title": "대구 소상공인 경영안정 지원",
+      "program_name": "대구 소상공인 경영안정 지원",
       "organization": "대구광역시",
       "region": "대구",
       "support_type": "융자",
-      "deadline": "2026-12-31",
-      "eligibility_summary": "대구 소재 소상공인",
+      "application_end": "2026-12-31",
+      "target_description": "대구 소재 소상공인",
       "match_score": 92,
       "status": "모집 중"
     }
@@ -436,7 +444,7 @@
 
 `GET /api/v1/policies/{policy_id}`
 
-목록에서 선택한 정책의 지원 대상, 지원 내용, 신청 기간, 신청 방법, 원문 링크를 반환한다.
+목록에서 선택한 정책의 지원 대상, 지원 내용, 신청 기간, 신청 방법, 원문 링크, 지원 기관 및 모집 상태를 반환한다. `match_score`는 사용자 조건과 정책 조건을 비교해 서버가 계산하는 참고 점수다.
 
 ## 10. AI 리포트·AI 비서 API
 
@@ -448,21 +456,28 @@
 {
   "data": {
     "analysis_run_id": 101,
-    "summary": "최근 매출은 감소했지만 유동인구는 유지되고 있습니다.",
+    "summary": "최근 매출은 감소했지만 유동인구는 유지되고 있어 소비 전환 관련 요인 후보를 확인할 필요가 있습니다.",
     "cause_and_evidence": [
       {
-        "cause": "유동인구 대비 카드소비 전환 감소",
+        "cause": "유동인구 대비 카드소비 전환 감소 요인 후보",
         "evidence": "유동인구 +3.2%, 카드소비 -8.1%",
         "source_type": "dummy"
       }
     ],
-    "key_time": "12:00-13:00",
+    "key_time": "12:00-14:00",
     "key_customer": "20-30대 및 인근 직장인",
     "finance_summary": "영업이익률은 평균보다 양호하지만 부채비율은 관리가 필요합니다.",
     "recommended_actions": [
       "점심 시간대 대표 메뉴와 프로모션을 점검하세요.",
       "유동인구가 높은 시간대에 노출을 집중하세요."
     ],
+    "recovery_plan": {
+      "focus_time": "12:00-14:00",
+      "recommended_action": "점심 시간대 대표 메뉴와 홍보 노출을 집중하세요.",
+      "opportunity_index": 18.5,
+      "opportunity_index_unit": "점",
+      "expected_cashflow_change": {"value": 650000, "unit": "원", "type": "reference_scenario"}
+    },
     "policy_summary": "현재 조건에 맞는 지원사업 1건이 있습니다.",
     "source_type": "dummy"
   },
@@ -496,7 +511,7 @@
 {
   "data": {
     "message_id": 301,
-    "answer": "유동인구는 유지됐지만 점심 시간대 카드소비 전환이 낮아진 영향이 큽니다.",
+    "answer": "유동인구는 유지됐지만 점심 시간대 카드소비 전환이 낮아진 요인 후보가 확인됩니다.",
     "related_insight_ids": [401, 402],
     "source_type": "dummy"
   },
@@ -516,6 +531,39 @@
 
 프로토타입에서는 이미지 저장 또는 OCR 연동 없이 업로드 성공 여부만 확인할 수 있다. 향후 OCR이 적용되면 품목, 금액, 거래일, 지출 분류 후보를 반환한다.
 
+현재 프로토타입의 발표 핵심 흐름에는 영수증 업로드를 포함하지 않는다.
+
+### A-15. 골목상권 회복 플랜 조회
+
+`GET /api/v1/analysis-runs/{analysis_run_id}/recovery-plan`
+
+분석 실행 결과에서 소비 전환 공백, 집중 시간대, 추천 운영 행동, 참고용 소비 기회 지수 및 자금 흐름 시나리오를 반환한다.
+
+```json
+{
+  "data": {
+    "analysis_run_id": 101,
+    "cause_candidate": "12:00-14:00 유동인구 대비 카드소비가 낮음",
+    "evidence": [
+      {"metric": "foot_traffic", "value": 820, "unit": "명"},
+      {"metric": "card_spend", "value": 540000, "unit": "원"}
+    ],
+    "focus_time": "12:00-14:00",
+    "target_customer": "20-30대 및 인근 직장인",
+    "recommended_actions": [
+      "점심 시간대 대표 메뉴와 홍보 노출을 집중하세요.",
+      "해당 시간대의 배달 운영 조건을 점검하세요."
+    ],
+    "opportunity_index": {"value": 18.5, "unit": "점"},
+    "expected_cashflow_change": {"value": 650000, "unit": "원", "type": "reference_scenario"},
+    "disclaimer": "비교지표 기반 참고용 시나리오이며 실제 매출이나 금융 결과를 보장하지 않습니다.",
+    "source_type": "dummy"
+  },
+  "meta": {"request_id": "req_20260901_0801"},
+  "error": null
+}
+```
+
 ## 11. 화면과 API 연결
 
 | 화면·기능 | 사용하는 API |
@@ -525,6 +573,7 @@
 | 자금 흐름 | A-07, A-08 |
 | 금융 체온계 | A-09 |
 | 정책·지원사업 | A-10, A-11 |
+| 골목상권 회복 플랜 | A-15 |
 | AI 리포트 | A-12 |
 | 우측 AI 비서 채팅창 | A-13 또는 프로토타입 로컬 더미 로직 |
 | 영수증 입력 | A-14 |
@@ -539,10 +588,10 @@ POST /analysis-runs
 분석 실행 생성 및 더미 데이터 조회
     ↓
 매출·카드소비·유동인구·금융지표 계산
+        ↓
+인사이트·회복 플랜·정책 매칭·리포트 생성
     ↓
-인사이트·정책 매칭·리포트 생성
-    ↓
-GET /dashboard, /insights, /report
+GET /dashboard, /insights, /recovery-plan, /report
     ↓
 화면 카드·그래프·AI 비서 답변으로 표시
 ```
@@ -575,6 +624,7 @@ GET /dashboard, /insights, /report
 - A-02 분석 상태 조회
 - A-03 메인 대시보드
 - A-04 상세 인사이트
+- A-15 골목상권 회복 플랜
 - A-12 AI 리포트
 - A-13 AI 비서 더미 채팅
 
@@ -597,7 +647,8 @@ GET /dashboard, /insights, /report
 - 분석 조건을 입력하면 분석 실행 ID가 생성된다.
 - 대시보드에서 매출·카드소비·유동인구 변화율을 확인할 수 있다.
 - 유동인구와 카드소비의 차이를 인사이트 문장과 그래프로 확인할 수 있다.
-- 매출 감소 원인과 근거가 AI 리포트에 표시된다.
+- 매출 감소 요인 후보와 근거가 AI 리포트에 표시된다.
+- 회복 플랜에서 추천 행동과 참고용 금융 효과를 확인할 수 있다.
 - 우측 AI 비서에서 정해진 질문에 더미 답변이 표시된다.
 - 정책·지원사업 목록에서 지역·업종·매출 조건으로 검색할 수 있다.
 - 모든 시연 데이터는 실제 원천데이터가 아닌 더미 또는 집계 결과로 구성된다.

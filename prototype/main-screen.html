@@ -776,6 +776,129 @@
 
     .section-card { padding: 22px; }
 
+    .recovery-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+      gap: 24px;
+      margin-top: 19px;
+      padding: 24px 26px;
+      border-color: #cfe7df;
+      background: linear-gradient(128deg, #eff9f6 0%, #ffffff 58%, #f7fceb 100%);
+      box-shadow: 0 16px 34px rgba(55, 142, 118, 0.11);
+    }
+
+    .recovery-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #28796d;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.02em;
+    }
+
+    .recovery-kicker::before {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #80c968;
+      box-shadow: 0 0 0 5px rgba(128, 201, 104, 0.13);
+      content: "";
+    }
+
+    .recovery-card h2 {
+      margin-top: 11px;
+      color: var(--navy-950);
+      font-size: clamp(20px, 2.2vw, 27px);
+      letter-spacing: -0.06em;
+      line-height: 1.25;
+    }
+
+    .recovery-card > div:first-child p {
+      max-width: 540px;
+      margin-top: 11px;
+      color: #5d7475;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .recovery-note {
+      display: inline-block;
+      margin-top: 15px;
+      color: #79908d;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .plan-content {
+      display: grid;
+      gap: 11px;
+    }
+
+    .plan-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .plan-stat {
+      min-height: 80px;
+      padding: 12px;
+      border: 1px solid #dcece7;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .plan-stat span {
+      display: block;
+      color: #7d9691;
+      font-size: 10px;
+      font-weight: 750;
+    }
+
+    .plan-stat strong {
+      display: block;
+      margin-top: 8px;
+      color: #215f58;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .plan-action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 13px;
+      color: #3f625e;
+      background: rgba(226, 245, 237, 0.78);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .plan-action strong { color: #236f65; }
+
+    .plan-button {
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: #368b7d;
+      font-size: 11px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .plan-button:hover { background: #277367; }
+
+    .plan-disclaimer {
+      color: #849997;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
     .section-heading {
       display: flex;
       align-items: flex-start;
@@ -979,6 +1102,7 @@
       .dashboard-grid { grid-template-columns: 1fr; }
       .chart-card { grid-row: auto; min-height: auto; }
       .bottom-grid { grid-template-columns: 1fr; }
+      .recovery-card { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 760px) {
@@ -1031,6 +1155,9 @@
       .section-card { padding: 18px; }
       .chart-callout { margin-top: 3px; }
       .cashflow { grid-template-columns: 1fr; }
+      .plan-stats { grid-template-columns: 1fr; }
+      .plan-action { align-items: flex-start; flex-direction: column; }
+      .plan-button { width: 100%; }
     }
 
     @media (max-width: 420px) {
@@ -1061,6 +1188,7 @@
         <button class="nav-item active" type="button"><span class="nav-icon">⌂</span><span class="nav-label">대시보드</span></button>
         <button class="nav-item" type="button"><span class="nav-icon">▥</span><span class="nav-label">매출·지출 분석</span></button>
         <button class="nav-item" type="button"><span class="nav-icon">◉</span><span class="nav-label">골목금융 체온계</span></button>
+        <button class="nav-item" type="button"><span class="nav-icon">↗</span><span class="nav-label">골목상권 회복 플랜</span></button>
         <button class="nav-item" type="button"><span class="nav-icon">♧</span><span class="nav-label">정책·지원사업</span></button>
         <button class="nav-item" type="button"><span class="nav-icon">✦</span><span class="nav-label">AI 리포트</span></button>
       </nav>
@@ -1136,7 +1264,7 @@
             <span class="insight-kicker">가장 중요한 인사이트</span>
             <h2>사람은 늘었지만,<br>지갑은 덜 열렸습니다.</h2>
             <p>유동인구는 증가했지만 카드소비는 감소했습니다. 특히 12~14시에는 방문객 대비 소비가 낮아지는 소비 전환 공백이 확인됩니다.</p>
-            <button class="ghost-button" type="button">상세 인사이트 보기&nbsp; →</button>
+            <button class="ghost-button" id="recoveryPlanButton" type="button">회복 플랜 확인&nbsp; →</button>
           </article>
 
           <article class="card section-card chart-card">
@@ -1205,6 +1333,24 @@
           </article>
         </section>
 
+        <section class="card recovery-card" id="recoveryPlan" aria-label="골목상권 회복 플랜">
+          <div>
+            <span class="recovery-kicker">골목상권 회복 플랜</span>
+            <h2>발견한 공백을<br>실행할 행동으로 바꿔보세요.</h2>
+            <p>12~14시는 방문객이 많지만 카드소비가 낮습니다. 이 시간대와 핵심 고객층에 맞춰 운영·홍보를 집중하는 시나리오를 제안합니다.</p>
+            <span class="recovery-note">분석 근거: 유동인구 +3.2% · 카드소비 -8.1% · 12~14시 소비 전환 공백</span>
+          </div>
+          <div class="plan-content">
+            <div class="plan-stats">
+              <div class="plan-stat"><span>집중 시간대</span><strong>12~14시</strong></div>
+              <div class="plan-stat"><span>추천 고객층</span><strong>20~30대<br>인근 직장인</strong></div>
+              <div class="plan-stat"><span>참고용 금융 효과</span><strong>+650,000원<br><small>예상 자금 흐름</small></strong></div>
+            </div>
+            <div class="plan-action"><span><strong>추천 실행</strong><br>점심 대표 메뉴와 홍보 노출을 집중하고 배달 운영 조건을 점검하세요.</span><button class="plan-button" id="planDetailButton" type="button">플랜 자세히 보기 →</button></div>
+            <p class="plan-disclaimer">※ 비교지표 기반 참고용 시나리오이며 실제 매출이나 금융 결과를 보장하지 않습니다.</p>
+          </div>
+        </section>
+
         <section class="bottom-grid">
           <article class="card section-card">
             <div class="section-heading">
@@ -1250,7 +1396,8 @@
           <div class="ai-message bot">유동인구는 3.2% 증가했지만 카드소비는 8.1% 감소했습니다. 특히 12~14시에 방문객 대비 소비가 낮은 공백이 확인됩니다.</div>
         </div>
         <div class="ai-suggestions" aria-label="추천 질문">
-          <button class="ai-suggestion" type="button">매출 감소 원인</button>
+          <button class="ai-suggestion" type="button">매출 감소 요인 후보</button>
+          <button class="ai-suggestion" type="button">회복 플랜 알려줘</button>
           <button class="ai-suggestion" type="button">추천 운영 시간대</button>
           <button class="ai-suggestion" type="button">지원사업 찾아줘</button>
         </div>
@@ -1273,6 +1420,9 @@
     const aiForm = document.querySelector('#aiForm');
     const aiInput = document.querySelector('#aiInput');
     const aiMessages = document.querySelector('#aiMessages');
+    const recoveryPlan = document.querySelector('#recoveryPlan');
+    const recoveryPlanButton = document.querySelector('#recoveryPlanButton');
+    const planDetailButton = document.querySelector('#planDetailButton');
 
     sidebarToggle?.addEventListener('click', () => {
       const collapsed = appShell.classList.toggle('sidebar-collapsed');
@@ -1306,14 +1456,27 @@
       aiMessages.scrollTop = aiMessages.scrollHeight;
     };
 
+    recoveryPlanButton?.addEventListener('click', () => {
+      recoveryPlan?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    planDetailButton?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('회복 플랜을 자세히 설명해줘', 'user');
+      window.setTimeout(() => appendMessage('12~14시 소비 전환 공백을 개선하기 위해 점심 대표 메뉴와 홍보 노출을 집중하는 플랜입니다. 표시된 +650,000원은 비교지표를 활용한 참고용 자금 흐름 시나리오입니다.', 'bot'), 220);
+    });
+
     const demoAnswer = (question) => {
+      if (question.includes('회복') || question.includes('플랜')) {
+        return '12~14시 소비 전환 공백을 개선하기 위해 점심 대표 메뉴와 홍보 노출을 집중하는 플랜입니다. 표시된 금융 효과는 비교지표 기반 참고용 시나리오입니다.';
+      }
       if (question.includes('지원') || question.includes('정책')) {
         return '대구·음식점·매출 범위 조건에 맞는 정책과 지원사업을 확인해 보세요. 자세한 추천은 정책·지원사업 메뉴에서 볼 수 있습니다.';
       }
       if (question.includes('시간') || question.includes('운영')) {
         return '현재 카드소비가 상대적으로 높은 시간대를 중심으로 운영과 홍보 시간을 검토해 보세요. 12~14시는 소비 전환 공백 구간으로 확인됩니다.';
       }
-      return '현재 더미 데이터 기준으로 유동인구와 카드소비의 차이를 우선 확인해 보세요. 유동인구는 늘었지만 카드소비는 감소한 상황입니다.';
+      return '현재 더미 데이터 기준으로 유동인구와 카드소비의 차이를 우선 확인해 보세요. 유동인구는 늘었지만 카드소비는 감소한 요인 후보가 확인됩니다.';
     };
 
     aiForm?.addEventListener('submit', (event) => {
