@@ -93,6 +93,9 @@ iM-partner/
 ├── 08_api-spec.md
 ├── 09_test-plan.md
 ├── 10_mvp-review.md
+├── 11_demo-hardening.md
+├── 12_demo-script.md
+├── 13_judge-qa.md
 ├── README.md
 └── prototype/
     ├── main-screen.html
@@ -143,6 +146,9 @@ HTML 화면과 API 연결
 - [API 명세서](08_api-spec.md)
 - [테스트 계획서](09_test-plan.md)
 - [MVP 점검 및 구현 결과](10_mvp-review.md)
+- [데모 시연 품질 보완 기록](11_demo-hardening.md)
+- [공모전 데모 시연 스크립트](12_demo-script.md)
+- [심사위원 예상 질문 및 답변](13_judge-qa.md)
 
 ## 11. 현재 범위에 포함하지 않는 기능
 
