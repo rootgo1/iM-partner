@@ -18,8 +18,8 @@
 | 테이블 | 상태 | 역할 |
 |---|---|---|
 | Django 인증 사용자 | 신규 설계 | 아이디·이메일·비밀번호 해시 |
-| user_profiles | 신규 | 이름·전화번호·나이·지역 |
-| store_profiles | 기존 확장 | 소유자·사업장·지도 기준 |
+| user_profiles | 신규 | 이름·전화번호·나이 |
+| store_profiles | 기존 확장 | 소유자·사업장 소재지·직원 수·지도 기준 |
 | data_sources | 신규 | 출처·권한·검증·자료 버전 |
 | card_consumptions | 기존 확장 | 카드소비 집계 |
 | foot_traffic | 기존 확장 | 상권 유동인구 집계 |
@@ -94,7 +94,9 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
 | address | VARCHAR(255) | 가게 주소 |
 | business_registration_number | VARCHAR(30), nullable | 사업자번호, 공개 노출 금지 |
 | business_start_date | DATE, nullable | 창업일자 |
-| business_size | JSON, nullable | 지표·값·단위·기준일, C-03 확정 전 판정 불가 |
+| employee_count | INTEGER, nullable | 사업장 규모: 직원 수, 0 이상 정수 |
+| employee_count_as_of | DATE, nullable | 직원 수 확인 기준일 |
+| employee_count_basis | VARCHAR(100), nullable | 사용자 입력의 산정 기준; 공고의 상시근로자 기준과 자동 동일시 금지 |
 | revenue_range | VARCHAR(50), nullable | 기존 정책 매출 조건 유지 |
 | latitude / longitude | DECIMAL, nullable | 확인된 좌표 |
 | location_source_id | FK, nullable | 좌표 근거 |
@@ -204,7 +206,7 @@ policy_support_programs 기존 외부 ID·제목·기관·유형·지원 대상/
 | region_conditions | 복수 지역·거주지/사업장 기준 |
 | industry_conditions | 허용·제외 업종·분류 |
 | business_start_conditions | 창업일/업력 조건과 기준일 |
-| business_size_conditions | 지표명·단위·범위 |
+| business_size_conditions | 공고의 지표명·단위·범위·산정 기준; 프로필 직원 수와 기준이 같은지 확인 |
 | revenue_conditions | 기존 매출 관련 조건 |
 | eligibility_rules | AND/OR·제외·경계 포함 규칙과 원문 참조 |
 | extraction_status / reviewed_at | 추출 불확실성·검토 상태 |

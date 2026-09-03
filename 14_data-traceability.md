@@ -396,7 +396,7 @@ AI 답변 규칙과 근거 문장 교체
 
 | 기존 값·필드 | 목표 원천/결과 | 교체 전 필수 확인 |
 |---|---|---|
-| user.name / store.* | user_profiles / store_profiles | 예시 사용자와 실제 계정·가게 구분, 사업장 소재지 확정·규모 기준 미정 |
+| user.name / store.* | user_profiles / store_profiles | 예시 사용자와 실제 계정·가게 구분, 사업장 소재지·직원 수 기준 확정, 공고별 산정 기준 확인 |
 | metrics.salesChange | POS sales_expenses → analysis_insights | 취소·환불·중복·기간·증감 분모 |
 | metrics.cardChange | card_consumptions → 공통 분석 | 제공처·기간·업종·모집단·단위 |
 | metrics.trafficChange | foot_traffic → 공통 분석 | 실제 매장 방문과 구분, 카드자료와 비교 가능성 |
@@ -440,6 +440,7 @@ KPI·그래프·요인·플랜·챗봇·AI 비서·PDF가 동일 analysis_run_id
 ### 14-5. 추가 확인 사항
 
 - 프로필 지역: 사업장 주소지로 확정. 거주지와 구분합니다.
+- 사업장 규모: 직원 수로 확정. 공고의 상시근로자 산정 기준과 자동 동일시하지 않습니다.
 - AI 리포트의 새 명칭: AI 비서. 우측 단순 질의응답은 챗봇입니다.
 - 생성 데이터: POS 포함 공모전 시연에 사용 가능, 생성 자료임을 표시합니다.
 - 위젯 이동: 사용자 요청으로 보류하고 AI 비서 화면 설계·구현 시 재확인합니다.
