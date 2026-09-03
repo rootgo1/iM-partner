@@ -1,636 +1,285 @@
 # iM 파트너 데이터베이스 명세서
 
-- 문서 상태: 초안
-- 기준 문서: 01_prd.md, 02_function-spec.md, 03_user-flow.md, 04_data-spec.md, 05_system-architecture.md, 06_screen-spec.md
-- 서비스명: iM 파트너
-- 데이터베이스: MySQL
-- ORM: Django ORM
-- 프로토타입 데이터: AI 생성 더미 데이터
-- 본선 데이터: 허용된 집계 분석 결과 및 시각화 자료
+- 개정일: 2026-09-03 / 목표 논리 스키마
+- MySQL·Django ORM 예정. 실제 DB·모델·마이그레이션은 아직 생성하지 않았습니다.
+- [데이터 명세](04_data-spec.md)와 [API 명세](08_api-spec.md)를 함께 적용합니다.
 
----
+## 1. 설계 원칙
 
-## 1. 데이터베이스 설계 목적
+- 기존 테이블명을 가능한 한 유지하고 회의 요구에 필요한 필드·관계만 추가합니다.
+- 사용자 계정과 가게를 분리하고, 가게 관련 자료에 소유권을 확인합니다.
+- 숫자는 표시 문자열이 아닌 숫자 자료형, 상태 미정은 null로 저장합니다.
+- 자료 출처·기간·단위·검증 상태를 보존합니다. 허용된 POS 원자료와 제한된 센터 원자료를 동일한 저장 금지 대상으로 취급하지 않습니다.
+- 공모전 생성 데이터는 synthetic_demo로 명시해 사용할 수 있습니다. 내부 test_fixture와 구분하고 실제 관측 자료로 섞어 표시하지 않습니다.
+- 아래 추가 테이블은 필요한 데이터 계약이며 모든 기능을 즉시 구현하겠다는 일정 확정이 아닙니다.
 
-iM 파트너의 다음 기능에 필요한 데이터를 저장하고 조회합니다.
+## 2. 테이블 목록과 관계
 
-- 지역·업종 입력
-- 상권 및 매출 현황
-- 카드소비·유동인구 분석
-- 매출·지출 및 자금 흐름
-- 골목금융 체온계
-- 정책·지원사업 추천
-- AI 리포트·골목상권 회복 플랜 생성
-
----
-
-## 2. 데이터베이스 설계 원칙
-
-- 테이블과 컬럼명은 영문 소문자와 snake_case를 사용합니다.
-- 모든 테이블에는 기본키를 둡니다.
-- 더미 데이터와 허용된 실제 분석 결과를 같은 구조로 저장합니다.
-- 카드소비와 유동인구 데이터에는 특정 가게의 개인정보를 저장하지 않습니다.
-- 실제 원본 데이터와 반출이 제한된 데이터는 저장하지 않습니다.
-- 데이터 출처 유형을 구분하여 저장합니다.
-- 금액은 원 단위의 소수점 숫자로 저장합니다.
-- 증감률과 비율은 소수점 숫자로 저장합니다.
-- 분석 기준 기간·지역·업종을 확인할 수 있어야 합니다.
-- 회원가입과 로그인 기능은 현재 데이터베이스 범위에 포함하지 않습니다.
-
----
-
-## 3. 전체 데이터베이스 구조
-
-```text
-store_profiles
-        │
-        ├── sales_expenses
-        ├── cashflow_inputs
-        ├── delivery_metrics
-        └── analysis_runs
-                    │
-                    └── analysis_insights
-
-card_consumptions
-foot_traffic
-financial_benchmarks
-policy_support_programs
-event_weather_data
-```
-
-카드소비, 유동인구, 금융상태, 정책 데이터는 지역·업종·기간 등의 조건을 기준으로 분석에 사용합니다. 회복 플랜은 별도 원천 테이블을 만들지 않고 분석 결과와 인사이트를 이용해 생성합니다.
-
----
-
-## 4. 테이블 목록
-
-| 테이블명 | 설명 | 주요 기능 |
+| 테이블 | 상태 | 역할 |
 |---|---|---|
-| `store_profiles` | 사용자 및 가게 기본정보 | 지역·업종 입력 |
-| `card_consumptions` | 삼성카드 소비 데이터 | 카드소비 분석 |
-| `foot_traffic` | 통신사 유동인구 데이터 | 유동인구 분석 |
-| `sales_expenses` | 매출·지출 내역 | 매출·지출 분석 |
-| `cashflow_inputs` | 자금 흐름 입력정보 | 예상 자금 흐름 |
-| `delivery_metrics` | 대구로 배달 운영 데이터 | 배달 운영 분석 |
-| `financial_benchmarks` | 업종 평균 금융지표 | 금융 체온계 |
-| `policy_support_programs` | 정책 및 지원사업 | 정책 추천 |
-| `event_weather_data` | 행사·날씨 데이터 | 소비 변화 비교 |
-| `analysis_runs` | 분석 실행 기록 | 분석 조건 관리 |
-| `analysis_insights` | 분석 결과 및 인사이트 | AI 리포트·회복 플랜 |
+| Django 인증 사용자 | 신규 설계 | 아이디·이메일·비밀번호 해시 |
+| user_profiles | 신규 | 이름·전화번호·나이·지역 |
+| store_profiles | 기존 확장 | 소유자·사업장·지도 기준 |
+| data_sources | 신규 | 출처·권한·검증·자료 버전 |
+| card_consumptions | 기존 확장 | 카드소비 집계 |
+| foot_traffic | 기존 확장 | 상권 유동인구 집계 |
+| sales_expenses | 기존 확장 | POS 거래와 지출 |
+| store_items / transaction_items | 조건부 신규 | 품목과 거래 품목 상세 |
+| inventory_snapshots / item_mappings | 조건부 신규 | 재고·판매/매입 품목 대응 |
+| store_visit_counts | 조건부 신규 | 별도 측정한 매장 방문 수 |
+| cashflow_inputs | 기존 확장 | 현금·예상 입출금과 가정 |
+| delivery_metrics | 유지·출처 보강 | 대구로 운영지표 |
+| financial_benchmarks | 유지·출처 보강 | 업종 평균 비교 |
+| policy_support_programs | 기존 확장 | 원문·자격·갱신 |
+| event_weather_data | 기존 확장 | 행사·날씨·뉴스·일정 |
+| nearby_places | 신규 | 상권 점포 좌표와 확인된 경쟁 근거 |
+| analysis_runs / analysis_insights | 기존 확장 | 분석 조건·결과·근거·규칙 |
+| assistant_sessions / assistant_messages | 신규 | AI 비서 대화와 분석 연결 |
+| report_files | 신규 | 실제 PDF 생성·접근 관리 |
 
----
+```text
+인증 사용자 ─ user_profiles
+    └─ store_profiles
+         ├─ sales_expenses ─ transaction_items ─ store_items
+         ├─ inventory_snapshots / item_mappings / store_visit_counts
+         ├─ cashflow_inputs / delivery_metrics
+         ├─ analysis_runs ─ analysis_insights
+         └─ assistant_sessions ─ assistant_messages / report_files
 
-## 5. 공통 컬럼
+data_sources ─ 각 입력자료·분석 실행의 source_ids
+공통 자료: card_consumptions / foot_traffic / financial_benchmarks /
+           policy_support_programs / event_weather_data / nearby_places
+```
 
-모든 데이터 테이블은 다음 공통 컬럼을 사용할 수 있습니다.
+회복 플랜은 별도 사실 데이터 테이블 없이 분석 결과·근거를 조합합니다. 챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
 
-| 컬럼명 | 자료형 | 설명 |
+## 3. 공통 컬럼·형식
+
+기본키 id BIGINT, created_at·updated_at DATETIME. 외래키는 연결 대상의 삭제 정책과 권한을 함께 정의합니다.
+
+자료별 source_id → data_sources를 연결합니다. 복합 분석은 analysis_runs.source_ids JSON에 사용한 출처 ID 목록을 보존합니다.
+
+- 금액 DECIMAL(18,2), 수량 DECIMAL(18,3), 비율 DECIMAL.
+- 시각은 시간대 인식 처리 후 일관된 방식으로 저장하고 집계 기준 Asia/Seoul을 명시.
+- available / partial / no_data / not_comparable / definition_pending은 자료 상태.
+- null과 0, 미상과 제한 없음은 구분.
+- 사용자가 요청값으로 출처의 검증완료 상태를 지정하지 못하게 함.
+
+## 4. 계정·프로필
+
+### 인증 사용자 / user_profiles
+
+인증 사용자: Django 인증 기능의 username, email, password 해시. 평문 비밀번호를 별도 컬럼에 보관하지 않습니다.
+
+| user_profiles 필드 | 타입 | 의미 |
 |---|---|---|
-| `id` | BIGINT | 기본키 |
-| `source_type` | VARCHAR(30) | 데이터 출처 유형 |
-| `created_at` | DATETIME | 생성일시 |
-| `updated_at` | DATETIME | 수정일시 |
+| user_id | FK, unique | 인증 사용자 |
+| name | VARCHAR(100) | 이름 |
+| phone | VARCHAR(30), nullable | 전화번호 |
+| age | INTEGER, nullable | 사용자가 제공한 나이 |
+| age_as_of | DATE, nullable | 나이 확인 기준일 |
 
-### `source_type` 값
+프로필 화면의 지역은 사업장 주소지로 확정되어 store_profiles.region과 address에서 조회합니다. user_profiles에 같은 지역 값을 중복 저장하지 않습니다. 거주지는 이번 수집 항목이 아닙니다.
 
-| 값 | 설명 |
-|---|---|
-| `dummy` | AI 생성 더미 데이터 |
-| `approved_result` | 사용이 허용된 집계 분석 결과 |
+나이를 받기 위해 생년월일을 추가 수집하지 않습니다. 전화·나이의 필수 여부는 기능별 필요에 따라 정합니다.
 
-`raw_actual` 등 실제 원본 데이터를 의미하는 값은 사용하지 않습니다.
+### store_profiles
 
----
-
-## 6. 테이블 상세 명세
-
-## 6-1. `store_profiles`
-
-사용자와 가게의 기본정보를 저장합니다.
-
-현재 프로토타입에서는 사용자명 `이소현`과 분석 대상 가게 정보를 표시하는 데 사용합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `display_name` | VARCHAR(100) | O | 화면에 표시할 사용자명 |
-| `store_name` | VARCHAR(150) | X | 가게명 |
-| `region` | VARCHAR(100) | O | 사업 지역 |
-| `industry` | VARCHAR(100) | O | 업종 |
-| `revenue_range` | VARCHAR(50) | X | 매출 범위 |
-| `is_demo` | BOOLEAN | O | 시연용 여부 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### 예시 데이터
-
-| display_name | region | industry | revenue_range | is_demo |
-|---|---|---|---|---|
-| 이소현 | 대구 서문시장 | 음식점 | 월 2,000만~3,000만 원 | TRUE |
-
----
-
-## 6-2. `card_consumptions`
-
-삼성카드 소비 데이터를 저장합니다.
-
-카드소비 데이터는 지역·업종·기간·요일·시간대·고객층 단위로 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `region` | VARCHAR(100) | O | 소비 지역 |
-| `industry` | VARCHAR(100) | O | 소비 업종 |
-| `analysis_month` | DATE | O | 분석 월. 해당 월의 1일을 저장 |
-| `weekday` | TINYINT | X | 요일 숫자 |
-| `time_slot` | VARCHAR(20) | X | 시간대 |
-| `consumption_value` | DECIMAL(18,2) | O | 카드소비 금액 또는 지수 |
-| `metric_type` | VARCHAR(20) | O | `amount` 또는 `index` |
-| `age_group` | VARCHAR(30) | X | 연령 구분 |
-| `gender` | VARCHAR(20) | X | 성별 구분 |
-| `is_game_day` | BOOLEAN | X | 경기일 여부 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### 활용 지표
-
-- 최근 2년 카드소비 증감률
-- 카드소비가 많은 요일·시간대
-- 실제 소비 고객층
-- 경기일·비경기일 소비 차이
-- 유동인구와 카드소비 비교
-
----
-
-## 6-3. `foot_traffic`
-
-통신사 유동인구 데이터를 저장합니다.
-
-유동인구 데이터는 지역·기간·요일·시간대·고객층 단위로 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `region` | VARCHAR(100) | O | 유동인구 지역 |
-| `analysis_month` | DATE | O | 분석 월. 해당 월의 1일을 저장 |
-| `weekday` | TINYINT | X | 요일 숫자 |
-| `time_slot` | VARCHAR(20) | X | 시간대 |
-| `traffic_value` | DECIMAL(18,2) | O | 유동인구 수 또는 지수 |
-| `metric_type` | VARCHAR(20) | O | `count` 또는 `index` |
-| `age_group` | VARCHAR(30) | X | 연령 구분 |
-| `gender` | VARCHAR(20) | X | 성별 구분 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### 활용 지표
-
-- 유동인구가 많은 요일·시간대
-- 유동인구 증감률
-- 상권 방문 고객층
-- 카드소비 고객층과 비교
-- 소비 전환 공백 시간대
-
----
-
-## 6-4. `sales_expenses`
-
-사용자의 매출·지출 내역을 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `store_profile_id` | BIGINT | O | 가게 기본정보 외래키 |
-| `transaction_date` | DATE | O | 거래일자 |
-| `transaction_type` | VARCHAR(20) | O | `sales` 또는 `expense` |
-| `expense_category` | VARCHAR(30) | X | 임대료·재료비·인건비·기타 |
-| `amount` | DECIMAL(18,2) | O | 거래 금액 |
-| `input_source` | VARCHAR(20) | O | 직접 입력·거래내역·POS·영수증 |
-| `description` | VARCHAR(255) | X | 거래 설명 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### `transaction_type` 값
-
-| 값 | 설명 |
-|---|---|
-| `sales` | 매출 |
-| `expense` | 지출 |
-
-### `input_source` 값
-
-| 값 | 설명 |
-|---|---|
-| `manual` | 직접 입력 |
-| `transaction` | 거래내역 입력 |
-| `pos` | POS기 데이터 |
-| `receipt` | 영수증 이미지 인식 결과 |
-
----
-
-## 6-5. `cashflow_inputs`
-
-현재 보유 현금과 예상 매출·지출을 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `store_profile_id` | BIGINT | O | 가게 기본정보 외래키 |
-| `snapshot_date` | DATE | O | 자금 상태 기준일 |
-| `current_cash` | DECIMAL(18,2) | O | 현재 보유 현금 |
-| `expected_sales` | DECIMAL(18,2) | O | 예상 매출 |
-| `expected_expenses` | DECIMAL(18,2) | O | 예상 지출 |
-| `rent_expense` | DECIMAL(18,2) | X | 임대료 |
-| `material_expense` | DECIMAL(18,2) | X | 재료비 |
-| `labor_expense` | DECIMAL(18,2) | X | 인건비 |
-| `other_expense` | DECIMAL(18,2) | X | 기타 지출 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### 예상 자금 흐름
-
-```text
-예상 자금 흐름
-= 현재 보유 현금
-  + 예상 매출
-  - 예상 지출
-```
-
----
-
-## 6-6. `delivery_metrics`
-
-대구로 배달 운영 데이터를 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `store_profile_id` | BIGINT | O | 가게 기본정보 외래키 |
-| `metric_date` | DATE | O | 지표 기준일 |
-| `cancellation_rate` | DECIMAL(5,2) | X | 주문 취소율 |
-| `average_cooking_time` | DECIMAL(8,2) | X | 평균 조리시간 |
-| `discount_rate` | DECIMAL(5,2) | X | 할인율 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
----
-
-## 6-7. `financial_benchmarks`
-
-사용자 금융상태와 업종 평균을 비교하기 위한 데이터를 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `industry` | VARCHAR(100) | O | 업종 |
-| `analysis_year` | SMALLINT | O | 분석 연도 |
-| `average_sales` | DECIMAL(18,2) | X | 업종 평균 매출액 |
-| `average_operating_margin` | DECIMAL(5,2) | X | 평균 영업이익률 |
-| `average_debt_ratio` | DECIMAL(5,2) | X | 평균 부채비율 |
-| `average_expense_ratio` | DECIMAL(5,2) | X | 평균 비용 비중 |
-| `average_cashflow` | DECIMAL(18,2) | X | 평균 예상 자금 흐름 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
----
-
-## 6-8. `policy_support_programs`
-
-정책 및 지원사업 정보를 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `external_id` | VARCHAR(100) | X | 외부 정책 데이터의 고유 ID |
-| `program_name` | VARCHAR(200) | O | 지원사업명 |
-| `organization` | VARCHAR(150) | X | 지원 기관 |
-| `support_type` | VARCHAR(50) | X | 지원 유형 |
-| `target_description` | TEXT | X | 지원 대상 |
-| `support_description` | TEXT | X | 지원 내용 |
-| `region` | VARCHAR(100) | X | 적용 지역 |
-| `industry` | VARCHAR(100) | X | 관련 업종 |
-| `revenue_range` | VARCHAR(50) | X | 매출 조건 |
-| `application_condition` | TEXT | X | 신청 조건 |
-| `summary` | TEXT | X | 정책 또는 기사 요약 |
-| `application_start` | DATE | X | 신청 시작일 |
-| `application_end` | DATE | X | 신청 종료일 |
-| `published_at` | DATE | X | 공고 게시일 |
-| `source_url` | VARCHAR(500) | X | 정책 원문 링크 |
-| `status` | VARCHAR(30) | X | 모집 상태 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
----
-
-## 6-9. `event_weather_data`
-
-행사·날씨 및 전통시장 관련 보조 데이터를 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `region` | VARCHAR(100) | O | 지역 |
-| `event_date` | DATE | O | 행사·날씨 기준일 |
-| `event_name` | VARCHAR(200) | X | 행사명 |
-| `weather_description` | VARCHAR(100) | X | 날씨 설명 |
-| `market_name` | VARCHAR(150) | X | 전통시장명 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
----
-
-## 6-10. `analysis_runs`
-
-사용자가 실행한 분석 조건과 실행 기록을 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `store_profile_id` | BIGINT | X | 가게 기본정보 외래키 |
-| `region` | VARCHAR(100) | O | 분석 지역 |
-| `industry` | VARCHAR(100) | O | 분석 업종 |
-| `revenue_range` | VARCHAR(50) | X | 정책 추천용 매출 범위 |
-| `period_start` | DATE | O | 분석 시작일 |
-| `period_end` | DATE | O | 분석 종료일 |
-| `status` | VARCHAR(20) | O | 분석 상태 |
-| `source_type` | VARCHAR(30) | O | 데이터 출처 유형 |
-| `completed_at` | DATETIME | X | 분석 완료일시 |
-| `created_at` | DATETIME | O | 분석 실행일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### `status` 값
-
-| 값 | 설명 |
-|---|---|
-| `pending` | 분석 대기 |
-| `running` | 분석 중 |
-| `completed` | 분석 완료 |
-| `failed` | 분석 실패 |
-
----
-
-## 6-11. `analysis_insights`
-
-분석 결과와 인사이트 문장을 저장합니다.
-
-| 컬럼명 | 자료형 | 필수 | 설명 |
-|---|---|---|---|
-| `id` | BIGINT | O | 기본키 |
-| `analysis_run_id` | BIGINT | O | 분석 실행 외래키 |
-| `insight_type` | VARCHAR(50) | O | 인사이트 유형 |
-| `title` | VARCHAR(255) | O | 인사이트 제목 |
-| `description` | TEXT | O | 인사이트 설명 |
-| `metric_value` | DECIMAL(18,2) | X | 관련 수치 |
-| `metric_unit` | VARCHAR(30) | X | 수치 단위 |
-| `priority` | TINYINT | X | 표시 우선순위 |
-| `created_at` | DATETIME | O | 생성일시 |
-| `updated_at` | DATETIME | O | 수정일시 |
-
-### `insight_type` 예시
-
-| 값 | 설명 |
-|---|---|
-| `sales_change` | 매출 변화 |
-| `card_consumption_change` | 카드소비 변화 |
-| `foot_traffic_change` | 유동인구 변화 |
-| `conversion_gap` | 소비 전환 공백 |
-| `peak_time_mismatch` | 유동·소비 피크 시간 차이 |
-| `customer_difference` | 방문·소비 고객층 차이 |
-| `financial_status` | 금융상태 |
-| `policy_recommendation` | 정책 추천 |
-| `recovery_plan` | 골목상권 회복 플랜 |
-
----
-
-## 7. 테이블 관계
-
-### 7-1. 가게 관련 데이터
-
-```text
-store_profiles
-        ├── 1:N sales_expenses
-        ├── 1:N cashflow_inputs
-        ├── 1:N delivery_metrics
-        └── 1:N analysis_runs
-```
-
-### 7-2. 분석 결과 관련 데이터
-
-```text
-analysis_runs
-        └── 1:N analysis_insights
-```
-
-### 7-3. 지역·업종 데이터
-
-```text
-card_consumptions
-        ┐
-        ├── 지역·업종·기간·시간대 기준으로 분석
-foot_traffic
-        ┘
-```
-
-카드소비와 유동인구 데이터는 특정 가게와 직접 연결하지 않고, 지역·업종·기간 조건으로 조회합니다.
-
----
-
-## 8. 외래키 기준
-
-| 외래키 | 참조 테이블 | 설명 |
+| 필드 | 타입 | 변경 |
 |---|---|---|
-| `sales_expenses.store_profile_id` | `store_profiles.id` | 매출·지출의 대상 가게 |
-| `cashflow_inputs.store_profile_id` | `store_profiles.id` | 자금 흐름의 대상 가게 |
-| `delivery_metrics.store_profile_id` | `store_profiles.id` | 배달 운영의 대상 가게 |
-| `analysis_runs.store_profile_id` | `store_profiles.id` | 분석을 실행한 가게 |
-| `analysis_insights.analysis_run_id` | `analysis_runs.id` | 분석 실행별 결과 |
+| owner_id | FK | 사용자 소유권 추가 |
+| store_name | VARCHAR(150), nullable | 기존 유지 |
+| region / industry | VARCHAR(100) | 사업 지역·업종 |
+| industry_code / industry_code_version | VARCHAR, nullable | 점포·공고 업종 매핑 기준 |
+| address | VARCHAR(255) | 가게 주소 |
+| business_registration_number | VARCHAR(30), nullable | 사업자번호, 공개 노출 금지 |
+| business_start_date | DATE, nullable | 창업일자 |
+| business_size | JSON, nullable | 지표·값·단위·기준일, C-03 확정 전 판정 불가 |
+| revenue_range | VARCHAR(50), nullable | 기존 정책 매출 조건 유지 |
+| latitude / longitude | DECIMAL, nullable | 확인된 좌표 |
+| location_source_id | FK, nullable | 좌표 근거 |
+| business_evidence | JSON, nullable | 확보된 내 메뉴·영업시간 등 값·출처·기준일 |
 
----
+기존 display_name은 사용자 프로필을 통해 표시하도록 전환합니다. 기존 is_demo는 목표 서비스 데이터의 구분 수단으로 사용하지 않습니다. 기존 Mock 자료를 실제 사용자 레코드로 자동 변환하지 않습니다.
 
-## 9. 주요 인덱스
+## 5. data_sources
 
-### `card_consumptions`
+| 필드 | 타입 | 의미 |
+|---|---|---|
+| source_name / provider | VARCHAR | 자료명·제공자 |
+| source_type | VARCHAR(30) | approved_result / authorized_store_data / public_data / synthetic_demo / test_fixture |
+| source_url / source_reference | TEXT, nullable | 원문·허용된 내부 관리 참조 |
+| permission_status / permitted_usage | VARCHAR / TEXT | 권한 확인 상태·허용 범위 |
+| verification_status | VARCHAR | 미검증/검증완료/반려 |
+| period_start / period_end | DATE, nullable | 관측 범위 |
+| collected_at | DATETIME, nullable | 수집 시각 |
+| data_version | VARCHAR | 자료 버전 |
+| coverage | JSON, nullable | 지역·업종·표본·누락 범위 |
 
-```text
-(region, industry, analysis_month)
-(region, industry, weekday, time_slot)
-(age_group, gender)
-```
+기존 dummy 출처 레코드는 목적·구조 확인 후 synthetic_demo 또는 test_fixture로 분류합니다. synthetic_demo는 표시가 있는 공모전 시연에 사용하며 실제 관측으로 분류하지 않습니다. approved_result를 붙이는 것만으로 권한·검증이 생기는 것은 아닙니다.
 
-### `foot_traffic`
+## 6. 카드소비·유동인구
 
-```text
-(region, analysis_month)
-(region, weekday, time_slot)
-(age_group, gender)
-```
+기존 필드 유지:
 
-### `sales_expenses`
+- card_consumptions: region, industry, analysis_month, weekday, time_slot, consumption_value, metric_type(amount/index), age_group, gender, is_game_day.
+- foot_traffic: region, analysis_month, weekday, time_slot, traffic_value, metric_type(count/index), age_group, gender.
 
-```text
-(store_profile_id, transaction_date)
-(store_profile_id, transaction_type)
-```
+공통 추가: source_id, period_start/end, granularity, observed_date(실제 일별 자료일 때), slot_start/end(제공된 경우), sample_count, coverage.
 
-### `policy_support_programs`
+월간 자료만 있으면 일별 observed_date는 null입니다. 월·일·시간 데이터가 같은 집계에서 중복 합산되지 않도록 granularity와 모집단을 구분합니다. 별도 매장 방문 수는 이 테이블에 저장하지 않습니다.
 
-```text
-(region, industry)
-(revenue_range)
-(external_id)
-(status, application_end)
-```
+## 7. POS·지출·품목
 
-### `analysis_runs`
+### sales_expenses
 
-```text
-(store_profile_id, created_at)
-(region, industry, period_start, period_end)
-```
+기존 store_profile_id, transaction_date, transaction_type(sales/expense), expense_category, amount, input_source, description을 유지합니다.
 
----
+| 추가·정비 필드 | 의미 |
+|---|---|
+| occurred_at | 실제 거래 시각; 시각 없으면 null, 00시 거래로 위장하지 않음 |
+| external_transaction_id / source_id | 공급원·원거래 식별자 |
+| entry_kind | sale / expense / refund / reversal 등 공급 계약에 맞춘 유형 |
+| transaction_status | 완료·취소 등 원자료 처리 상태 |
+| original_transaction_id | 환불·취소가 참조하는 원거래 |
+| payment_at / payment_status | 현금흐름에 필요한 실제 지급·수금 시점/상태, 확보 시 |
+| original_category | 기존·공급원 원분류 |
+| expense_category | rent / maintenance / purchase / labor / other |
 
-## 10. 데이터 저장 및 조회 흐름
+표시명은 월세·관리비·매입비·인건비·기타 지출입니다. amount의 부호와 환불 반영은 공급원별 변환 규칙을 거쳐 일관되게 정의합니다. 차감 처리와 음수 저장을 동시에 적용하지 않습니다.
 
-### 10-1. 더미 데이터 입력
+input_source는 기존 manual/transaction/pos/receipt를 유지합니다. 기본은 POS 조회이며 수기 보완은 구분합니다. 영수증 OCR은 향후입니다.
 
-```text
-CSV·JSON·엑셀 더미 데이터
-        ↓
-데이터 형식 확인
-        ↓
-Django 초기 데이터 입력 스크립트
-        ↓
-MySQL 저장
-```
+### store_items / transaction_items — 품목 자료 확보 시
 
-### 10-2. 사용자 분석 요청
+- store_items: store_profile_id, external_item_id, item_name, item_type(판매/매입/겸용), base_unit, source_id.
+- transaction_items: sales_expense_id, store_item_id, external_line_id, quantity, unit, unit_price, line_amount.
+- TOP 3는 매입 성격 거래의 품목별 금액 합계. 총거래 금액과 품목 합계의 할인·세금·조정 차이를 검증합니다.
+- 영수증 총액을 각 품목에 반복 복사하여 합산하지 않습니다.
 
-```text
-지역·업종 입력
-        ↓
-analysis_runs 생성
-        ↓
-조건에 맞는 카드소비·유동인구 데이터 조회
-        ↓
-pandas·numpy 분석
-        ↓
-analysis_insights 저장
-        ↓
-회복 플랜과 AI 리포트에 결과 전달
-```
+### inventory_snapshots / item_mappings — 근거 확보 시
 
-### 10-3. 정책 추천
+- inventory_snapshots: store_profile_id, store_item_id, snapshot_at, quantity, unit, adjustments(폐기·기타 조정의 근거), source_id.
+- item_mappings: store_profile_id, sales_item_id, purchase_item_id, quantity_per_sale, unit, valid_from/to, source_id.
+- 메뉴와 원재료가 다르면 레시피·단위 대응 자료가 필요합니다. 매핑이 없으면 발주 수량을 계산하지 않습니다.
 
-```text
-지역·업종·매출 범위 입력
-        ↓
-policy_support_programs 조건 검색
-        ↓
-조건 일치 결과 정렬
-        ↓
-화면에 추천 목록 표시
-```
+### store_visit_counts — 별도 측정 자료 확보 시
 
-### 10-4. 골목상권 회복 플랜
+store_profile_id, period_start_at, period_end_at, visitor_count, measurement_method, deduplication_basis, source_id.
 
-```text
-analysis_insights의 소비 전환 공백 조회
-        ↓
-집중 시간대·고객층·추천 행동 연결
-        ↓
-참고용 소비 기회 지수와 자금 효과 계산
-        ↓
-화면과 AI 리포트에 회복 플랜 표시
-```
+주문 건수나 상권 유동인구를 복사해 채우지 않습니다.
 
-회복 플랜은 프로토타입에서 별도 테이블을 만들지 않고 `analysis_insights`와 관련 매출·지출 데이터를 이용해 계산합니다.
+## 8. 현금흐름·배달·금융 비교
 
----
+### cashflow_inputs
 
-## 11. 데이터 출처 및 보안 기준
+기존 store_profile_id, snapshot_date, current_cash, expected_sales, expected_expenses, rent_expense, material_expense, labor_expense, other_expense를 이어받습니다.
 
-### 프로토타입
+- maintenance_expense, purchase_expense를 추가해 표준 비용 분류와 맞춥니다.
+- material_expense의 이관은 원분류를 확인한 뒤 수행하고 중복 합산하지 않습니다.
+- expected_inflows, expected_outflows, assumptions(JSON), forecast_method, source_id를 추가합니다.
+- expected_sales와 expected_inflows는 동일하다고 가정하지 않습니다.
+- 산출 자료·가정이 없으면 예상 잔액은 null입니다.
 
-- AI 생성 더미 데이터 사용
-- 프로젝트의 `data/dummy/`에 원본 더미 데이터 저장
-- 초기 입력 스크립트로 MySQL에 저장
-- 반복 가능한 시연 환경 구성
+### delivery_metrics
 
-### 본선
+기존 store_profile_id, metric_date, cancellation_rate, average_cooking_time, discount_rate 유지. source_id·집계 기간·단위·표본을 추가합니다.
 
-- 실제 원본 데이터 저장 금지
-- 허용된 집계 분석 결과만 사용
-- 반출 제한 데이터는 프로젝트와 GitHub에 포함하지 않음
-- 실제 결과 사용 전 공개·저장 가능 여부 확인
-- 실제 데이터 반영 시 `source_type`을 `approved_result`로 표시
+### financial_benchmarks
 
-### GitHub 업로드 금지 대상
+기존 industry, analysis_year, 매출·영업이익률·부채비율·비용비율·현금흐름 평균 유지. source_id, period_start/end, 모집단·단위·sample_count를 보강합니다.
 
-- 실제 원본 데이터
-- 개인 식별정보
-- 금융기관 인증정보
-- API 키와 비밀번호
-- 반출이 제한된 분석 파일
+체온계의 고정 점수 테이블을 만들지 않습니다. 실제 계산법이 정의되면 분석 결과에 rule_version과 함께 저장합니다.
 
----
+## 9. 정책·지원사업
 
-## 12. 현재 데이터베이스 범위에 포함하지 않는 내용
+policy_support_programs 기존 외부 ID·제목·기관·유형·지원 대상/내용·지역·업종·매출 범위·신청 조건·요약·접수기간·공고일·URL·상태를 유지합니다.
 
-- 회원가입 및 로그인
-- 금융기관 계좌 연동
-- 실제 신용평가
-- 대출 심사 및 실행
-- 금융상품 가입
-- 실제 원본 데이터 저장
-- 별도 학습모델 데이터베이스
-- 실시간 데이터 수집 시스템
+| 추가·정비 필드 | 의미 |
+|---|---|
+| source_id / source_updated_at / last_collected_at | 제공처·갱신 이력 |
+| raw_notice | 허용된 공고 원문 |
+| category / title_filter_matched | 금융·창업 분류와 제목 1차 필터 근거 |
+| age_min / age_max / age_reference_date | 연령 범위·기준일 |
+| region_conditions | 복수 지역·거주지/사업장 기준 |
+| industry_conditions | 허용·제외 업종·분류 |
+| business_start_conditions | 창업일/업력 조건과 기준일 |
+| business_size_conditions | 지표명·단위·범위 |
+| revenue_conditions | 기존 매출 관련 조건 |
+| eligibility_rules | AND/OR·제외·경계 포함 규칙과 원문 참조 |
+| extraction_status / reviewed_at | 추출 불확실성·검토 상태 |
 
----
+단일 칼럼으로 표현 불가한 조건은 JSON으로 원문과 함께 보존합니다. null은 무조건 제한 없음이 아닙니다. 각 조건에 known/unrestricted/unknown/not_applicable 상태를 둡니다.
 
-## 13. Django 모델 구현 기준
+적합도는 프로필·규칙 버전에 따라 계산하는 결과이며 공고 자체의 고정 점수로 저장하지 않습니다. 산식 미정이면 점수는 null입니다.
 
-- 각 테이블은 Django Model로 정의합니다.
-- 기본키는 Django의 기본 `BigAutoField`를 사용할 수 있습니다.
-- 외래키 삭제 정책은 데이터 보존을 고려하여 설정합니다.
-- 금액 필드는 `DecimalField`를 사용합니다.
-- 비율 필드는 소수점 둘째 자리까지 저장할 수 있도록 설정합니다.
-- 생성일시와 수정일시는 자동으로 관리합니다.
-- 데이터 출처 유형은 선택값으로 관리합니다.
-- 분석 상태는 선택값으로 관리합니다.
+## 10. 위치·이슈·일정
 
----
+### nearby_places
 
-## 14. 데이터베이스 구현 순서
+provider_place_id, source_id, name, address, region, industry_code, industry_code_version, latitude, longitude, observed_at.
 
-1. Django 프로젝트 및 앱 생성
-2. `store_profiles` 모델 생성
-3. 카드소비·유동인구 모델 생성
-4. 매출·지출·자금 흐름 모델 생성
-5. 금융상태·정책·행사 데이터 모델 생성
-6. 분석 실행·인사이트 모델 생성
-7. Django migration 실행
-8. 더미 데이터 입력 스크립트 작성
-9. MySQL 저장 및 조회 테스트
-10. 분석 모듈과 데이터베이스 연결
+competitive_evidence(JSON): 확인된 메뉴·영업시간·주변 고객 근거별 value/source_id/observed_at. 없는 값은 null이며 지도로부터 추정하지 않습니다.
 
----
+내 가게와 반경 거리는 조회 조건에 따라 계산합니다. 고정 반경·할인율은 DB 기본값으로 임의 설정하지 않습니다.
 
-## 15. 데이터베이스 명세 완료 기준
+### event_weather_data
 
-- 필요한 테이블 목록이 정의되어야 함
-- 각 테이블의 컬럼과 자료형이 정의되어야 함
-- 테이블 간 관계가 정의되어야 함
-- 카드소비·유동인구 데이터의 지역·업종·기간 기준이 정의되어야 함
-- 매출·지출 및 자금 흐름 데이터가 정의되어야 함
-- 금융상태와 업종 평균 데이터가 정의되어야 함
-- 정책·지원사업 검색 조건이 정의되어야 함
-- 분석 실행과 인사이트 결과 저장 방식이 정의되어야 함
-- 회복 플랜을 분석 결과에서 생성하는 방식이 정의되어야 함
-- 더미 데이터 입력 방식이 정의되어야 함
-- 실제 원본 데이터 저장 금지 기준이 포함되어야 함
-- Django 모델로 구현할 수 있어야 함
+기존 region, event_date, event_name, weather_description, market_name 유지.
+
+확장: record_type(event/weather/news/calendar/seasonal), title, start_at/end_at, latitude/longitude, industry_tags, summary, source_url, published_at, source_id, status.
+
+서로 다른 유형의 자료는 record_type별 필수 조건을 검증합니다. 과거 축제 상품 추천은 관련 판매자료·분석 근거로 연결하고 행사 이름만으로 인기 상품을 생성하지 않습니다.
+
+## 11. 분석 실행·결과
+
+### analysis_runs
+
+기존 가게·지역·업종·매출범위·기간·상태·완료일 유지.
+
+추가: user_id, comparison_start/end, timezone, source_ids, data_version, rule_version, profile_snapshot, analysis_scope, data_status, missing_fields, dataset_mode(demo/real/mixed).
+
+mixed이면 결과 항목별 source_ids와 생성 여부를 명시합니다. real 모드에는 synthetic_demo/test_fixture를 공급하지 않습니다.
+
+처리 상태 pending/running/completed/failed. 완료했더라도 일부 자료가 없을 수 있습니다.
+
+### analysis_insights
+
+기존 analysis_run_id, insight_type, title, description, metric_value, metric_unit, priority 유지.
+
+추가: result_key, structured_result(JSON), evidence(JSON), source_ids, rule_version, data_status, limitations.
+
+insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 유지하고 필요한 기간/품목/경쟁 분석으로 확장합니다. 근거 없는 수치를 description에 숨기지 않습니다.
+
+회복 플랜은 focus_time, customer, action, source_ids, financial_reference(근거 없으면 null)를 가진 구조화 결과로 연결합니다. 지도 자체를 분석 근거로 취급하지 않습니다.
+
+## 12. AI 비서 대화와 PDF
+
+- assistant_sessions: user_id, store_profile_id, analysis_run_id(nullable), title, status.
+- assistant_messages: session_id, role, content, analysis_run_id(nullable), evidence_refs, created_at.
+- report_files: session_id, analysis_run_id, owner_id, status(pending/generating/completed/failed), file_path, file_name, mime_type, generated_at, error_code.
+- 생성된 PDF는 보호 저장소의 파일 경로로 관리하고 공개 URL을 DB에 무조건 저장하지 않습니다.
+- 다운로드는 소유권 확인 후 제공하며 completed와 실제 파일 존재를 모두 검사합니다.
+- 대화·파일 보존기간과 삭제 정책은 실제 운영 전에 결정합니다. 위젯 이동은 의미 미정으로 테이블을 추가하지 않습니다.
+
+## 13. 인덱스·무결성
+
+- 가게 자료: store_profile_id + occurred_at/transaction_date.
+- 수집 거래: store_profile_id + source_id + external_transaction_id 기준 중복 방지. 품목은 거래 ID + external_line_id.
+- 카드·유동: source_id + 지역·업종(카드) + 기간·집계 단위·시간·고객 구간. 월/일·전체/세부 집계 중복 방지.
+- 정책: source_id + external_id unique, 접수기간·진행상태 인덱스.
+- 위치: 제공처 + provider_place_id unique, 좌표·업종 검색 검토.
+- 분석·파일: 소유자·가게·생성 시각·상태 인덱스.
+- 실제 제공 스키마 확인 후 unique 조합·null 처리·삭제 정책을 확정합니다. 불확실한 자연키로 정상 레코드를 덮어쓰지 않습니다.
+
+## 14. 전환·검증 순서
+
+1. 자료와 프로필 의미·규칙을 확정.
+2. 실제 Django 모델·권한·테이블 생성.
+3. 생성 시연 자료는 synthetic_demo로 명시·일관성 검증. 실자료는 권한·출처 검증, 내부 fixture 격리.
+4. 합계·날짜·취소·중복·단위·출처 검증.
+5. 분석 실행→화면→챗봇→AI 비서→PDF 연결.
+6. 생성 여부 표시·실자료 혼동·기존 하드코딩 잔여 검사.
+7. [테스트 계획](09_test-plan.md) 통과 후 발표 설명 변경.
+
+실제 제한 자료·개인정보·비밀번호·API 키는 GitHub나 제출 파일에 무단 포함하지 않습니다. 스키마 승인만으로 외부 데이터 이용이 승인된 것은 아닙니다.
