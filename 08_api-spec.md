@@ -1,6 +1,6 @@
 # 08. API 명세서
 
-- 개정일: 2026-09-03 / 승인된 목표 계약
+- 개정일: 2026-09-04 / 승인된 목표 계약
 - 방식: Django REST Framework, 기본 경로 /api/v1/, JSON
 - 현재 구현: API 서버 없음. 아래 경로는 실제 호출 가능한 주소가 아닙니다.
 - 기준: [데이터](04_data-spec.md), [DB](07_db-schema.md), [화면](06_screen-spec.md)
@@ -12,6 +12,8 @@
 - 가게·분석·대화·보고서에는 인증·소유권을 검증합니다.
 - source_type·검증 상태·계산 결과는 서버가 결정합니다.
 - 공모전 생성 자료는 dataset_mode:demo와 source_type:synthetic_demo로 명시합니다. real 모드 실패를 생성값으로 대체하지 않습니다. 내부 test_fixture는 공개 시연과 분리합니다.
+- 회복 플랜 API는 CCTV 익명 집계와 POS를 핵심 근거로 사용하고, 지도·상권 자료는 보조 근거로 구분합니다.
+- 일반 화면·분석 API는 CCTV 원본 영상·얼굴·개인 식별 정보를 반환하지 않습니다.
 - HTTP 처리 성공과 데이터 충분성은 다릅니다.
 - 상담 연계·금융 점수·정책 %의 미정 부분은 가짜 성공 응답으로 만들지 않습니다.
 
@@ -86,6 +88,9 @@ data_status: available / partial / no_data / not_comparable / definition_pending
 | A-24 | GET | /stores/{store_profile_id}/nearby-places | 지도 반경 내 동종업종 |
 | A-25 | GET | /stores/{store_profile_id}/updates | 뉴스·날씨·행사·캘린더 안내 |
 | A-26 | GET | /stores/{store_profile_id}/time-guidance | 지난 일주일 기반 현재 시간 안내 |
+| A-27 | GET | /stores/{store_profile_id}/funnel-metrics | CCTV·POS 시간대별 전환 퍼널 |
+| A-28 | POST | /stores/{store_profile_id}/recovery-experiments | 회복 행동 실행·비교 계획 등록 |
+| A-29 | GET | /recovery-experiments/{experiment_id} | 7일 후 전후 비교 상태·결과 |
 
 계정 로그인·로그아웃·비밀번호 변경은 Django 인증 계층에서 처리합니다. 세부 인증 URL·가입 방식은 구현 전 별도 정의하며, 위 계약에 평문 비밀번호 조회를 추가하지 않습니다.
 
@@ -115,7 +120,7 @@ store_context, metrics, main_insight, finance, cashflow_summary, recovery_summar
 
 series(시간·값·단위), customer_segments, factor_candidates, comparison_method, sample_count, evidence, limitations 반환.
 
-요일·시간·주문·방문 지표는 각각 구분합니다. 데이터가 없는 특정 시간대·고객층·그래프를 생성하지 않습니다.
+요일·시간·주문, 상권 유동인구, CCTV 통행·입장 지표는 각각 구분합니다. 데이터가 없는 특정 시간대·고객층·그래프를 생성하지 않습니다.
 
 ## 5. A-05~A-09 POS·지출·금융
 
@@ -125,7 +130,7 @@ series(시간·값·단위), customer_segments, factor_candidates, comparison_me
 
 응답: 거래 목록·요약, sales_total, expense_total, categories, purchase_top_items, inventory_checks, order_suggestions, data_status, missing_fields.
 
-품목 금액·판매/매입·재고가 없으면 해당 배열은 빈 배열과 사유를 반환합니다. 실제 매장 방문 수를 제공할 수 없으면 영수증 건수를 방문 수로 바꾸지 않습니다.
+품목 금액·판매/매입·재고가 없으면 해당 배열은 빈 배열과 사유를 반환합니다. CCTV 입장객 자료가 없으면 영수증 건수나 상권 유동인구를 입장객 수로 바꾸지 않습니다.
 
 분석 실행 ID와 함께 요청하면 가게·기간이 일치해야 합니다. 금액 합계와 취소·환불 처리는 공통 분석 서비스에서 수행합니다.
 
@@ -191,17 +196,54 @@ answer_status: answered / insufficient_data / out_of_scope. consultation은 실�
 - 실제 AI 연결 여부를 나타내는 생성 방식 정보를 유지합니다.
 - 외부 AI 제공자·비용은 미정이며 이번 계약으로 결제하지 않습니다.
 
-## 8. A-15 / A-24 회복 플랜·지도
+## 8. A-15 / A-24 / A-27~A-29 회복 플랜·퍼널·지도
 
-A-15 응답: factor_candidates, focus_time, target_customers, actions, competitive_evidence, event_guidance, financial_reference, related_policies, source_ids, limitations.
+### A-15 회복 플랜
+
+A-15 응답: funnel, opportunity_slot, factor_candidates, actions, supporting_context, experiment, financial_reference, related_policies, source_ids, rule_version, limitations.
+
+- `funnel`: 통행자→체류자→입장객→결제 건수→순매출을 같은 매장·시간대 기준으로 제공합니다.
+- `factor_candidates`: 통행·유입·구매전환 상태를 규칙 버전과 함께 요인 후보로 반환합니다.
+- `actions`: 요인 후보에 연결된 실행 행동이며 확정 효과를 포함하지 않습니다.
+- `supporting_context`: 지도·동종업종·상권 고객·행사·절기 등 확인된 보조 근거입니다.
+- `experiment`: 실행 전/후 비교 계획 또는 진행 상태입니다.
 
 financial_reference는 산출 근거가 없으면 value:null, data_status:definition_pending. +650,000원을 기본 시나리오로 넣지 않습니다.
+
+매출 기회 시간대의 계산식·최소 표본·진단 임계값이 확정되지 않으면 `opportunity_slot`을 임의 산출하지 않고 definition_pending과 필요한 확인사항을 반환합니다.
+
+### A-27 CCTV·POS 전환 퍼널
+
+조건: period_start/end, 필요 시 weekday, slot_start/end, analysis_run_id. 분석 실행 ID를 쓰면 매장·기간이 일치해야 합니다.
+
+응답: time_slots, passerby_count, dwell_count, entrant_count, valid_payment_count, net_sales, entry_rate, estimated_purchase_conversion_rate, average_ticket, conversion_scope, channel_filter_status, source_ids, quality_status, rule_version, limitations.
+
+- 매장 유입률 = entrant_count ÷ passerby_count × 100.
+- 추정 구매전환율 = valid_payment_count ÷ entrant_count × 100. 결제 건수는 구매자 수와 같지 않으므로 ‘추정’으로 표시합니다.
+- 객단가 = net_sales ÷ valid_payment_count.
+- 분모가 0이거나 자료가 불충분하면 해당 값은 null입니다.
+- CCTV와 POS의 매장·영업일·시간 구간 기준이 맞지 않으면 `not_comparable`입니다.
+- POS 판매 채널을 확인해 입장객과 비교 가능한 결제 범위를 `conversion_scope`에 표시합니다. 배달·비대면 결제를 분리할 수 없으면 `partial` 또는 `not_comparable`로 처리합니다.
+- 응답에는 집계값만 포함하며 원본 영상·얼굴·개인 식별자·특징값을 포함하지 않습니다.
+
+### A-24 지도·상권 보조 근거
 
 A-24 조건: radius_m, 같은 업종의 기준. 위치는 해당 가게의 확인된 주소·좌표를 기준으로 합니다.
 
 반환: center, radius_m, places(점포 식별자·이름·주소·업종·위도·경도·거리·출처), data_status.
 
-반경 범위·좌표계·거리 방식·업종 매핑을 확정 후 검증합니다. 지도 핀만으로 메뉴·개점시각·직장인 비중을 만들어 반환하지 않습니다.
+반경 범위·좌표계·거리 방식·업종 매핑을 확정 후 검증합니다. 지도 핀만으로 메뉴·개점시각·직장인 비중을 만들어 반환하지 않습니다. 지도·상권 자료가 없어도 CCTV·POS 퍼널을 가짜 값으로 보완하지 않으며, 보조 근거만 no_data로 처리합니다.
+
+### A-28 / A-29 회복 행동과 7일 후 비교
+
+A-28 입력: analysis_run_id, target_slot, action_codes, action_summary, baseline_start/end, planned_start_at. 서버는 매장 소유권과 분석 근거를 확인하고 experiment_id, status, comparison_due_at을 반환합니다.
+
+A-29 응답: status, baseline, comparison, deltas, comparison_conditions, source_ids, rule_version, limitations.
+
+- 상태는 planned / running / waiting / comparable / not_comparable / completed를 사용합니다.
+- 7일이 지났더라도 같은 시간대·요일 조건의 CCTV/POS 자료가 부족하면 waiting 또는 not_comparable입니다.
+- 실행 행동과 지표 변화의 상관관계는 보여줄 수 있지만, 다른 요인을 통제하지 않았다면 인과 효과로 단정하지 않습니다.
+- 비교 결과가 준비되기 전에 개선 수치나 수익을 생성하지 않습니다.
 
 ## 9. A-16~A-23 프로필·AI 비서·PDF
 
@@ -242,18 +284,20 @@ A-26은 서버 기준 현재 날짜 이전의 완료된 7일을 기본 참고창
 | S-04 | A-05~A-08 |
 | S-06 | A-10, A-11 |
 | S-07 AI 비서 | A-12, A-18~A-23 |
-| S-08 회복 | A-15, A-24, A-25 |
+| S-08 회복 | A-15, A-24, A-25, A-27~A-29 |
 | S-09 프로필 | A-16, A-17 |
 | 공통 챗봇 | A-13 |
 
 ## 12. 검증·구현 순서
 
 - 기간·단위·소유권·입력 형식 검증.
+- CCTV 익명 집계와 POS의 매장·시간대·영업일 정렬, 중복·품질·분모 0 검증.
 - 데이터 없는 정상 응답과 시스템 오류 구분.
-- 정책 조건 미상·후보 부족·만료·중복, 지도 실패, PDF 실패 처리.
+- 정책 조건 미상·후보 부족·만료·중복, 지도 실패, CCTV 집계 실패, PDF 실패 처리.
 - 표본 부족, 거래 중복·환불, 프로필 변경 시 오래된 결과 혼합 방지.
+- 원본 영상·얼굴·개인 식별 정보가 일반 API에 노출되지 않는지 검사.
 - 모든 수치와 문장이 같은 데이터 버전을 쓰는지 검사.
-- 실제 POS·외부자료 계약과 인증을 먼저 구현하고 기존 P0 연결, 나머지는 데이터 준비 순서에 따라 진행.
+- 생성 CCTV·POS 자료로 공통 분석 구조를 먼저 검증하고, 실제 장비·POS·외부자료 계약과 인증 확인 후 교체합니다. 지도·상권은 보조 근거로 후속 연결합니다.
 - 기존 F-09의 우선순위를 내리지 않으며, API 명세 승인 자체로 구현 완료·유료 서비스 이용을 주장하지 않음.
 
 검증 사례는 [09_test-plan.md](09_test-plan.md)에 연결합니다.

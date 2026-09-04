@@ -1,6 +1,6 @@
 # iM 파트너 데이터베이스 명세서
 
-- 개정일: 2026-09-03 / 목표 논리 스키마
+- 개정일: 2026-09-04 / 목표 논리 스키마
 - MySQL·Django ORM 예정. 실제 DB·모델·마이그레이션은 아직 생성하지 않았습니다.
 - [데이터 명세](04_data-spec.md)와 [API 명세](08_api-spec.md)를 함께 적용합니다.
 
@@ -11,6 +11,8 @@
 - 숫자는 표시 문자열이 아닌 숫자 자료형, 상태 미정은 null로 저장합니다.
 - 자료 출처·기간·단위·검증 상태를 보존합니다. 허용된 POS 원자료와 제한된 센터 원자료를 동일한 저장 금지 대상으로 취급하지 않습니다.
 - 공모전 생성 데이터는 synthetic_demo로 명시해 사용할 수 있습니다. 내부 test_fixture와 구분하고 실제 관측 자료로 섞어 표시하지 않습니다.
+- 회복 플랜의 핵심 근거는 CCTV 익명 집계와 POS이며, 지도·상권 자료는 보조 근거로 분리합니다.
+- CCTV 원본 영상·얼굴·개인 식별자는 일반 분석 테이블과 화면 API에 저장하지 않습니다. 실제 처리·보관 정책은 장비와 제공 계약 확인 후 확정합니다.
 - 아래 추가 테이블은 필요한 데이터 계약이며 모든 기능을 즉시 구현하겠다는 일정 확정이 아닙니다.
 
 ## 2. 테이블 목록과 관계
@@ -26,7 +28,7 @@
 | sales_expenses | 기존 확장 | POS 거래와 지출 |
 | store_items / transaction_items | 조건부 신규 | 품목과 거래 품목 상세 |
 | inventory_snapshots / item_mappings | 조건부 신규 | 재고·판매/매입 품목 대응 |
-| store_visit_counts | 조건부 신규 | 별도 측정한 매장 방문 수 |
+| store_funnel_counts | 신규 | CCTV 익명 통행·체류·입장 집계 |
 | cashflow_inputs | 기존 확장 | 현금·예상 입출금과 가정 |
 | delivery_metrics | 유지·출처 보강 | 대구로 운영지표 |
 | financial_benchmarks | 유지·출처 보강 | 업종 평균 비교 |
@@ -34,6 +36,7 @@
 | event_weather_data | 기존 확장 | 행사·날씨·뉴스·일정 |
 | nearby_places | 신규 | 상권 점포 좌표와 확인된 경쟁 근거 |
 | analysis_runs / analysis_insights | 기존 확장 | 분석 조건·결과·근거·규칙 |
+| recovery_experiments | 신규 | 실행 행동·기준기간·7일 후 비교 |
 | assistant_sessions / assistant_messages | 신규 | AI 비서 대화와 분석 연결 |
 | report_files | 신규 | 실제 PDF 생성·접근 관리 |
 
@@ -41,9 +44,10 @@
 인증 사용자 ─ user_profiles
     └─ store_profiles
          ├─ sales_expenses ─ transaction_items ─ store_items
-         ├─ inventory_snapshots / item_mappings / store_visit_counts
+         ├─ inventory_snapshots / item_mappings
+         ├─ store_funnel_counts
          ├─ cashflow_inputs / delivery_metrics
-         ├─ analysis_runs ─ analysis_insights
+         ├─ analysis_runs ─ analysis_insights ─ recovery_experiments
          └─ assistant_sessions ─ assistant_messages / report_files
 
 data_sources ─ 각 입력자료·분석 실행의 source_ids
@@ -51,7 +55,7 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
            policy_support_programs / event_weather_data / nearby_places
 ```
 
-회복 플랜은 별도 사실 데이터 테이블 없이 분석 결과·근거를 조합합니다. 챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
+회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. 챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
 
 ## 3. 공통 컬럼·형식
 
@@ -129,7 +133,7 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
 
 공통 추가: source_id, period_start/end, granularity, observed_date(실제 일별 자료일 때), slot_start/end(제공된 경우), sample_count, coverage.
 
-월간 자료만 있으면 일별 observed_date는 null입니다. 월·일·시간 데이터가 같은 집계에서 중복 합산되지 않도록 granularity와 모집단을 구분합니다. 별도 매장 방문 수는 이 테이블에 저장하지 않습니다.
+월간 자료만 있으면 일별 observed_date는 null입니다. 월·일·시간 데이터가 같은 집계에서 중복 합산되지 않도록 granularity와 모집단을 구분합니다. CCTV로 측정한 매장 앞 통행·입장 수는 이 테이블에 저장하지 않습니다.
 
 ## 7. POS·지출·품목
 
@@ -144,6 +148,7 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
 | entry_kind | sale / expense / refund / reversal 등 공급 계약에 맞춘 유형 |
 | transaction_status | 완료·취소 등 원자료 처리 상태 |
 | original_transaction_id | 환불·취소가 참조하는 원거래 |
+| sales_channel | in_store / takeout / delivery / online / unknown 등 공급원 기준 판매 채널 |
 | payment_at / payment_status | 현금흐름에 필요한 실제 지급·수금 시점/상태, 확보 시 |
 | original_category | 기존·공급원 원분류 |
 | expense_category | rent / maintenance / purchase / labor / other |
@@ -165,11 +170,24 @@ input_source는 기존 manual/transaction/pos/receipt를 유지합니다. 기본
 - item_mappings: store_profile_id, sales_item_id, purchase_item_id, quantity_per_sale, unit, valid_from/to, source_id.
 - 메뉴와 원재료가 다르면 레시피·단위 대응 자료가 필요합니다. 매핑이 없으면 발주 수량을 계산하지 않습니다.
 
-### store_visit_counts — 별도 측정 자료 확보 시
+### store_funnel_counts — CCTV 익명 집계
 
-store_profile_id, period_start_at, period_end_at, visitor_count, measurement_method, deduplication_basis, source_id.
+| 필드 | 의미 |
+|---|---|
+| store_profile_id / source_id | 대상 매장·CCTV 집계 출처 |
+| period_start_at / period_end_at | 집계 시작·종료 시각 |
+| passerby_count | 매장 앞 통행자 수 |
+| dwell_count | 정의된 구역·시간 기준 체류자 수 |
+| entrant_count | 정의된 출입선 기준 입장객 수 |
+| measurement_method / model_version | 측정 방식·분석 모델 버전 |
+| deduplication_basis | 같은 사람의 중복 집계를 줄이는 기준 |
+| coverage / quality_status | 촬영 범위·가림·누락·품질 상태 |
+| anonymization_method | 익명 집계 방식 |
+| raw_video_policy | 원본 영상 처리·보관 정책 참조 |
 
-주문 건수나 상권 유동인구를 복사해 채우지 않습니다.
+이 테이블은 시간대별 **집계값만** 저장합니다. 얼굴 이미지, 특징 벡터, 개인 식별자, 원본 프레임은 일반 서비스 DB에 넣지 않습니다. `entrant_count ≤ passerby_count`, `dwell_count ≤ passerby_count` 같은 검증 실패는 값을 임의 보정하지 않고 품질 오류로 표시합니다.
+
+POS의 결제 건수는 완료 거래를 기준으로 취소·환불 처리 규칙을 일관되게 적용해 계산합니다. CCTV 입장객과 비교할 때는 판매 채널을 확인하고, 배달·비대면 결제를 분리할 수 없으면 비교 상태와 한계를 저장합니다. 주문 건수나 상권 유동인구를 통행자·입장객 수로 복사하지 않습니다.
 
 ## 8. 현금흐름·배달·금융 비교
 
@@ -253,7 +271,22 @@ mixed이면 결과 항목별 source_ids와 생성 여부를 명시합니다. rea
 
 insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 유지하고 필요한 기간/품목/경쟁 분석으로 확장합니다. 근거 없는 수치를 description에 숨기지 않습니다.
 
-회복 플랜은 focus_time, customer, action, source_ids, financial_reference(근거 없으면 null)를 가진 구조화 결과로 연결합니다. 지도 자체를 분석 근거로 취급하지 않습니다.
+회복 플랜은 funnel_metrics, opportunity_slot, factor_candidates, actions, supporting_context, source_ids, rule_version을 가진 구조화 결과로 연결합니다. 지도·상권 자료는 `supporting_context`로 구분하며 CCTV·POS 퍼널을 대신하지 않습니다. 금융 효과는 산출 근거가 있을 때만 financial_reference에 저장하고, 없으면 null입니다.
+
+### recovery_experiments
+
+| 필드 | 의미 |
+|---|---|
+| store_profile_id / analysis_run_id | 매장·회복 플랜 분석 실행 |
+| baseline_start / baseline_end | 실행 전 비교 기준 기간 |
+| target_slot_start / target_slot_end | 개선 대상 시간대 |
+| action_codes / action_summary | 선택한 실행 행동·설명 |
+| started_at | 실행 시작 시각 |
+| comparison_start / comparison_end | 같은 조건으로 비교할 후속 기간 |
+| status | planned / running / waiting / comparable / not_comparable / completed |
+| rule_version | 진단·비교 규칙 버전 |
+
+7일 후 비교는 달력상 7일 경과만으로 성공 처리하지 않습니다. 같은 매장·시간대·영업일 조건의 CCTV/POS 자료가 충분한지 확인하고, 부족하면 `waiting` 또는 `not_comparable`로 남깁니다. 비교 결과는 연결된 분석 결과에 근거와 함께 저장하며 추천 효과를 미리 확정값으로 기록하지 않습니다.
 
 ## 12. AI 비서 대화와 PDF
 
@@ -269,6 +302,8 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 - 가게 자료: store_profile_id + occurred_at/transaction_date.
 - 수집 거래: store_profile_id + source_id + external_transaction_id 기준 중복 방지. 품목은 거래 ID + external_line_id.
 - 카드·유동: source_id + 지역·업종(카드) + 기간·집계 단위·시간·고객 구간. 월/일·전체/세부 집계 중복 방지.
+- CCTV 집계: store_profile_id + source_id + period_start_at + period_end_at의 중복 방지. 시간대 겹침·음수·통행자보다 큰 입장객 수를 검증.
+- 회복 실험: store_profile_id + target_slot + started_at 조회 및 상태 인덱스. 기준·비교 기간의 중복과 시간대 불일치를 검증.
 - 정책: source_id + external_id unique, 접수기간·진행상태 인덱스.
 - 위치: 제공처 + provider_place_id unique, 좌표·업종 검색 검토.
 - 분석·파일: 소유자·가게·생성 시각·상태 인덱스.
@@ -278,10 +313,12 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 
 1. 자료와 프로필 의미·규칙을 확정.
 2. 실제 Django 모델·권한·테이블 생성.
-3. 생성 시연 자료는 synthetic_demo로 명시·일관성 검증. 실자료는 권한·출처 검증, 내부 fixture 격리.
-4. 합계·날짜·취소·중복·단위·출처 검증.
-5. 분석 실행→화면→챗봇→AI 비서→PDF 연결.
-6. 생성 여부 표시·실자료 혼동·기존 하드코딩 잔여 검사.
-7. [테스트 계획](09_test-plan.md) 통과 후 발표 설명 변경.
+3. 생성 시연 자료는 CCTV·POS를 포함해 synthetic_demo로 명시·일관성 검증. 실자료는 권한·출처 검증, 내부 fixture 격리.
+4. CCTV 익명 집계와 POS의 매장·시간대·영업일 정렬, 집계 품질, 취소·환불·중복·단위 검증.
+5. 퍼널 지표→요인 후보→실행 행동→7일 후 비교를 같은 analysis_run·rule_version으로 연결.
+6. 지도·상권·행사 자료는 보조 근거로 연결하고 핵심 퍼널을 대신하지 않는지 확인.
+7. 분석 실행→화면→챗봇→AI 비서→PDF 연결.
+8. 생성 여부 표시·실자료 혼동·기존 하드코딩 잔여 검사.
+9. [테스트 계획](09_test-plan.md) 통과 후 발표 설명 변경.
 
 실제 제한 자료·개인정보·비밀번호·API 키는 GitHub나 제출 파일에 무단 포함하지 않습니다. 스키마 승인만으로 외부 데이터 이용이 승인된 것은 아닙니다.
