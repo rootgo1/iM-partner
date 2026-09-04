@@ -262,7 +262,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 - report_files: session_id, analysis_run_id, owner_id, status(pending/generating/completed/failed), file_path, file_name, mime_type, generated_at, error_code.
 - 생성된 PDF는 보호 저장소의 파일 경로로 관리하고 공개 URL을 DB에 무조건 저장하지 않습니다.
 - 다운로드는 소유권 확인 후 제공하며 completed와 실제 파일 존재를 모두 검사합니다.
-- 대화·파일 보존기간과 삭제 정책은 실제 운영 전에 결정합니다. 위젯 이동은 의미 미정으로 테이블을 추가하지 않습니다.
+- 대화·파일 보존기간과 삭제 정책은 실제 운영 전에 결정합니다.
 
 ## 13. 인덱스·무결성
 
