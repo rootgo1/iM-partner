@@ -134,12 +134,82 @@
     maxEmployees: i % 2 === 0 ? 5 : null, ageMin: i === 7 ? 19 : null, ageMax: i === 7 ? 39 : null,
     sourceType: 'synthetic_demo', score: null
   }));
+  const recoveryScenario = {
+    analysisDate: '2026-09-03',
+    storeStatus: 'open',
+    sourceType: 'synthetic_demo',
+    dataStatus: 'comparable_demo',
+    conversionScope: 'in_store_only_demo',
+    opportunitySlotId: '18-20',
+    opportunitySelection: {
+      status: 'scenario_selected',
+      ruleVersion: null,
+      note: '기능 검토용 생성 시나리오에서 선택한 시간대입니다. 자동 선정 산식과 임계값은 아직 확정되지 않았습니다.'
+    },
+    slots: [
+      { id: '08-10', label: '08~10시', passersby: 126, dwellers: 34, entrants: 9, validPayments: 6, netSales: 93000 },
+      { id: '10-12', label: '10~12시', passersby: 164, dwellers: 48, entrants: 13, validPayments: 9, netSales: 144000 },
+      { id: '12-14', label: '12~14시', passersby: 218, dwellers: 79, entrants: 19, validPayments: 14, netSales: 222000 },
+      { id: '14-16', label: '14~16시', passersby: 146, dwellers: 36, entrants: 12, validPayments: 8, netSales: 116000 },
+      { id: '16-18', label: '16~18시', passersby: 207, dwellers: 58, entrants: 24, validPayments: 18, netSales: 297000 },
+      { id: '18-20', label: '18~20시', passersby: 310, dwellers: 74, entrants: 21, validPayments: 14, netSales: 286000 }
+    ],
+    diagnosis: {
+      type: 'traffic_to_entry_gap',
+      status: 'factor_candidate',
+      title: '통행량 대비 매장 유입이 낮습니다.',
+      explanation: '사람이 적어서라기보다 매장 외부에서 메뉴와 혜택이 충분히 눈에 띄지 않았을 가능성을 먼저 점검해 보세요.',
+      ruleVersion: null
+    },
+    actions: [
+      { time: '17:30', title: '대표 메뉴 입간판 노출', detail: '대표 메뉴와 가격을 매장 앞에서 한눈에 확인할 수 있도록 표시합니다.' },
+      { time: '18:00~20:00', title: '2인 세트 혜택 안내', detail: '적용 시간과 조건을 명확히 표시하고 실제 할인율은 운영자가 결정합니다.' },
+      { time: '7일 후', title: '같은 조건으로 전후 비교', detail: '같은 요일·시간대의 유입률, 유효 결제 건수, 순매출을 함께 확인합니다.' }
+    ],
+    comparison: {
+      status: 'waiting',
+      baselineLabel: '실행 전',
+      actionLabel: '입간판 + 2인 세트 안내',
+      followUpDate: '2026-09-10',
+      followUpMetrics: null,
+      note: '7일 후 같은 요일·시간대의 집계가 준비되면 비교합니다.'
+    },
+    supportingEvidence: {
+      mapStatus: 'not_connected',
+      competitorStatus: 'not_connected',
+      eventStatus: 'not_connected'
+    }
+  };
+  const ratio = (numerator, denominator) => denominator > 0 ? numerator / denominator * 100 : null;
+  function analyzeRecovery() {
+    const slots = recoveryScenario.slots.map(row => Object.assign({}, row, {
+      dwellRate: ratio(row.dwellers, row.passersby),
+      entryRate: ratio(row.entrants, row.passersby),
+      estimatedPurchaseRate: ratio(row.validPayments, row.entrants),
+      averageTicket: row.validPayments > 0 ? row.netSales / row.validPayments : null
+    }));
+    const opportunity = slots.find(row => row.id === recoveryScenario.opportunitySlotId) || null;
+    return {
+      analysisDate: recoveryScenario.analysisDate,
+      storeStatus: recoveryScenario.storeStatus,
+      sourceType: recoveryScenario.sourceType,
+      dataStatus: recoveryScenario.dataStatus,
+      conversionScope: recoveryScenario.conversionScope,
+      opportunitySelection: Object.assign({}, recoveryScenario.opportunitySelection),
+      opportunity,
+      slots,
+      diagnosis: Object.assign({}, recoveryScenario.diagnosis),
+      actions: recoveryScenario.actions.map(row => Object.assign({}, row)),
+      comparison: Object.assign({}, recoveryScenario.comparison),
+      supportingEvidence: Object.assign({}, recoveryScenario.supportingEvidence)
+    };
+  }
   const api = {
-    records, expenses, purchases, area, periods, categories, menu, materials, policies,
-    analyze, customPeriod, guidance, shift, rate,
+    records, expenses, purchases, area, periods, categories, menu, materials, policies, recoveryScenario,
+    analyze, analyzeRecovery, customPeriod, guidance, shift, rate,
     profile: { name: '이소현', storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: 3, age: '', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     generatedLabel: '생성 데이터 기반 시연', referenceDate: '2026-09-03',
-    sources: { pos: 'POS 형식의 생성 판매 집계', expenses: '생성 지출·매입 자료', area: '생성 상권 비교 자료', policies: '화면 구성용 가상 공고' }
+    sources: { pos: 'POS 형식의 생성 판매 집계', expenses: '생성 지출·매입 자료', area: '생성 상권 비교 자료', cctv: 'CCTV 형식의 익명 통행·체류·입장 생성 집계', recovery: 'CCTV·POS 결합 기능 검토용 생성 시나리오', policies: '화면 구성용 가상 공고' }
   };
   root.IM_MEETING_DEMO = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

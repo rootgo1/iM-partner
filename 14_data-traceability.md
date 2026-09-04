@@ -1,4 +1,4 @@
-# iM 파트너 데모 주장-데이터-코드 추적성 감사
+# iM파트너 데모 주장-데이터-코드 추적성 감사
 
 > 개정 안내: 이 문서의 기존 감사 본문은 정적 Mock MVP의 수치·코드·문구를 추적한 기록입니다. 기존 코드 위치·수치 감사는 보존합니다. 2026-09-04 확정한 CCTV·POS 핵심 + 지도·상권 보조 근거의 혼합형 회복 플랜은 아직 메인 코드와 연결되지 않았으며 15절에서 목표 추적성을 별도로 정의합니다.
 
@@ -408,7 +408,7 @@ AI 답변 규칙과 근거 문장 교체
 | cashflow.* | cashflow_inputs와 검증된 입출금 | 현금 기준일·정산 시점·예상 매출/입금 구분 |
 | policy.* | policy_support_programs + 프로필 매칭 | 실제 공고·원문 자격·상태·조건 근거 |
 
-KPI·그래프·요인·플랜·챗봇·AI 비서·PDF가 동일 analysis_run_id와 source_ids·rule_version을 사용하도록 설계했습니다. 최신 사용자 확인에 따라 POS를 포함한 생성 데이터 시연을 허용하고 synthetic_demo와 dataset_mode로 구분합니다. 아직 실제 코드의 공통 데이터 원천 전환을 구현한 것은 아닙니다.
+KPI·그래프·요인·플랜·iM챗봇·AI 비서·PDF가 동일 analysis_run_id와 source_ids·rule_version을 사용하도록 설계했습니다. 최신 사용자 확인에 따라 POS를 포함한 생성 데이터 시연을 허용하고 synthetic_demo와 dataset_mode로 구분합니다. 아직 실제 코드의 공통 데이터 원천 전환을 구현한 것은 아닙니다.
 
 ### 14-3. 회의의 새 예시·주장 처리
 
@@ -441,7 +441,7 @@ KPI·그래프·요인·플랜·챗봇·AI 비서·PDF가 동일 analysis_run_id
 
 - 프로필 지역: 사업장 주소지로 확정. 거주지와 구분합니다.
 - 사업장 규모: 직원 수로 확정. 공고의 상시근로자 산정 기준과 자동 동일시하지 않습니다.
-- AI 리포트의 새 명칭: AI 비서. 우측 단순 질의응답은 챗봇입니다.
+- AI 리포트의 새 명칭: AI 비서. 우측 단순 질의응답은 iM챗봇입니다.
 - 생성 데이터: POS 포함 공모전 시연에 사용 가능, 생성 자료임을 표시합니다.
 
 ## 15. 2026-09-04 혼합형 회복 플랜 목표 추적성
@@ -476,7 +476,7 @@ KPI·그래프·요인·플랜·챗봇·AI 비서·PDF가 동일 analysis_run_id
 
 ### 15-3. Single Source of Truth 전환 요구
 
-향후 `recoveryPlan`의 고정 문자열을 직접 수정하는 방식으로 구현하지 않습니다. 공통 분석 결과 한 건에서 퍼널·차트·요인 후보·행동·챗봇·AI 비서·PDF·전후 비교가 값을 읽어야 합니다.
+향후 `recoveryPlan`의 고정 문자열을 직접 수정하는 방식으로 구현하지 않습니다. 공통 분석 결과 한 건에서 퍼널·차트·요인 후보·행동·iM챗봇·AI 비서·PDF·전후 비교가 값을 읽어야 합니다.
 
 ```text
 store_funnel_counts + POS 거래
@@ -485,7 +485,7 @@ store_funnel_counts + POS 거래
         ↓
 진단 규칙(rule_version)
         ↓
-화면 / 챗봇 / AI 비서 / PDF / recovery_experiments
+화면 / iM챗봇 / AI 비서 / PDF / recovery_experiments
 
 nearby_places + 상권·행사
         ↓

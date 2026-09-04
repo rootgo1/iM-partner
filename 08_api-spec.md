@@ -74,7 +74,7 @@ data_status: available / partial / no_data / not_comparable / definition_pending
 | A-10 | GET | /policies | 추천/전체 목록·검색 |
 | A-11 | GET | /policies/{policy_id} | 원문·자격 상세 |
 | A-12 | GET | /analysis-runs/{analysis_run_id}/report | AI 비서에서 사용하는 분석 요약 조회 |
-| A-13 | POST | /assistant/messages | 챗봇 질의응답, 기존 경로 보존 |
+| A-13 | POST | /assistant/messages | iM챗봇 질의응답, 기존 경로 보존 |
 | A-14 | POST | /stores/{store_profile_id}/receipts | 영수증 확장, 현재 미구현·후순위 |
 | A-15 | GET | /analysis-runs/{analysis_run_id}/recovery-plan | 회복 근거·행동·금융 참고 |
 | A-16 | GET, PATCH | /me/profile | 사용자 프로필 |
@@ -173,15 +173,15 @@ A-11은 지원 내용·원문·접수기간·조건 구조·추출 상태·원�
 
 수집의 금융·창업 및 제목 3키워드 OR 조건은 서버 수집 계층의 규칙입니다. 화면 검색과 구분합니다. 외부 공고 분류·권한 확인 전 호출하지 않습니다.
 
-## 7. A-12~A-13 요약·챗봇 구분
+## 7. A-12~A-13 요약·iM챗봇 구분
 
 ### A-12 분석 요약
 
 실제 분석 결과의 sections, evidence, limitations, analysis_run_id, report_file(생성된 경우)을 반환합니다. 조회 요청만으로 가짜 PDF를 생성했다고 응답하지 않습니다.
 
-### A-13 챗봇
+### A-13 iM챗봇
 
-목표 화면 이름은 ‘챗봇’이지만 기존 /assistant/messages 경로를 유지합니다. AI 비서의 다단계 분석 경로와 구분합니다.
+목표 화면 이름은 ‘iM챗봇’이지만 기존 /assistant/messages 경로를 유지합니다. AI 비서의 다단계 분석 경로와 구분합니다.
 
 입력: store_profile_id, analysis_run_id(분석 관련 질문 시), message, current_screen(문맥 보조).
 
@@ -262,7 +262,7 @@ AI 비서:
 
 A-23 성공 응답은 JSON이 아닌 PDF 바이트이며 Content-Disposition으로 파일 다운로드를 안내합니다. 실패는 공통 오류 구조를 사용합니다. 생성 완료 전 다운로드 URL을 활성화하지 않습니다.
 
-PDF의 숫자·기간·출처는 화면·챗봇과 동일 실행을 참조합니다.
+PDF의 숫자·기간·출처는 화면·iM챗봇과 동일 실행을 참조합니다.
 
 ## 10. A-25~A-26 이슈·시간 안내
 
@@ -286,7 +286,7 @@ A-26은 서버 기준 현재 날짜 이전의 완료된 7일을 기본 참고창
 | S-07 AI 비서 | A-12, A-18~A-23 |
 | S-08 회복 | A-15, A-24, A-25, A-27~A-29 |
 | S-09 프로필 | A-16, A-17 |
-| 공통 챗봇 | A-13 |
+| 공통 iM챗봇 | A-13 |
 
 ## 12. 검증·구현 순서
 

@@ -1,0 +1,28 @@
+/*
+ * iM혜민체 — iM뱅크 공식 배포본
+ * 원본 파일을 수정하지 않고 웹 UI 용도로 사용합니다.
+ * CI/BI(회사명·브랜드명·상품명·로고·슬로건)에는 사용하지 않습니다.
+ */
+@font-face {
+  font-family: "iM Hyemin UI";
+  src:
+    local("IM혜민 Regular"),
+    url("./IM_Hyemin-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "iM Hyemin UI";
+  src:
+    local("IM혜민 Bold"),
+    url("./IM_Hyemin-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --font-im-hyemin: "iM Hyemin UI", Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif;
+}

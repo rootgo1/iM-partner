@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="iM 파트너 메인 대시보드 UI 프로토타입">
-  <title>iM 파트너 · 회의 반영 프로토타입</title>
+  <meta name="description" content="대구 소상공인을 위한 데이터 기반 경영·금융 도우미 iM파트너">
+  <title>iM파트너 - 소상공인 경영·금융 도우미</title>
+  <link rel="icon" type="image/x-icon" href="./assets/brand/im-bank-favicon.ico">
+  <link rel="stylesheet" href="./assets/fonts/noto-sans-kr.css">
   <style>
     :root {
       --navy-950: #143f49;
@@ -80,39 +82,58 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
       flex: 0 0 auto;
-      min-width: 64px;
+      width: 32px;
+      min-width: 32px;
       height: 32px;
       margin-left: auto;
-      padding: 0 8px;
+      padding: 0;
       border: 1px solid #d9ece8;
       border-radius: 10px;
       color: #317f78;
       background: #f4fbf9;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
+      transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
     }
 
-    .sidebar-toggle:hover { background: #e8f6f2; }
+    .sidebar-toggle:hover {
+      color: #1f685f;
+      background: #e8f6f2;
+      border-color: #bcded7;
+      transform: translateX(-1px);
+    }
+
+    .sidebar-toggle:active { transform: translateX(-1px) scale(0.96); }
 
     .toggle-icon {
-      font-size: 18px;
-      line-height: 1;
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: translateX(1px) rotate(135deg);
+      transition: transform 180ms ease;
     }
 
     .brand-mark {
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 30px;
       display: grid;
       place-items: center;
-      border-radius: 11px;
-      color: #fff;
-      background: linear-gradient(135deg, #4d9f91, #a6dc78);
-      font-size: 17px;
-      font-weight: 900;
-      box-shadow: 0 7px 16px rgba(76, 160, 143, 0.2);
+      flex: 0 0 auto;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+
+    .brand-mark:hover { transform: translateY(-1px); filter: brightness(1.04); }
+    .brand-mark:active { transform: scale(0.96); }
+    .brand-mark:focus-visible { outline: 2px solid #2b8e82; outline-offset: 3px; }
+
+    .brand-mark img,
+    .topbar-brand-mark img {
+      display: block;
+      width: 100%;
+      height: auto;
     }
 
     .demo-label {
@@ -191,14 +212,14 @@
     }
 
     .app-shell.sidebar-collapsed .sidebar {
-      width: 82px;
-      flex-basis: 82px;
-      padding-right: 12px;
-      padding-left: 12px;
+      width: 96px;
+      flex-basis: 96px;
+      padding-right: 8px;
+      padding-left: 8px;
     }
 
     .app-shell.sidebar-collapsed .brand {
-      justify-content: center;
+      justify-content: flex-start;
       padding-right: 0;
       padding-left: 0;
     }
@@ -212,18 +233,22 @@
     }
 
     .app-shell.sidebar-collapsed .sidebar-toggle {
-      position: absolute;
-      top: 2px;
-      right: -8px;
-      width: 27px;
-      min-width: 27px;
+      position: static;
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
       padding: 0;
-      border-radius: 50%;
+      border-radius: 10px;
       background: #fff;
       box-shadow: 0 3px 10px rgba(34, 86, 83, 0.12);
     }
 
-    .app-shell.sidebar-collapsed .toggle-label { display: none; }
+    .app-shell.sidebar-collapsed .toggle-icon {
+      transform: translateX(-1px) rotate(-45deg);
+    }
+
+    .app-shell.sidebar-collapsed .sidebar-toggle:hover { transform: translateX(1px); }
+    .app-shell.sidebar-collapsed .sidebar-toggle:active { transform: translateX(1px) scale(0.96); }
 
     .app-shell.sidebar-collapsed .nav-item {
       justify-content: center;
@@ -281,54 +306,34 @@
     .topbar-brand {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
+      border: 0;
       color: #fff;
+      background: transparent;
       font-size: 21px;
-      font-weight: 850;
-      letter-spacing: -0.06em;
+      font-weight: 700;
+      text-decoration: none;
       white-space: nowrap;
+      cursor: pointer;
     }
+
+    .topbar-brand-name {
+      display: inline-flex;
+      align-items: baseline;
+      line-height: 1;
+      letter-spacing: -0.035em;
+    }
+
+    .topbar-brand-name .brand-korean { margin-left: 0.08em; }
+
+    .topbar-brand:hover .topbar-brand-mark { transform: translateY(-1px); }
 
     .topbar-brand-mark {
       display: inline-grid;
       place-items: center;
-      width: 35px;
-      height: 35px;
-      border: 1px solid rgba(255, 255, 255, 0.48);
-      border-radius: 11px;
-      color: #347e75;
-      background: rgba(255, 255, 255, 0.95);
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: -0.08em;
-    }
-
-    .top-nav {
-      display: flex;
-      align-items: center;
-      gap: 25px;
-    }
-
-    .top-nav-item {
-      position: relative;
-      padding: 8px 0;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .top-nav-item.active { color: #fff; }
-
-    .top-nav-item.active::after {
-      position: absolute;
-      right: 0;
-      bottom: -9px;
-      left: 0;
-      height: 3px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.88);
-      content: "";
+      width: 42px;
+      height: 30px;
+      flex: 0 0 auto;
     }
 
     .mobile-menu {
@@ -698,6 +703,8 @@
 
     .trend-down { color: var(--red); font-weight: 800; }
     .trend-up { color: var(--green); font-weight: 800; }
+    .trend-caution { color: var(--orange); font-weight: 800; }
+    .trend-neutral { color: var(--muted); font-weight: 700; }
 
     .dashboard-grid {
       display: grid;
@@ -1147,8 +1154,6 @@
     @media (max-width: 960px) and (min-width: 761px) {
       .topbar { padding-right: 22px; padding-left: 22px; }
       .topbar-left { gap: 20px; }
-      .top-nav { gap: 15px; }
-      .top-nav-item { font-size: 12px; }
       .profile span { display: none; }
       .app-shell.chat-open .ai-panel {
         position: fixed;
@@ -1203,7 +1208,6 @@
       .topbar { height: 68px; padding: 0 18px; }
       .mobile-menu { display: inline-grid; place-items: center; }
       .topbar-left { gap: 0; }
-      .top-nav { display: none; }
       .breadcrumb { gap: 6px; font-size: 12px; }
       .breadcrumb span { display: none; }
       .data-chip { display: none; }
@@ -1239,12 +1243,12 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">iM</div><span>파트너 메뉴</span>
+        <a class="brand-mark" href="#dashboard" data-view="dashboard" aria-label="iM파트너 메인 페이지로 이동"><img src="./assets/brand/im-bank-symbol.png" alt=""></a><span>파트너 메뉴</span>
         <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="파트너 메뉴 접기" aria-expanded="true" aria-controls="mainNavigation">
-          <span class="toggle-icon" aria-hidden="true">‹</span><span class="toggle-label">접기</span>
+          <span class="toggle-icon" aria-hidden="true"></span>
         </button>
       </div>
-      <div class="demo-label">생성 데이터 기반 시연<br>회의 반영 HTML 미리보기</div>
+      <div class="demo-label">생성 데이터 기반 시연<br>프론트엔드 1차 구현</div>
       <div class="nav-title">MY BUSINESS</div>
       <nav class="nav-list" id="mainNavigation" aria-label="파트너 메뉴"></nav>
       <div class="sidebar-footer">분석 대상<br><strong id="storeContext">서문시장 음식점</strong><br>실제 POS · DB 미연결</div>
@@ -1254,15 +1258,10 @@
       <header class="topbar">
         <div class="topbar-left">
           <button class="mobile-menu" id="menuButton" type="button" aria-label="파트너 메뉴 열기" aria-expanded="false" aria-controls="sidebar">☰</button>
-          <div class="topbar-brand"><span class="topbar-brand-mark" aria-hidden="true">iM</span><span>iM 파트너</span></div>
-          <nav class="top-nav" aria-label="서비스 바로가기">
-            <button type="button" class="top-nav-item" data-view="dashboard">대시보드</button>
-            <button type="button" class="top-nav-item" data-view="recovery">회복 플랜</button>
-            <button type="button" class="top-nav-item" data-view="secretary">AI 비서</button>
-          </nav>
+          <a class="topbar-brand" href="#dashboard" data-view="dashboard" aria-label="iM파트너 홈으로 이동"><span class="topbar-brand-mark" aria-hidden="true"><img src="./assets/brand/im-bank-symbol.png" alt=""></span><span class="topbar-brand-name"><span>iM</span><span class="brand-korean">파트너</span></span></a>
         </div>
         <div class="topbar-actions">
-          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>챗봇</span></button>
+          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>iM챗봇</span></button>
           <span class="data-chip">생성 데이터</span>
           <button class="profile" type="button" data-view="profile" aria-label="내 프로필 보기"><span class="avatar" id="profileInitials" aria-hidden="true">이소</span><span id="profileName">이소현</span></button>
         </div>
@@ -1287,19 +1286,19 @@
         </form>
         <div class="v-data-notice"><span class="v-tag">생성 데이터 기반 시연</span><span>서문시장 음식점 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
         <div id="viewRoot" tabindex="-1"></div>
-        <noscript><p class="v-note">이 시안의 메뉴·분석·챗봇을 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
+        <noscript><p class="v-note">이 시안의 메뉴·분석·iM챗봇을 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
       </div>
     </main>
-    <aside class="ai-panel" id="aiPanel" aria-label="데이터 질문 챗봇" aria-hidden="true" inert>
+    <aside class="ai-panel" id="aiPanel" aria-label="데이터 질문 iM챗봇" aria-hidden="true" inert>
       <div id="chatResizeHandle" class="v-resize-handle" aria-hidden="true"></div>
       <div class="ai-panel-inner">
         <header class="ai-header">
-          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>챗봇</strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
-          <button class="ai-close" id="aiClose" type="button" aria-label="챗봇 접기">×</button>
+          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>iM챗봇</strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
+          <button class="ai-close" id="aiClose" type="button" aria-label="iM챗봇 접기">×</button>
         </header>
-        <label class="v-resize">창 너비<input id="chatWidth" type="range" min="320" max="560" value="380" step="10" aria-label="챗봇 창 너비"></label>
+        <label class="v-resize">창 너비<input id="chatWidth" type="range" min="320" max="560" value="380" step="10" aria-label="iM챗봇 창 너비"></label>
         <div class="ai-context" id="aiContext"></div>
-        <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="챗봇 대화">
+        <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="iM챗봇 대화">
           <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복 플랜에 관해 물어보세요.</div>
         </div>
         <div class="ai-suggestions" aria-label="추천 질문">
@@ -1310,8 +1309,8 @@
           <button class="ai-suggestion" type="button" data-question="자금 흐름에서 무엇을 확인해야 하나요?">자금 흐름에서 무엇을 확인해야 하나요?</button>
         </div>
         <form class="ai-form" id="aiForm">
-          <input class="ai-input" id="aiInput" type="text" required maxlength="500" placeholder="데이터에 대해 질문해 주세요" aria-label="챗봇 질문" autocomplete="off">
-          <button class="ai-send" type="submit" aria-label="챗봇 질문 보내기">↑</button>
+          <input class="ai-input" id="aiInput" type="text" required maxlength="500" placeholder="데이터에 대해 질문해 주세요" aria-label="iM챗봇 질문" autocomplete="off">
+          <button class="ai-send" type="submit" aria-label="iM챗봇 질문 보내기">↑</button>
         </form>
         <p class="ai-disclaimer">외부 AI 없는 규칙 기반 시안입니다.<br>상담원·연결 채널은 미정입니다.</p>
       </div>
@@ -1320,6 +1319,17 @@
   <dialog class="v-modal" id="policyModal" aria-labelledby="policyModalTitle">
     <div class="v-row v-between"><span class="v-tag neutral">가상 공고 · 실제 신청 불가</span><button type="button" class="v-button small" data-action="close-modal" aria-label="공고 예시 닫기">닫기</button></div>
     <h2 id="policyModalTitle"></h2><div id="policyModalContent"></div>
+  </dialog>
+  <dialog class="v-modal" id="recoveryMetricModal" aria-labelledby="recoveryMetricModalTitle">
+    <div class="v-row v-between"><span class="v-tag">CCTV·POS 지표</span><button type="button" class="v-button small" data-action="close-recovery-definitions" aria-label="회복 플랜 지표 기준 닫기">닫기</button></div>
+    <h2 id="recoveryMetricModalTitle">지표 계산 기준</h2>
+    <div class="v-definition-list">
+      <div><strong>매장 유입률</strong><span>입장객 수 ÷ 매장 앞 통행자 수 × 100</span></div>
+      <div><strong>추정 구매전환율</strong><span>비교 가능한 유효 결제 건수 ÷ 입장객 수 × 100. 결제 건수는 구매자 수와 다를 수 있어 추정치로 표시합니다.</span></div>
+      <div><strong>객단가</strong><span>매장 내 순매출 ÷ 비교 가능한 유효 결제 건수</span></div>
+      <div><strong>요인 후보</strong><span>수치 패턴으로 먼저 점검할 항목이며 매출 변화의 확정 원인을 뜻하지 않습니다.</span></div>
+    </div>
+    <p class="v-metadata v-space">현재 값은 기능 검토용 생성 시나리오입니다. 실제 연동 전 CCTV 집계·중복 제거·POS 판매 채널·시간대 정합성 기준을 확정해야 합니다.</p>
   </dialog>
   <div class="demo-notice" id="demoNotice" role="status" aria-live="polite"></div>
   <script src="./meeting-data.js"></script>

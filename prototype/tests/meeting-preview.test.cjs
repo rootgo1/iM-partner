@@ -15,6 +15,24 @@ check('Local assets exist and no external script/style dependency', () => {
   for (const m of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css))"/g)) assert.ok(fs.existsSync(path.resolve(root, m[1])), m[1]);
   assert.ok(!/<(?:script|link)[^>]+(?:src|href)="https?:/i.test(html));
   assert.equal((html.match(/id="([^"]+)"/g) || []).length, new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1])).size);
+  assert.match(html, /<a class="topbar-brand" href="#dashboard" data-view="dashboard" aria-label="iM파트너 홈으로 이동">/);
+  assert.match(html, /<a class="brand-mark" href="#dashboard" data-view="dashboard" aria-label="iM파트너 메인 페이지로 이동">/);
+  assert.equal((html.match(/src="\.\/assets\/brand\/im-bank-symbol\.png"/g) || []).length, 2);
+  assert.match(html, /class="topbar-brand-name"><span>iM<\/span><span class="brand-korean">파트너<\/span>/);
+  assert.ok(fs.existsSync(path.resolve(root, 'assets/brand/im-bank-symbol.gif')));
+  assert.ok(fs.existsSync(path.resolve(root, 'assets/brand/im-bank-symbol.png')));
+  assert.ok(fs.existsSync(path.resolve(root, 'assets/brand/im-bank-favicon.ico')));
+  for (const asset of ['briefing-market.png', 'briefing-weather.png', 'briefing-season.png']) {
+    assert.ok(fs.existsSync(path.resolve(root, 'assets/dashboard-banners', asset)), asset);
+  }
+  assert.match(html, /<title>iM파트너 - 소상공인 경영·금융 도우미<\/title>/);
+  assert.match(html, /<link rel="icon" type="image\/x-icon" href="\.\/assets\/brand\/im-bank-favicon\.ico">/);
+  assert.ok(!html.includes('class="toggle-label"'));
+  assert.match(html, /<span class="toggle-icon" aria-hidden="true"><\/span>/);
+  assert.ok(!code.includes("toggle-icon').textContent"));
+  assert.ok(!html.includes('class="top-nav"'));
+  assert.ok(!html.includes('iM 파트너'));
+  assert.ok(html.includes('iM챗봇'));
 });
 for (const [label, p] of Object.entries(D.periods)) check(label + ': POS, costs, daily chart and categories reconcile', () => {
   const a = D.analyze(p);
@@ -40,6 +58,22 @@ check('Generated policies and undefined metrics remain explicit', () => {
   assert.equal(D.policies.length, 10);
   assert.ok(D.policies.every(p => p.sourceType === 'synthetic_demo' && p.score === null));
   assert.ok(!code.includes('650000')); assert.ok(!/fetch\(|XMLHttpRequest|localStorage|sessionStorage/.test(code));
+});
+check('CCTV and POS recovery scenario reconciles without invented outcomes', () => {
+  const r = D.analyzeRecovery();
+  assert.equal(r.sourceType, 'synthetic_demo');
+  assert.equal(r.opportunity.label, '18~20시');
+  assert.equal(r.opportunity.passersby, 310);
+  assert.equal(r.opportunity.entrants, 21);
+  assert.equal(r.opportunity.validPayments, 14);
+  assert.equal(r.opportunity.netSales, 286000);
+  assert.equal(r.opportunity.entryRate.toFixed(1), '6.8');
+  assert.equal(r.opportunity.estimatedPurchaseRate.toFixed(1), '66.7');
+  assert.equal(Math.round(r.opportunity.averageTicket), 20429);
+  assert.ok(r.slots.every(row => row.passersby >= row.dwellers && row.dwellers >= row.entrants && row.entrants >= row.validPayments));
+  assert.equal(r.opportunitySelection.ruleVersion, null);
+  assert.equal(r.comparison.status, 'waiting');
+  assert.equal(r.comparison.followUpMetrics, null);
 });
 // A deliberately small DOM contract stub: tests logic/markup, not actual browser layout.
 const nodes = new Map(), listeners = {}, buttons = [];
@@ -110,6 +144,7 @@ function submit(id, values) { const form = nodes.get(id); form.values = values; 
 vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and all seven navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
   for (const view of ['dashboard', 'market', 'finance', 'recovery', 'policies', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
@@ -138,6 +173,21 @@ check('Report prompts, sidebar, chat controls, calendar and policy modal', () =>
   click({ action: 'close-modal' }); assert.equal(nodes.get('policyModal').open, false);
   click({ view: 'dashboard' }); assert.ok(nodes.get('bannerTitle').textContent.includes('뉴스'));
   click({ action: 'banner-next' }); assert.ok(nodes.get('bannerTitle').textContent.includes('행사'));
+});
+check('Recovery funnel, definitions, action state and chatbot share one source', () => {
+  click({ view: 'recovery' });
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('통행자는 <b>310명</b>'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('매장 유입률이 <b>6.8%</b>'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('유효 결제'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('데이터 집계 대기'));
+  click({ action: 'show-recovery-definitions' }); assert.equal(nodes.get('recoveryMetricModal').open, true);
+  click({ action: 'close-recovery-definitions' }); assert.equal(nodes.get('recoveryMetricModal').open, false);
+  click({ action: 'start-recovery' });
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('실행 기록 시안 진행 중'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('DB에 저장되지 않습니다'));
+  click({ question: 'CCTV 유입률과 구매전환율을 알려주세요' });
+  assert.ok(nodes.get('aiMessages').textContent.includes('통행자 310명'));
+  assert.ok(nodes.get('aiMessages').textContent.includes('추정 구매전환율은 66.7%'));
 });
 check('Profile strings are escaped and region mismatch is excluded', () => {
   click({ view: 'profile' });

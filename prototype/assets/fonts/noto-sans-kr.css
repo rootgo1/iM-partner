@@ -1,0 +1,36 @@
+/* Noto Sans KR files are bundled locally for a stable, offline contest demo. */
+@font-face {
+  font-family: "iM Noto Sans KR";
+  src: url("./NotoSansKR-Light.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "iM Noto Sans KR";
+  src: url("./NotoSansKR-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "iM Noto Sans KR";
+  src: url("./NotoSansKR-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "iM Noto Sans KR";
+  src: url("./NotoSansKR-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+
+:root {
+  --font-im-ui: "iM Noto Sans KR", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+}

@@ -45,7 +45,7 @@
       pages.push(canvas);
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = '#449985'; ctx.fillRect(margin, 58, 56, 5);
-      font(25, true); ctx.fillStyle = '#276957'; ctx.fillText('iM 파트너', margin, 111);
+      font(25, true); ctx.fillStyle = '#276957'; ctx.fillText('iM파트너', margin, 111);
       font(19, false); ctx.fillStyle = '#798880'; ctx.textAlign = 'right';
       ctx.fillText('생성 데이터 기반 시연 · 규칙 기반 분석', width - margin, 111); ctx.textAlign = 'left';
       y = 177;

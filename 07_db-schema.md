@@ -1,4 +1,4 @@
-# iM 파트너 데이터베이스 명세서
+# iM파트너 데이터베이스 명세서
 
 - 개정일: 2026-09-04 / 목표 논리 스키마
 - MySQL·Django ORM 예정. 실제 DB·모델·마이그레이션은 아직 생성하지 않았습니다.
@@ -55,7 +55,7 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
            policy_support_programs / event_weather_data / nearby_places
 ```
 
-회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. 챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
+회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. iM챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
 
 ## 3. 공통 컬럼·형식
 
@@ -317,7 +317,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 4. CCTV 익명 집계와 POS의 매장·시간대·영업일 정렬, 집계 품질, 취소·환불·중복·단위 검증.
 5. 퍼널 지표→요인 후보→실행 행동→7일 후 비교를 같은 analysis_run·rule_version으로 연결.
 6. 지도·상권·행사 자료는 보조 근거로 연결하고 핵심 퍼널을 대신하지 않는지 확인.
-7. 분석 실행→화면→챗봇→AI 비서→PDF 연결.
+7. 분석 실행→화면→iM챗봇→AI 비서→PDF 연결.
 8. 생성 여부 표시·실자료 혼동·기존 하드코딩 잔여 검사.
 9. [테스트 계획](09_test-plan.md) 통과 후 발표 설명 변경.
 
