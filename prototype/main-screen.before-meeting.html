@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="iM 파트너 메인 대시보드 UI 프로토타입">
-  <title>iM 파트너 · 회의 반영 프로토타입</title>
+  <title>iM 파트너 · 메인 대시보드</title>
   <style>
     :root {
       --navy-950: #143f49;
@@ -1232,98 +1232,462 @@
       .chart-card .text-button { display: inline-block; margin-top: 10px; }
     }
   </style>
-  <link rel="stylesheet" href="./meeting-preview.css">
 </head>
 <body>
-  <a class="v-skip" href="#viewRoot">본문으로 이동</a>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">iM</div><span>파트너 메뉴</span>
-        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="파트너 메뉴 접기" aria-expanded="true" aria-controls="mainNavigation">
-          <span class="toggle-icon" aria-hidden="true">‹</span><span class="toggle-label">접기</span>
+        <div class="brand-mark">iM</div>
+        <span>파트너 메뉴</span>
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="파트너 메뉴 접기">
+          <span class="toggle-icon">‹</span><span class="toggle-label">접기</span>
         </button>
       </div>
-      <div class="demo-label">생성 데이터 기반 시연<br>회의 반영 HTML 미리보기</div>
+
+      <div class="demo-label">프로토타입 미리보기<br>AI 생성 더미 데이터</div>
+
       <div class="nav-title">MY BUSINESS</div>
-      <nav class="nav-list" id="mainNavigation" aria-label="파트너 메뉴"></nav>
-      <div class="sidebar-footer">분석 대상<br><strong id="storeContext">서문시장 음식점</strong><br>실제 POS · DB 미연결</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-target="dashboard" type="button"><span class="nav-icon">⌂</span><span class="nav-label">대시보드</span></button>
+        <button class="nav-item" data-target="cashflowSummary" type="button"><span class="nav-icon">▥</span><span class="nav-label">매출·지출 분석</span></button>
+        <button class="nav-item" data-target="financeTemperature" type="button"><span class="nav-icon">◉</span><span class="nav-label">골목금융 체온계</span></button>
+        <button class="nav-item" data-target="recoveryPlan" type="button"><span class="nav-icon">↗</span><span class="nav-label">골목상권 회복 플랜</span></button>
+        <button class="nav-item" data-target="policies" type="button"><span class="nav-icon">♧</span><span class="nav-label">정책·지원사업</span></button>
+        <button class="nav-item" data-target="aiPanel" type="button"><span class="nav-icon">✦</span><span class="nav-label">AI 리포트</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        분석 대상<br>
+        <strong data-mock="store-context-short">대구 서문시장 · 음식점</strong>
+      </div>
     </aside>
-    <button class="v-nav-backdrop" id="navBackdrop" type="button" tabindex="-1" aria-label="메뉴 닫기"></button>
+
     <main class="main">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="mobile-menu" id="menuButton" type="button" aria-label="파트너 메뉴 열기" aria-expanded="false" aria-controls="sidebar">☰</button>
-          <div class="topbar-brand"><span class="topbar-brand-mark" aria-hidden="true">iM</span><span>iM 파트너</span></div>
+          <button class="mobile-menu" id="menuButton" type="button" aria-label="메뉴 열기">☰</button>
+          <div class="topbar-brand">
+            <span class="topbar-brand-mark">iM</span>
+            <span>iM 파트너</span>
+          </div>
           <nav class="top-nav" aria-label="서비스 바로가기">
-            <button type="button" class="top-nav-item" data-view="dashboard">대시보드</button>
-            <button type="button" class="top-nav-item" data-view="recovery">회복 플랜</button>
-            <button type="button" class="top-nav-item" data-view="secretary">AI 비서</button>
+            <span class="top-nav-item active">대시보드</span>
+            <span class="top-nav-item">상권 인사이트</span>
+            <span class="top-nav-item">금융·지원</span>
           </nav>
         </div>
         <div class="topbar-actions">
-          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>챗봇</span></button>
-          <span class="data-chip">생성 데이터</span>
-          <button class="profile" type="button" data-view="profile" aria-label="내 프로필 보기"><span class="avatar" id="profileInitials" aria-hidden="true">이소</span><span id="profileName">이소현</span></button>
+          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false">
+            <span class="ai-toggle-icon">✦</span><span>AI 비서</span>
+          </button>
+          <span class="data-chip">시연용 데이터</span>
+          <div class="profile"><div class="avatar" data-mock="user-initials">이소</div><span data-mock="user-name">이소현</span></div>
         </div>
       </header>
-      <div class="content">
-        <section class="page-heading" aria-label="분석 조건">
+
+      <div class="content" id="dashboard">
+        <section class="page-heading" id="storeOverview">
           <div>
-            <div class="eyebrow" id="viewEyebrow">대시보드</div>
-            <h1 id="pageTitle" tabindex="-1">가게의 오늘을 살펴보세요.</h1>
-            <p class="page-description" id="pageContext">이소현님 · 대구 중구 · 음식점</p>
-            <p class="v-metadata" id="periodContext">2026.08.01 - 08.31 · 생성 데이터</p>
+            <div class="eyebrow">오늘의 골목상권 리포트</div>
+            <h1 data-mock="user-greeting">이소현님, 가게 현황을 확인해 보세요.</h1>
+            <p class="page-description" data-mock="analysis-context-description">대구 서문시장 · 음식점 · 최근 2년 데이터를 기준으로 분석했습니다.</p>
           </div>
-          <div class="v-stack">
-            <label class="v-metadata" for="periodSelect">분석 기간</label>
-            <select class="period-select" id="periodSelect"><option value="month">2026년 8월 · 한 달</option><option value="week">최근 7일 · 8/27~9/2</option><option value="custom">직접 기간 선택</option></select>
+          <select class="period-select" aria-label="분석 기간 선택">
+            <option>최근 2년</option>
+            <option>최근 1년</option>
+            <option>최근 6개월</option>
+          </select>
+        </section>
+
+        <section class="metric-grid" aria-label="핵심 지표">
+          <article class="card metric-card" id="salesSummary">
+            <div class="metric-label">최근 매출 <span class="metric-info">i</span></div>
+            <div class="metric-value" data-mock="sales-change">-12.4%</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="sales-delta">▼ 12.4%</span><span>이전 기간 대비</span></div>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-label">카드소비 변화 <span class="metric-info">i</span></div>
+            <div class="metric-value" data-mock="card-change">-8.1%</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="card-delta">▼ 8.1%</span><span>최근 2년 비교</span></div>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-label">유동인구 변화 <span class="metric-info">i</span></div>
+            <div class="metric-value" data-mock="traffic-change">+3.2%</div>
+            <div class="metric-foot"><span class="trend-up" data-mock="traffic-delta">▲ 3.2%</span><span>최근 2년 비교</span></div>
+          </article>
+          <article class="card metric-card" id="financeTemperature">
+            <div class="metric-label">금융 체온 <span class="metric-info">i</span></div>
+            <div class="metric-value" data-mock="finance-temperature">62°</div>
+            <div class="metric-foot"><span class="trend-down" data-mock="finance-status">주의</span><span>업종 평균 대비</span></div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="card insight-card">
+            <span class="insight-kicker">가장 중요한 인사이트</span>
+            <h2 data-mock="insight-headline">사람은 늘었지만,<br>지갑은 덜 열렸습니다.</h2>
+            <p data-mock="insight-description">유동인구는 증가했지만 카드소비는 감소했습니다. 특히 12~14시에는 방문객 대비 소비가 낮아지는 소비 전환 공백이 확인됩니다.</p>
+            <button class="ghost-button" id="recoveryPlanButton" type="button">회복 플랜 확인&nbsp; →</button>
+          </article>
+
+          <article class="card section-card chart-card">
+            <div class="section-heading">
+              <div>
+                <h2>유동인구와 카드소비 비교</h2>
+                <p>요일·시간대별 상대 지수</p>
+                <div class="legend"><span><i class="traffic"></i>유동인구</span><span><i class="spend"></i>카드소비</span></div>
+              </div>
+              <button class="text-button" id="chartDetailButton" type="button">상세 보기 →</button>
+            </div>
+
+            <div class="chart-wrap" aria-label="유동인구와 카드소비 비교 그래프">
+              <svg viewBox="0 0 680 280" role="img">
+                <defs>
+                  <linearGradient id="trafficFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#2c6bed" stop-opacity="0.16" />
+                    <stop offset="100%" stop-color="#2c6bed" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <line class="chart-grid-line" x1="42" y1="30" x2="658" y2="30" />
+                <line class="chart-grid-line" x1="42" y1="83" x2="658" y2="83" />
+                <line class="chart-grid-line" x1="42" y1="136" x2="658" y2="136" />
+                <line class="chart-grid-line" x1="42" y1="189" x2="658" y2="189" />
+                <line class="chart-grid-line" x1="42" y1="242" x2="658" y2="242" />
+                <text class="chart-label" x="10" y="34">높음</text>
+                <text class="chart-label" x="10" y="246">낮음</text>
+                <path class="traffic-area" d="M48 158 C88 129 110 119 143 138 S196 150 232 99 S286 59 321 91 S376 137 410 111 S461 54 501 72 S556 124 594 83 S630 62 648 70 L648 242 L48 242 Z" />
+                <path class="traffic-line" d="M48 158 C88 129 110 119 143 138 S196 150 232 99 S286 59 321 91 S376 137 410 111 S461 54 501 72 S556 124 594 83 S630 62 648 70" />
+                <path class="spend-line" d="M48 188 C85 183 111 177 143 188 S198 204 232 169 S286 139 321 151 S375 182 410 161 S459 121 501 136 S554 176 594 147 S630 132 648 139" />
+                <circle class="chart-point-blue" cx="232" cy="99" r="5" />
+                <circle class="chart-point-orange" cx="232" cy="169" r="5" />
+                <line x1="232" y1="99" x2="232" y2="169" stroke="#ea8b2d" stroke-width="1.5" stroke-dasharray="4 4" />
+                <text class="chart-label" x="42" y="265">10시</text>
+                <text class="chart-label" x="182" y="265">12시</text>
+                <text class="chart-label" x="316" y="265">14시</text>
+                <text class="chart-label" x="450" y="265">16시</text>
+                <text class="chart-label" x="590" y="265">18시</text>
+              </svg>
+            </div>
+            <div class="chart-callout"><strong data-mock="chart-callout-title">12~14시 소비 전환 공백</strong> · <span data-mock="chart-callout-description">유동인구는 높지만 카드소비가 상대적으로 낮은 시간대입니다.</span></div>
+          </article>
+
+          <article class="card section-card">
+            <div class="section-heading">
+              <div>
+                <h2>핵심 인사이트</h2>
+                <p>데이터가 알려주는 세 가지 변화</p>
+              </div>
+              <button class="text-button" id="insightDetailButton" type="button">전체 보기 →</button>
+            </div>
+            <div class="insight-list">
+              <div class="insight-row">
+                <div class="insight-number">01</div>
+                <div><strong>소비 전환 공백이 있습니다.</strong><p><span data-mock="insight-focus-time">12~14시</span> 방문객 대비 카드소비가 낮습니다.</p></div>
+              </div>
+              <div class="insight-row">
+                <div class="insight-number">02</div>
+                <div><strong>피크 시간이 서로 다릅니다.</strong><p>유동인구와 실제 소비가 가장 많은 시간이 일치하지 않습니다.</p></div>
+              </div>
+              <div class="insight-row">
+                <div class="insight-number">03</div>
+                <div><strong>고객층에 차이가 있습니다.</strong><p>방문 고객층과 실제 소비 고객층을 비교해 보세요.</p></div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="card recovery-card" id="recoveryPlan" aria-label="골목상권 회복 플랜">
+          <div>
+            <span class="recovery-kicker">골목상권 회복 플랜</span>
+            <h2>발견한 공백을<br>실행할 행동으로 바꿔보세요.</h2>
+            <p data-mock="recovery-description">12~14시는 방문객이 많지만 카드소비가 낮습니다. 이 시간대와 핵심 고객층에 맞춰 운영·홍보를 집중하는 시나리오를 제안합니다.</p>
+            <span class="recovery-note" data-mock="recovery-evidence">분석 근거: 유동인구 +3.2% · 카드소비 -8.1% · 12~14시 소비 전환 공백</span>
+          </div>
+          <div class="plan-content">
+            <div class="plan-stats">
+              <div class="plan-stat"><span>집중 시간대</span><strong data-mock="recovery-focus-time">12~14시</strong></div>
+              <div class="plan-stat"><span>추천 고객층</span><strong data-mock="recovery-customer">20~30대<br>인근 직장인</strong></div>
+              <div class="plan-stat"><span>참고용 금융 효과</span><strong><span data-mock="recovery-cashflow">+650,000원</span><br><small>고정 Mock 참고값</small></strong></div>
+            </div>
+            <div class="plan-action"><span><strong>추천 실행</strong><br><span data-mock="recovery-action">점심 대표 메뉴와 홍보 노출을 집중하고 배달 운영 조건을 점검하세요.</span></span><button class="plan-button" id="planDetailButton" type="button">플랜 자세히 보기 →</button></div>
+            <p class="plan-disclaimer">※ 현재 프로토타입의 고정 Mock 참고값이며 실제 매출이나 금융 결과를 보장하지 않습니다.</p>
           </div>
         </section>
-        <form class="v-period" id="customPeriod" hidden>
-          <label for="periodStart" class="v-metadata">시작일</label><input id="periodStart" type="date" value="2026-08-01" min="2026-07-01" max="2026-09-02" required>
-          <label for="periodEnd" class="v-metadata">종료일</label><input id="periodEnd" type="date" value="2026-08-31" min="2026-07-01" max="2026-09-02" required>
-          <button class="v-button" type="submit">기간 적용</button>
-        </form>
-        <div class="v-data-notice"><span class="v-tag">생성 데이터 기반 시연</span><span>서문시장 음식점 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
-        <div id="viewRoot" tabindex="-1"></div>
-        <noscript><p class="v-note">이 시안의 메뉴·분석·챗봇을 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
+
+        <section class="bottom-grid">
+          <article class="card section-card" id="cashflowSummary">
+            <div class="section-heading">
+              <div><h2>이번 달 자금 흐름</h2><p>매출·지출 입력값 기준 예상</p></div>
+              <button class="text-button" id="cashflowDetailButton" type="button">자세히 보기 →</button>
+            </div>
+            <div class="cashflow">
+              <div class="mini-stat"><span>현재 보유 현금</span><strong data-mock="current-cash">3,240,000원</strong></div>
+              <div class="mini-stat"><span>예상 매출</span><strong data-mock="expected-sales">8,600,000원</strong></div>
+              <div class="mini-stat"><span>예상 잔액</span><strong class="negative" data-mock="expected-balance">1,180,000원</strong></div>
+            </div>
+          </article>
+
+          <article class="card section-card" id="policies">
+            <div class="section-heading">
+              <div><h2>맞춤 정책·지원사업</h2><p>대구 · 음식점 · 매출 범위 기준</p></div>
+              <button class="text-button" id="policyDetailButton" type="button">더 찾아보기 →</button>
+            </div>
+            <div class="policy-item">
+              <div><span class="policy-tag" data-mock="policy-tag">신청 조건 일치</span><strong data-mock="policy-name">소상공인 경영안정 지원사업</strong><p data-mock="policy-description">운영자금 및 경영 지원</p></div>
+              <span class="arrow">›</span>
+            </div>
+          </article>
+        </section>
+
+        <p class="footer-note">※ 현재 화면은 프로토타입용 AI 생성 더미 데이터를 사용합니다. 실제 분석 결과는 허용된 범위에서 교체하여 활용합니다.</p>
       </div>
     </main>
-    <aside class="ai-panel" id="aiPanel" aria-label="데이터 질문 챗봇" aria-hidden="true" inert>
-      <div id="chatResizeHandle" class="v-resize-handle" aria-hidden="true"></div>
+
+    <aside class="ai-panel" id="aiPanel" aria-label="AI 비서 채팅창">
       <div class="ai-panel-inner">
         <header class="ai-header">
-          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>챗봇</strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
-          <button class="ai-close" id="aiClose" type="button" aria-label="챗봇 접기">×</button>
+          <div class="ai-title">
+            <span class="ai-orb">✦</span>
+            <div><strong>AI 비서</strong><p>이소현님의 골목상권 파트너</p></div>
+          </div>
+          <button class="ai-close" id="aiClose" type="button" aria-label="AI 비서 접기">×</button>
         </header>
-        <label class="v-resize">창 너비<input id="chatWidth" type="range" min="320" max="560" value="380" step="10" aria-label="챗봇 창 너비"></label>
-        <div class="ai-context" id="aiContext"></div>
-        <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="챗봇 대화">
-          <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복 플랜에 관해 물어보세요.</div>
+        <div class="ai-context" data-mock="ai-context">대구 서문시장 · 음식점 · 최근 2년</div>
+        <div class="ai-messages" id="aiMessages" aria-live="polite">
+          <div class="ai-message bot" data-mock="ai-greeting">안녕하세요, 이소현님. 현재 상권 데이터를 바탕으로 매출 변화와 운영 방향을 함께 살펴볼게요.</div>
+          <div class="ai-message user">최근 매출이 왜 떨어졌나요?</div>
+          <div class="ai-message bot" data-mock="ai-initial-insight">유동인구는 3.2% 증가했지만 카드소비는 8.1% 감소했습니다. 특히 12~14시에 방문객 대비 소비가 낮은 공백이 확인됩니다.</div>
         </div>
         <div class="ai-suggestions" aria-label="추천 질문">
-          <button class="ai-suggestion" type="button" data-question="현재 매출이 왜 떨어졌나요?">현재 매출이 왜 떨어졌나요?</button>
-          <button class="ai-suggestion" type="button" data-question="어느 시간대를 공략해야 하나요?">어느 시간대를 공략해야 하나요?</button>
-          <button class="ai-suggestion" type="button" data-question="어떤 고객층을 노려야 하나요?">어떤 고객층을 노려야 하나요?</button>
-          <button class="ai-suggestion" type="button" data-question="당장 실행할 수 있는 방법은 무엇인가요?">당장 실행할 수 있는 방법은 무엇인가요?</button>
-          <button class="ai-suggestion" type="button" data-question="자금 흐름에서 무엇을 확인해야 하나요?">자금 흐름에서 무엇을 확인해야 하나요?</button>
+          <button class="ai-suggestion" type="button">현재 매출이 왜 떨어졌나요?</button>
+          <button class="ai-suggestion" type="button">어느 시간대를 공략해야 하나요?</button>
+          <button class="ai-suggestion" type="button">어떤 고객층을 노려야 하나요?</button>
+          <button class="ai-suggestion" type="button">당장 실행할 수 있는 방법은 무엇인가요?</button>
+          <button class="ai-suggestion" type="button">자금 흐름에서 무엇을 확인해야 하나요?</button>
         </div>
         <form class="ai-form" id="aiForm">
-          <input class="ai-input" id="aiInput" type="text" required maxlength="500" placeholder="데이터에 대해 질문해 주세요" aria-label="챗봇 질문" autocomplete="off">
-          <button class="ai-send" type="submit" aria-label="챗봇 질문 보내기">↑</button>
+          <input class="ai-input" id="aiInput" type="text" placeholder="상권이나 매출에 대해 물어보세요" autocomplete="off">
+          <button class="ai-send" type="submit" aria-label="질문 보내기">↑</button>
         </form>
-        <p class="ai-disclaimer">외부 AI 없는 규칙 기반 시안입니다.<br>상담원·연결 채널은 미정입니다.</p>
+        <div class="ai-disclaimer">현재는 화면 확인을 위한 더미 응답입니다.</div>
       </div>
     </aside>
   </div>
-  <dialog class="v-modal" id="policyModal" aria-labelledby="policyModalTitle">
-    <div class="v-row v-between"><span class="v-tag neutral">가상 공고 · 실제 신청 불가</span><button type="button" class="v-button small" data-action="close-modal" aria-label="공고 예시 닫기">닫기</button></div>
-    <h2 id="policyModalTitle"></h2><div id="policyModalContent"></div>
-  </dialog>
+
   <div class="demo-notice" id="demoNotice" role="status" aria-live="polite"></div>
-  <script src="./meeting-data.js"></script>
-  <script src="./report-pdf.js"></script>
-  <script src="./meeting-ui.js"></script>
+
+  <script src="./mock-data.js"></script>
+  <script>
+    const mock = window.IM_PARTNER_MOCK || {};
+    const setMockText = (key, value, preserveLineBreaks = false) => {
+      const element = document.querySelector(`[data-mock="${key}"]`);
+      if (!element || value === undefined || value === null) return;
+      if (preserveLineBreaks) {
+        element.innerHTML = String(value).replace(/\n/g, '<br>');
+      } else {
+        element.textContent = value;
+      }
+    };
+
+    const renderMockData = () => {
+      const user = mock.user || {};
+      const store = mock.store || {};
+      const metrics = mock.metrics || {};
+      const insight = mock.insight || {};
+      const plan = mock.recoveryPlan || {};
+      const cashflow = mock.cashflow || {};
+      const policy = mock.policy || {};
+
+      setMockText('user-name', user.name);
+      setMockText('user-initials', user.initials);
+      setMockText('store-context-short', `${store.region || ''} · ${store.industry || ''}`);
+      setMockText('user-greeting', `${user.name || ''}님, 가게 현황을 확인해 보세요.`);
+      setMockText('analysis-context-description', `${store.context || ''} 데이터를 기준으로 분석했습니다.`);
+      setMockText('ai-context', store.context);
+      setMockText('ai-greeting', `안녕하세요, ${user.name || ''}님. 현재 상권 데이터를 바탕으로 매출 변화와 운영 방향을 함께 살펴볼게요.`);
+      setMockText('ai-initial-insight', `유동인구는 ${metrics.trafficChange || '+3.2%'} 증가했지만 카드소비는 ${metrics.cardChange || '-8.1%'} 감소했습니다. 특히 ${plan.focusTime || '12~14시'}에 방문객 대비 소비가 낮은 공백이 확인됩니다.`);
+      setMockText('sales-change', metrics.salesChange);
+      setMockText('sales-delta', metrics.salesDelta);
+      setMockText('card-change', metrics.cardChange);
+      setMockText('card-delta', metrics.cardDelta);
+      setMockText('traffic-change', metrics.trafficChange);
+      setMockText('traffic-delta', metrics.trafficDelta);
+      setMockText('finance-temperature', metrics.financeTemperature);
+      setMockText('finance-status', metrics.financeStatus);
+      setMockText('insight-headline', insight.headline, true);
+      setMockText('insight-description', insight.description);
+      setMockText('chart-callout-title', insight.chartCalloutTitle);
+      setMockText('chart-callout-description', insight.chartCalloutDescription);
+      setMockText('insight-focus-time', plan.focusTime);
+      setMockText('recovery-description', plan.description);
+      setMockText('recovery-evidence', plan.evidence);
+      setMockText('recovery-focus-time', plan.focusTime);
+      setMockText('recovery-customer', plan.customer, true);
+      setMockText('recovery-cashflow', plan.referenceCashflow);
+      setMockText('recovery-action', plan.action);
+      setMockText('current-cash', cashflow.currentCash);
+      setMockText('expected-sales', cashflow.expectedSales);
+      setMockText('expected-balance', cashflow.expectedBalance);
+      setMockText('policy-tag', policy.tag);
+      setMockText('policy-name', policy.name);
+      setMockText('policy-description', policy.description);
+    };
+
+    renderMockData();
+
+    const menuButton = document.querySelector('#menuButton');
+    const sidebar = document.querySelector('#sidebar');
+    const appShell = document.querySelector('.app-shell');
+    const sidebarToggle = document.querySelector('#sidebarToggle');
+    const aiToggle = document.querySelector('#aiToggle');
+    const aiClose = document.querySelector('#aiClose');
+    const aiForm = document.querySelector('#aiForm');
+    const aiInput = document.querySelector('#aiInput');
+    const aiMessages = document.querySelector('#aiMessages');
+    const recoveryPlan = document.querySelector('#recoveryPlan');
+    const recoveryPlanButton = document.querySelector('#recoveryPlanButton');
+    const planDetailButton = document.querySelector('#planDetailButton');
+    const periodSelect = document.querySelector('.period-select');
+
+    sidebarToggle?.addEventListener('click', () => {
+      const collapsed = appShell.classList.toggle('sidebar-collapsed');
+      sidebarToggle.setAttribute('aria-label', collapsed ? '파트너 메뉴 펼치기' : '파트너 메뉴 접기');
+      sidebarToggle.querySelector('.toggle-icon').textContent = collapsed ? '›' : '‹';
+    });
+
+    const setChatOpen = (open) => {
+      appShell.classList.toggle('chat-open', open);
+      aiToggle.setAttribute('aria-expanded', String(open));
+      if (open) aiInput.focus();
+    };
+
+    aiToggle?.addEventListener('click', () => setChatOpen(true));
+    aiClose?.addEventListener('click', () => setChatOpen(false));
+
+    menuButton?.addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach((nav) => nav.classList.remove('active'));
+        item.classList.add('active');
+        sidebar.classList.remove('open');
+
+        const targetId = item.dataset.target;
+        if (targetId === 'aiPanel') {
+          setChatOpen(true);
+          return;
+        }
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+
+    const appendMessage = (text, type) => {
+      const message = document.createElement('div');
+      message.className = `ai-message ${type}`;
+      message.textContent = text;
+      aiMessages.appendChild(message);
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+    };
+
+    const showDemoNotice = (message) => {
+      const notice = document.querySelector('#demoNotice');
+      if (!notice) return;
+      notice.textContent = message;
+      notice.classList.add('visible');
+      window.clearTimeout(showDemoNotice.timer);
+      showDemoNotice.timer = window.setTimeout(() => notice.classList.remove('visible'), 3200);
+    };
+
+    recoveryPlanButton?.addEventListener('click', () => {
+      recoveryPlan?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    planDetailButton?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('회복 플랜을 자세히 설명해줘', 'user');
+      window.setTimeout(() => appendMessage(`${mock.recoveryPlan?.focusTime || '12~14시'} 소비 전환 공백을 개선하는 플랜입니다. ${mock.recoveryPlan?.action || '운영과 홍보를 점검해 보세요.'} 표시된 ${mock.recoveryPlan?.referenceCashflow || '+650,000원'}은 현재 프로토타입의 고정 Mock 참고값이며 계산식이 연결된 실제 예측값이 아닙니다.`, 'bot'), 220);
+    });
+
+    document.querySelector('#chartDetailButton')?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('유동인구와 카드소비 비교를 설명해줘', 'user');
+      window.setTimeout(() => appendMessage(`유동인구 ${mock.metrics?.trafficChange || '+3.2%'}와 카드소비 ${mock.metrics?.cardChange || '-8.1%'}가 엇갈리는 요인 후보가 확인됩니다. 특히 ${mock.recoveryPlan?.focusTime || '12~14시'}의 소비 전환 공백을 먼저 점검해 보세요.`, 'bot'), 220);
+    });
+
+    document.querySelector('#insightDetailButton')?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('매출 감소 요인 후보를 정리해줘', 'user');
+      window.setTimeout(() => appendMessage(`원인 후보는 유동인구보다 카드소비가 낮아진 소비 전환 공백입니다. ${mock.recoveryPlan?.focusTime || '12~14시'}에 대표 메뉴와 홍보 노출을 집중하는 플랜으로 연결할 수 있습니다.`, 'bot'), 220);
+    });
+
+    document.querySelector('#cashflowDetailButton')?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('자금 흐름에서 무엇을 확인해야 하나요?', 'user');
+      window.setTimeout(() => appendMessage(`현재 보유 현금 ${mock.cashflow?.currentCash || '3,240,000원'}과 예상 잔액 ${mock.cashflow?.expectedBalance || '1,180,000원'}을 먼저 확인하세요. 회복 플랜의 금융 효과는 현재 프로토타입의 고정 Mock 참고값입니다.`, 'bot'), 220);
+    });
+
+    document.querySelector('#policyDetailButton')?.addEventListener('click', () => {
+      setChatOpen(true);
+      appendMessage('지원사업 찾아줘', 'user');
+      window.setTimeout(() => appendMessage(`${mock.policy?.name || '조건에 맞는 지원사업'}을 확인해 보세요. 신청 기간과 지원 대상은 실제 공고 원문에서 다시 확인해야 합니다.`, 'bot'), 220);
+    });
+
+    periodSelect?.addEventListener('change', () => {
+      showDemoNotice('현재 시연 데이터는 최근 2년 기준으로 고정되어 있습니다.');
+      periodSelect.value = mock.store?.periodLabel || '최근 2년';
+    });
+
+    function askAssistant(question) {
+      setChatOpen(true);
+      appendMessage(question, 'user');
+      window.setTimeout(() => appendMessage(demoAnswer(question), 'bot'), 220);
+    }
+
+    const demoAnswer = (question) => {
+      const normalized = question.trim().toLowerCase();
+      const plan = mock.recoveryPlan || {};
+      const metrics = mock.metrics || {};
+      const cashflow = mock.cashflow || {};
+
+      if (normalized.includes('왜') || normalized.includes('떨어') || normalized.includes('줄') || normalized.includes('매출')) {
+        return `원인 후보는 유동인구보다 카드소비가 낮아진 소비 전환 공백입니다. 유동인구 ${metrics.trafficChange || '+3.2%'}, 카드소비 ${metrics.cardChange || '-8.1%'}가 확인되어 ${plan.focusTime || '12~14시'}의 대표 메뉴와 홍보 노출을 먼저 점검해 보세요.`;
+      }
+      if (normalized.includes('고객') || normalized.includes('타겟') || normalized.includes('누구')) {
+        return `추천 고객층은 ${(plan.customer || '20~30대 인근 직장인').replace(/\n/g, ' ')}입니다. 해당 고객이 많은 ${plan.focusTime || '12~14시'}에 대표 메뉴와 노출을 집중하는 것이 우선입니다.`;
+      }
+      if (normalized.includes('당장') || normalized.includes('실행') || normalized.includes('방법')) {
+        const action = (plan.action || '대표 메뉴와 홍보 노출을 점검하세요').replace(/[.。]+$/, '').replace(/하세요$/, '');
+        return `가장 빠른 실행은 ${action}하는 것입니다. 먼저 ${plan.focusTime || '12~14시'}에 적용하고, 카드소비 변화를 다시 확인하세요.`;
+      }
+      if (normalized.includes('자금') || normalized.includes('현금') || normalized.includes('비용') || normalized.includes('지출')) {
+        return `현재 보유 현금 ${cashflow.currentCash || '3,240,000원'}과 예상 잔액 ${cashflow.expectedBalance || '1,180,000원'}을 먼저 확인하세요. 회복 플랜의 금융 효과는 현재 프로토타입의 고정 Mock 참고값이며 계산식이 연결된 실제 예측값이 아닙니다.`;
+      }
+      if (normalized.includes('회복') || normalized.includes('플랜')) {
+        return `${plan.focusTime || '12~14시'} 소비 전환 공백을 개선하는 플랜입니다. ${plan.action || '운영과 홍보를 점검해 보세요.'} 표시된 금융 효과는 현재 프로토타입의 고정 Mock 참고값이며 계산식이 연결된 실제 예측값이 아닙니다.`;
+      }
+      if (question.includes('지원') || question.includes('정책')) {
+        return '대구·음식점·매출 범위 조건에 맞는 정책과 지원사업을 확인해 보세요. 자세한 추천은 정책·지원사업 메뉴에서 볼 수 있습니다.';
+      }
+      if (normalized.includes('시간') || normalized.includes('운영') || normalized.includes('언제')) {
+        return `우선 ${plan.focusTime || '12~14시'}를 점검하세요. 방문객은 많지만 카드소비가 낮은 공백 구간이므로 대표 메뉴와 홍보 노출을 집중해 볼 수 있습니다.`;
+      }
+      return '현재 더미 데이터 기준으로 유동인구와 카드소비의 차이를 우선 확인해 보세요. 유동인구는 늘었지만 카드소비는 감소한 요인 후보가 확인됩니다.';
+    };
+
+    aiForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const question = aiInput.value.trim();
+      if (!question) return;
+      appendMessage(question, 'user');
+      aiInput.value = '';
+      window.setTimeout(() => appendMessage(demoAnswer(question), 'bot'), 220);
+    });
+
+    document.querySelectorAll('.ai-suggestion').forEach((button) => {
+      button.addEventListener('click', () => {
+        aiInput.value = button.textContent;
+        aiForm.requestSubmit();
+      });
+    });
+  </script>
 </body>
 </html>

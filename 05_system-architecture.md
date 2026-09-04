@@ -1,14 +1,14 @@
 # iM 파트너 시스템 아키텍처
 
-- 개정일: 2026-09-03 / 승인된 목표 설계
+- 개정일: 2026-09-04 / 정적 HTML 부분 구현 및 목표 설계
 - 현재 실행 구조와 목표 구조를 구분합니다.
 - 관련: [데이터](04_data-spec.md), [DB](07_db-schema.md), [API](08_api-spec.md)
 
 ## 1. 현재 실행 구조
 
-브라우저 → prototype/main-screen.html → prototype/mock-data.js 및 인라인 JavaScript.
+브라우저 → prototype/main-screen.html → meeting-data.js → meeting-ui.js → report-pdf.js.
 
-현재는 DB·백엔드·실제 API·지도·사용자 인증·실제 PDF가 없는 정적 시안입니다. 화면의 ‘AI 비서’는 키워드 규칙과 고정 Mock 답변을 사용합니다. 이번 문서 개정에서 파일을 수정하지 않습니다.
+현재는 DB·백엔드·외부 API·실제 지도·사용자 인증이 없는 정적 시안입니다. `meeting-data.js`가 POS 형식 생성 자료와 공통 계산을 제공하고, `meeting-ui.js`가 화면·기간·챗봇·AI 비서를 연결합니다. `report-pdf.js`는 서버 없이 브라우저에서 실제 PDF 파일을 만듭니다. 챗봇과 AI 비서는 외부 AI가 아닌 키워드 규칙으로 동작하며, 프로필은 메모리에만 반영됩니다. 기존 `mock-data.js`는 이전 화면 기록 보존용으로 남겨 둡니다.
 
 ## 2. 목표 구조
 
