@@ -145,9 +145,14 @@ vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and all seven navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
+  assert.equal(nodes.get('pageHeading').hidden, true);
+  assert.equal(nodes.get('dataNotice').hidden, true);
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
   for (const view of ['dashboard', 'market', 'finance', 'recovery', 'policies', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
+  assert.equal(nodes.get('pageHeading').hidden, false);
+  assert.equal(nodes.get('dataNotice').hidden, false);
 });
 check('Chatbot answers follow period changes and do not invent absent data', () => {
   click({ question: '현재 매출이 왜 떨어졌나요?' });

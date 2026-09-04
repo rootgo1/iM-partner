@@ -106,6 +106,17 @@ const { chromium } = require('playwright');
   await page.getByRole('button', { name: '파트너 메뉴 펼치기' }).click();
   await page.waitForFunction(() => Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width - 238) < 1);
   assert.equal(await page.locator('.metric-card').count(), 4);
+  assert.equal(await page.locator('#pageHeading').isHidden(), true);
+  assert.equal(await page.locator('#dataNotice').isHidden(), true);
+  assert.equal(await page.locator('#dashboardPeriodSelect').inputValue(), 'month');
+  assert.equal(await page.locator('h1:visible').count(), 1);
+  await page.locator('#dashboardPeriodSelect').selectOption('week');
+  await page.waitForFunction(() => document.querySelector('#periodSelect')?.value === 'week');
+  assert.equal(await page.locator('#dashboardPeriodSelect').inputValue(), 'week');
+  await page.locator('#dashboardPeriodSelect').selectOption('custom');
+  assert.equal(await page.locator('#dashboardCustomPeriod').isVisible(), true);
+  await page.locator('#dashboardPeriodSelect').selectOption('month');
+  await page.waitForFunction(() => document.querySelector('#periodSelect')?.value === 'month');
   const expenseMetric = page.locator('.metric-card').filter({ hasText: '총지출' });
   assert.match(await expenseMetric.innerText(), /▲ 7\.2% 증가/);
   assert.equal(await expenseMetric.locator('.trend-caution').count(), 1);
@@ -115,6 +126,8 @@ const { chromium } = require('playwright');
 
   await page.getByRole('button', { name: '매출·지출 분석', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.includes('매출과 남는 돈'));
+  assert.equal(await page.locator('#pageHeading').isVisible(), true);
+  assert.equal(await page.locator('#dataNotice').isVisible(), true);
   assert.match(await page.locator('#viewRoot').innerText(), /월세/);
   assert.match(await page.locator('#viewRoot').innerText(), /매입금액 TOP 3/);
 

@@ -1266,8 +1266,8 @@
           <button class="profile" type="button" data-view="profile" aria-label="내 프로필 보기"><span class="avatar" id="profileInitials" aria-hidden="true">이소</span><span id="profileName">이소현</span></button>
         </div>
       </header>
-      <div class="content">
-        <section class="page-heading" aria-label="분석 조건">
+      <div class="content" id="mainContent">
+        <section class="page-heading" id="pageHeading" aria-label="분석 조건">
           <div>
             <div class="eyebrow" id="viewEyebrow">대시보드</div>
             <h1 id="pageTitle" tabindex="-1">가게의 오늘을 살펴보세요.</h1>
@@ -1284,7 +1284,7 @@
           <label for="periodEnd" class="v-metadata">종료일</label><input id="periodEnd" type="date" value="2026-08-31" min="2026-07-01" max="2026-09-02" required>
           <button class="v-button" type="submit">기간 적용</button>
         </form>
-        <div class="v-data-notice"><span class="v-tag">생성 데이터 기반 시연</span><span>서문시장 음식점 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
+        <div class="v-data-notice" id="dataNotice"><span class="v-tag">생성 데이터 기반 시연</span><span>서문시장 음식점 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
         <div id="viewRoot" tabindex="-1"></div>
         <noscript><p class="v-note">이 시안의 메뉴·분석·iM챗봇을 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
       </div>

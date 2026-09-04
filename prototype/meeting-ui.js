@@ -26,7 +26,7 @@
     profile: '내 가게의 기준 정보를 확인하세요.'
   };
   const state = {
-    view: 'dashboard', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
+    view: 'dashboard', periodMode: 'month', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
     policyView: 'recommended', keyword: '', category: 'all', offset: 0,
     reportMessages: [], reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
     bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
@@ -118,13 +118,22 @@
     for (let d = 1; d <= 30; d++) cells += '<span class="' + (d === 3 ? 'today' : '') + '">' + d + '</span>';
     return '<div class="v-row v-between"><h3>2026년 9월</h3><span class="v-metadata">시연 기준 달력</span></div><div class="v-calendar">' + cells + '</div><p class="v-metadata">행사 일정은 아직 연결되지 않았습니다.</p>';
   }
+  function periodOptions(selected) {
+    return [
+      ['month', '2026년 8월 · 한 달'],
+      ['week', '최근 7일 · 8/27~9/2'],
+      ['custom', '직접 기간 선택']
+    ].map(option => '<option value="' + option[0] + '"' + (option[0] === selected ? ' selected' : '') + '>' + option[1] + '</option>').join('');
+  }
   function dashboardLead() {
     const expenseRatio = analysis.expenseRatio;
     const expenseRatioText = expenseRatio == null ? '—' : expenseRatio.toFixed(1) + '%';
     const expenseRatioWidth = expenseRatio == null ? 0 : Math.max(0, Math.min(100, expenseRatio));
     return '<section class="v-dashboard-lead" aria-label="오늘의 브리핑과 골목금융 체온계">' +
       '<div class="v-feature-banner" id="dashboardBanner" data-banner-theme="news" aria-roledescription="carousel" aria-label="오늘의 브리핑 자동 배너">' +
-      '<div class="v-feature-banner-copy"><span class="v-feature-banner-kicker" id="bannerKicker"></span><h2 id="bannerTitle"></h2><p id="bannerText"></p><button class="v-feature-banner-action" id="bannerAction" data-action="banner-detail" type="button"></button></div>' +
+      '<div class="v-feature-banner-copy"><div class="v-feature-banner-top"><span class="v-feature-banner-kicker" id="bannerKicker"></span><span class="v-feature-period-wrap"><select class="v-feature-period-select" id="dashboardPeriodSelect" aria-label="분석 기간">' + periodOptions(state.periodMode) + '</select></span></div>' +
+      '<form class="v-feature-custom-period" id="dashboardCustomPeriod"' + (state.periodMode === 'custom' ? '' : ' hidden') + '><label>시작일<input id="dashboardPeriodStart" type="date" value="' + state.period.start + '" min="2026-07-01" max="2026-09-02" required></label><label>종료일<input id="dashboardPeriodEnd" type="date" value="' + state.period.end + '" min="2026-07-01" max="2026-09-02" required></label><button type="submit">적용</button></form>' +
+      '<h1 id="bannerTitle" tabindex="-1"></h1><p id="bannerText"></p><button class="v-feature-banner-action" id="bannerAction" data-action="banner-detail" type="button"></button></div>' +
       '<div class="v-feature-banner-image" aria-hidden="true"><span></span><img id="bannerImage" src="./assets/dashboard-banners/briefing-market.png" width="640" height="640" alt=""></div>' +
       '<div class="v-feature-banner-footer"><div class="v-feature-banner-pages"><span id="bannerCount"></span><button class="v-feature-banner-dot active" id="bannerDot0" data-banner-index="0" type="button" aria-label="첫 번째 배너" aria-pressed="true"></button><button class="v-feature-banner-dot" id="bannerDot1" data-banner-index="1" type="button" aria-label="두 번째 배너" aria-pressed="false"></button><button class="v-feature-banner-dot" id="bannerDot2" data-banner-index="2" type="button" aria-label="세 번째 배너" aria-pressed="false"></button></div>' +
       '<div class="v-feature-banner-controls"><button data-action="banner-prev" aria-label="이전 배너" type="button">‹</button><button data-action="banner-pause" id="bannerPause" type="button" aria-label="배너 자동 전환 일시정지">Ⅱ</button><button data-action="banner-next" aria-label="다음 배너" type="button">›</button></div></div></div>' +
@@ -311,6 +320,10 @@
       '</div><div class="v-row v-space">' + '<button class="v-button primary" type="submit">이 화면에 반영하기</button><span class="v-metadata">서버 저장·가입 없이 미리보기만 변경</span></div></form>';
   }
   function render() {
+    const dashboardView = state.view === 'dashboard';
+    $('#mainContent').classList.toggle('dashboard-view', dashboardView);
+    $('#pageHeading').hidden = dashboardView;
+    $('#dataNotice').hidden = dashboardView;
     $('#pageTitle').textContent = captions[state.view];
     $('#viewEyebrow').textContent = views[state.view];
     $('#pageContext').textContent = state.profile.name + '님 · ' + state.profile.region + ' · ' + state.profile.industry;
@@ -322,6 +335,10 @@
     document.querySelectorAll('[data-view]').forEach(el => { el.classList.toggle('active', el.dataset.view === state.view); if (el.classList.contains('nav-item')) { if (el.dataset.view === state.view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); } });
     const renders = { dashboard, market, finance, recovery, policies, secretary, profile };
     $('#viewRoot').innerHTML = renders[state.view]() + sourceFoot;
+    $('#periodSelect').value = state.periodMode;
+    $('#customPeriod').hidden = dashboardView || state.periodMode !== 'custom';
+    if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
+    if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
     updateBanner();
   }
   function navigate(view) {
@@ -331,7 +348,7 @@
     $('#menuButton').setAttribute('aria-expanded', 'false');
     if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
     window.scrollTo({ top: 0, behavior: 'auto' });
-    $('#pageTitle').focus({ preventScroll: true });
+    (state.view === 'dashboard' ? $('#bannerTitle') : $('#pageTitle')).focus({ preventScroll: true });
   }
   function notice(text) {
     const el = $('#demoNotice'); el.textContent = text; el.classList.add('visible');
@@ -500,8 +517,12 @@
     if (el.id === 'policyCategory') { state.category = el.value; state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
     if (el.id === 'guideHour') $('#guidanceContent').innerHTML = guidanceContent(Number(el.value));
     if (el.id === 'mapRadius') { state.radius = Math.max(100, Math.min(1000, Number(el.value) || 500)); el.value = state.radius; $('#mapPreview').innerHTML = mapPreview(); }
-    if (el.id === 'periodSelect') {
-      $('#customPeriod').hidden = el.value !== 'custom';
+    if (el.id === 'periodSelect' || el.id === 'dashboardPeriodSelect') {
+      state.periodMode = el.value;
+      $('#periodSelect').value = state.periodMode;
+      $('#customPeriod').hidden = state.view === 'dashboard' || state.periodMode !== 'custom';
+      if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
+      if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
       if (el.value !== 'custom') { state.period = Object.assign({}, D.periods[el.value]); analysis = D.analyze(state.period); invalidateReport(); render(); }
     }
   });
@@ -509,10 +530,12 @@
     const form = event.target;
     if (form.id === 'aiForm') { event.preventDefault(); ask($('#aiInput').value); }
     if (form.id === 'reportForm') { event.preventDefault(); askReport($('#reportInput').value); }
-    if (form.id === 'customPeriod') {
+    if (form.id === 'customPeriod' || form.id === 'dashboardCustomPeriod') {
       event.preventDefault();
-      const p = D.customPeriod($('#periodStart').value, $('#periodEnd').value);
+      const dashboardForm = form.id === 'dashboardCustomPeriod';
+      const p = D.customPeriod($(dashboardForm ? '#dashboardPeriodStart' : '#periodStart').value, $(dashboardForm ? '#dashboardPeriodEnd' : '#periodEnd').value);
       if (!p) { notice('생성 자료가 있는 2026.07.01~09.02 안에서 시작일과 종료일을 확인해 주세요.'); return; }
+      state.periodMode = 'custom';
       state.period = p; analysis = D.analyze(p); invalidateReport(); render();
       if (!analysis.comparisonAvailable) notice('현재 기간은 분석할 수 있지만 직전 비교 기간의 자료가 부족합니다.');
     }
