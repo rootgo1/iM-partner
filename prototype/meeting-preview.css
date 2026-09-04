@@ -68,6 +68,8 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
 .insight-card { padding: 27px; min-height: 280px; display: flex; flex-direction: column; justify-content: space-between; }
 .insight-card h2 { font-size: 28px; line-height: 1.38; position: relative; z-index: 1; }
 .insight-card p { max-width: none; font-size: 15px; line-height: 1.85; position: relative; z-index: 1; }
+.insight-card .v-insight-copy span { display: block; word-break: keep-all; overflow-wrap: normal; }
+.insight-card .v-insight-copy span + span { margin-top: 4px; }
 .insight-card .v-tag { color: #fff; background: #ffffff21; width: fit-content; }
 .insight-card .ghost-button { align-self: flex-start; position: relative; z-index: 1; font-size: 14px; }
 .v-chart { width: 100%; height: auto; display: block; margin: 10px 0; overflow: visible; }

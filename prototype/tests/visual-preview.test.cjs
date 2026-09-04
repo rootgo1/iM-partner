@@ -66,8 +66,23 @@ const { chromium } = require('playwright');
   const tabletBox = await page.locator('#aiPanel').boundingBox();
   assert.ok(tabletBox && tabletBox.width >= 320 && tabletBox.width <= 560);
   await page.screenshot({ path: path.join(output, 'dashboard-chat-1024.png'), fullPage: false });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(url + '?qa=mobile#dashboard', { waitUntil: 'load' });
+  await page.waitForSelector('.v-insight-copy span');
+  const mobile = await page.evaluate(() => {
+    const span = document.querySelector('.v-insight-copy span');
+    const text = span.firstChild, start = text.data.indexOf('입니다.');
+    const range = document.createRange();
+    range.setStart(text, start); range.setEnd(text, start + '입니다.'.length);
+    return { wordLines: range.getClientRects().length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  assert.equal(mobile.wordLines, 1, 'The ending word must not split across lines');
+  assert.ok(mobile.overflow <= 1, 'mobile horizontal overflow: ' + mobile.overflow);
+  await page.screenshot({ path: path.join(output, 'dashboard-390.png'), fullPage: false });
+  await page.locator('.insight-card').first().screenshot({ path: path.join(output, 'insight-card-390.png') });
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log('PASS browser render, seven-view interactions, chatbot, PDF, modal and 1024px layout');
+  console.log('PASS browser render, interactions, PDF, 1024px layout and natural 390px line wrapping');
   } finally {
     if (browser) await browser.close();
   }

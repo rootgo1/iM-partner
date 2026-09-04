@@ -75,6 +75,11 @@
     if (analysis.salesRate == null) return '비교 기간 자료가 부족합니다. 현재 기간의 시간대별 지표부터 확인해 보세요.';
     return '내 가게 매출 ' + pct(analysis.salesRate) + ', 상권 카드소비 ' + pct(analysis.cardRate) + ', 유동인구 ' + pct(analysis.trafficRate) + '입니다. ' + analysis.focus.label + ' 상대 지수 차이를 운영 점검의 요인 후보로 살펴보세요.';
   }
+  function causeMarkup() {
+    const text = causeText(), boundary = text.indexOf('. ');
+    if (boundary < 0) return '<span>' + esc(text) + '</span>';
+    return '<span>' + esc(text.slice(0, boundary + 1)) + '</span><span>' + esc(text.slice(boundary + 2)) + '</span>';
+  }
   function costText() {
     const purchase = analysis.byCategory.find(r => r.id === 'purchase');
     return '매출 ' + money(analysis.sales) + '에 지출 ' + money(analysis.expense) + '입니다. 매입비는 ' + money(purchase.amount) + '이며, ' +
@@ -107,7 +112,7 @@
       metric('상권 카드소비 변화', pct(analysis.cardRate), undefined, state.period.comparison + ' · 생성 자료') +
       metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
       '</section><div class="v-grid2">' +
-      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p>' + causeText() + '</p><button class="ghost-button" type="button" data-view="recovery">골목상권 회복 플랜 확인 →</button></article>' +
+      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">골목상권 회복 플랜 확인 →</button></article>' +
       card(head('유동인구와 카드소비', '<button class="text-button" type="button" data-view="market">상세 분석 →</button>') + comparisonChart()) + '</div>' +
       '<div class="v-grid3">' +
       card(head('골목금융 체온계', badge('참고 지표', 'neutral')) + '<div class="v-thermo"><div class="v-thermo-icon" aria-hidden="true"></div><div><span class="v-thermo-value">—</span><p class="v-subtitle">점수 산출 기준 확인 중</p></div></div><div class="v-row v-between"><span class="v-subtitle">매출 대비 지출</span><strong>' + (analysis.expenseRatio == null ? '—' : analysis.expenseRatio.toFixed(1) + '%') + '</strong></div><div class="v-progress"><span style="width:' + Math.min(100, analysis.expenseRatio || 0) + '%"></span></div><p class="v-metadata">위 비율은 생성 매출·지출의 단순 비교이며 체온계 점수·신용평가가 아닙니다.</p>') +
@@ -149,7 +154,7 @@
       '<path d="M0 150h450M225 0v300" stroke="#dce8df" stroke-dasharray="4 6"/><circle cx="225" cy="150" r="' + r + '" fill="#6db48b14" stroke="#73ac8d" stroke-dasharray="6 5"/><circle cx="225" cy="150" r="14" fill="#3b927a"/><text x="225" y="155" text-anchor="middle" fill="white" font-size="13">내</text><text x="225" y="186" text-anchor="middle" fill="#396c56" font-size="14">내 가게 핀 자리</text></svg><span class="v-map-foot">주소·좌표·상권 API 확인 후 카카오맵으로 연결</span></div>';
   }
   function recovery() {
-    return '<article class="card insight-card" style="min-height:220px"><span class="v-tag">골목상권 회복 플랜</span><h2>' + analysis.focus.label + '의 공백을<br>운영을 바꾸는 출발점으로.</h2><p>' + causeText() + '</p></article>' +
+    return '<article class="card insight-card" style="min-height:220px"><span class="v-tag">골목상권 회복 플랜</span><h2>' + analysis.focus.label + '의 공백을<br>운영을 바꾸는 출발점으로.</h2><p class="v-insight-copy">' + causeMarkup() + '</p></article>' +
       '<div class="v-grid3">' + card(head('집중할 시간') + '<div class="v-big">' + analysis.focus.label + '</div><p class="v-subtitle">생성 상권 상대 지수 차이가 가장 큰 구간</p>') +
       card(head('추천 고객층') + '<h3>추가 데이터 확인 필요</h3><p class="v-subtitle">연령대·직장인 비중을 임의로 추정하지 않습니다.</p>') +
       card(head('참고용 금융 효과') + '<h3>산출 기준 미정</h3><p class="v-subtitle">비교 자료와 산식이 없어 예상 수익을 계산하지 않습니다.</p>') + '</div>' +
