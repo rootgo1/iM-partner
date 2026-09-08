@@ -1236,6 +1236,7 @@
       .chart-card .text-button { display: inline-block; margin-top: 10px; }
     }
   </style>
+  <link rel="stylesheet" href="./vendor/lenis/lenis.css">
   <link rel="stylesheet" href="./meeting-preview.css">
 </head>
 <body>
@@ -1264,6 +1265,10 @@
           <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>iM챗봇</span></button>
           <span class="data-chip">생성 데이터</span>
           <button class="profile" type="button" data-view="profile" aria-label="내 프로필 보기"><span class="avatar" id="profileInitials" aria-hidden="true">이소</span><span id="profileName">이소현</span></button>
+          <a class="logout-link" id="logoutLink" href="./login-preview/index.html?signed_out=1" aria-label="로그아웃하고 비로그인 화면으로 이동">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"></path></svg>
+            <span>로그아웃</span>
+          </a>
         </div>
       </header>
       <div class="content" id="mainContent">
@@ -1334,6 +1339,8 @@
   <div class="demo-notice" id="demoNotice" role="status" aria-live="polite"></div>
   <script src="./meeting-data.js"></script>
   <script src="./report-pdf.js"></script>
+  <script src="./vendor/lenis/lenis.min.js"></script>
+  <script src="./smooth-scroll.js"></script>
   <script src="./meeting-ui.js"></script>
 </body>
 </html>

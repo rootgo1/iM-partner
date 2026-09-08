@@ -125,6 +125,72 @@
       ['custom', '직접 기간 선택']
     ].map(option => '<option value="' + option[0] + '"' + (option[0] === selected ? ' selected' : '') + '>' + option[1] + '</option>').join('');
   }
+  function sectionPeriodControl() {
+    return '<div class="v-section-period-control"><span>분석 기간</span><select class="v-select" id="sectionPeriodSelect" aria-label="분석 기간">' + periodOptions(state.periodMode) + '</select></div>' +
+      '<form class="v-section-custom-period" id="sectionCustomPeriod"' + (state.periodMode === 'custom' ? '' : ' hidden') + '><label>시작일<input id="sectionPeriodStart" type="date" value="' + state.period.start + '" min="2026-07-01" max="2026-09-02" required></label><label>종료일<input id="sectionPeriodEnd" type="date" value="' + state.period.end + '" min="2026-07-01" max="2026-09-02" required></label><button class="v-button" type="submit">기간 적용</button></form>';
+  }
+  function sectionPeriodNodes() {
+    const holder = document.createElement('div');
+    holder.innerHTML = sectionPeriodControl();
+    return Array.from(holder.children);
+  }
+  function recoveryScreenGroups(children) {
+    const [hero, source, layout, comparison, support, footer] = children;
+    if (!layout || !layout.matches('.v-recovery-layout')) return [[hero, source], [layout], [comparison], [support, footer]].filter(group => group.some(Boolean));
+    const stacks = Array.from(layout.children);
+    const primaryCards = stacks[0] ? Array.from(stacks[0].children) : [];
+    const actionCards = stacks[1] ? Array.from(stacks[1].children) : [];
+    const pair = (left, right, variant) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'v-recovery-screen-grid ' + variant;
+      if (left) wrapper.append(left);
+      if (right) wrapper.append(right);
+      return wrapper;
+    };
+    return [
+      [hero, source],
+      [pair(primaryCards[0], actionCards[0], 'diagnosis')],
+      [pair(primaryCards[1], actionCards[1], 'action')],
+      [comparison],
+      [support, footer]
+    ].filter(group => group.some(Boolean));
+  }
+  function screenGroups(view, children) {
+    const groupByIndexes = indexes => indexes.map(group => group.map(index => children[index]).filter(Boolean));
+    if (view === 'dashboard') return groupByIndexes([[0], [1, 2], [3], [4, 5]]);
+    if (view === 'market') return groupByIndexes([[1, 0], [2, 3]]);
+    if (view === 'finance') return groupByIndexes([[0, 1], [2, 3], [4], [5, 6]]);
+    if (view === 'recovery') return recoveryScreenGroups(children);
+    if (view === 'policies') return groupByIndexes([[1, 0], [2, 3]]);
+    if (view === 'secretary') return groupByIndexes([[0, 1]]);
+    if (view === 'profile') return groupByIndexes([[1, 0, 2]]);
+    return children.map(child => [child]);
+  }
+  function sectionizeView(view) {
+    const root = $('#viewRoot');
+    const children = Array.from(root.children);
+    if (!children.length || typeof root.querySelectorAll !== 'function') return;
+    const groups = screenGroups(view, children).filter(group => group.length);
+    if ((view === 'market' || view === 'finance') && groups[0]) groups[0].unshift(...sectionPeriodNodes());
+    const screens = groups.map((group, index) => {
+      const section = document.createElement('section');
+      section.className = 'v-screen-section v-screen-section--' + view + '-' + (index + 1);
+      section.tabIndex = -1;
+      section.setAttribute('aria-label', views[view] + ' 화면 ' + (index + 1) + '/' + groups.length);
+      const inner = document.createElement('div');
+      inner.className = 'v-screen-inner';
+      group.forEach(node => inner.append(node));
+      const count = document.createElement('span');
+      count.className = 'v-screen-count';
+      count.setAttribute('aria-hidden', 'true');
+      count.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(groups.length).padStart(2, '0');
+      section.append(inner, count);
+      return section;
+    });
+    root.replaceChildren(...screens);
+    root.scrollTop = 0;
+    if (window.IM_SMOOTH_SCROLL) window.IM_SMOOTH_SCROLL.mount(root);
+  }
   function dashboardLead() {
     const expenseRatio = analysis.expenseRatio;
     const expenseRatioText = expenseRatio == null ? '—' : expenseRatio.toFixed(1) + '%';
@@ -148,7 +214,8 @@
       '<h2>' + r.label + ', 통행은 많지만<br>입장 전환을 먼저 점검해 보세요.</h2>' +
       '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>, 매장 유입률은 <strong>' + ratioText(r.entryRate) + '</strong>입니다. 확정 원인이 아닌 요인 후보를 행동으로 연결합니다.</p>' +
       '<button class="v-button primary" type="button" data-view="recovery">전환 흐름과 회복 플랜 보기 →</button></div>' +
-      '<div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i>→</i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i>→</i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
+      '<div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i>→</i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i>→</i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
+      '<div class="v-signal-context" aria-label="회복 신호 해석 기준"><div><span>점검 시간</span><strong>' + r.label + '</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div><div><span>판단 수준</span><strong>요인 후보</strong></div></div></div>' +
       '</section>';
   }
   function recoveryFunnel() {
@@ -213,10 +280,12 @@
   }
   function finance() {
     const purchase = analysis.byCategory.find(r => r.id === 'purchase');
+    const largestExpense = analysis.byCategory.slice().sort((a, b) => b.amount - a.amount)[0];
     return '<section class="metric-grid">' + metric('선택 기간 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, true) +
       metric('선택 기간 지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
       '<article class="card metric-card"><div class="metric-label">매출·지출 차이</div><div class="metric-value">' + compact(analysis.delta) + '<small> 원</small></div><p class="v-metadata v-space">영업이익·현금잔액과 구분</p></article>' +
       '<article class="card metric-card"><div class="metric-label">매입비</div><div class="metric-value">' + compact(purchase.amount) + '<small> 원</small></div><p class="v-metadata v-space">품목별 매입금액 합계</p></article></section>' +
+      '<div class="v-finance-summary" aria-label="선택 기간 재무 요약"><div><span>매출 대비 지출</span><strong>' + ratioText(analysis.expenseRatio) + '</strong><small>체온계에서 사용하는 동일 지표</small></div><div><span>가장 큰 지출 항목</span><strong>' + largestExpense.name + '</strong><small>' + money(largestExpense.amount) + '</small></div><div><span>해석 기준</span><strong>매출·지출 차이</strong><small>영업이익·현금잔액과 구분</small></div></div>' +
       '<div class="v-grid2">' + card(head('일별 매출·지출') + salesChart()) +
       card(head('어디에 지출하고 있나요?') + analysis.byCategory.map(r =>
         '<div class="v-row v-between"><span>' + r.name + '</span><strong>' + money(r.amount) + '</strong></div><div class="v-progress"><span style="width:' + r.amount / Math.max(analysis.expense, 1) * 100 + '%"></span></div>').join('')) + '</div>' +
@@ -224,8 +293,8 @@
       card(head('매입금액 TOP 3', badge('선택 기간')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>품목</th><th class="right">매입량</th><th class="right">매입금액</th></tr></thead><tbody>' +
         analysis.topPurchases.slice(0, 3).map(r => '<tr><td>' + r.name + '</td><td class="right">' + r.quantity.toFixed(1) + ' ' + r.unit + '</td><td class="right">' + money(r.amount) + '</td></tr>').join('') +
         '</tbody></table></div><p class="v-metadata v-space">생성 매입 자료 · 매입량은 실제 사용량과 다를 수 있습니다.</p>') +
-      card(head('발주 전에 확인할 것') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 메뉴와 재료를 연결하세요</strong><p>메뉴별 레시피·단위 대응 자료가 필요합니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>남은 재고·폐기를 확인하세요</strong><p>자료가 없어 과다 매입 수량이나 다음 달 발주량은 계산하지 않습니다.</p></div></div></div>') + '</div>' +
-      '<div class="v-grid2">' + card(head('자금 흐름') + note('현금잔액·정산 예정일·예상 입출금 자료가 아직 없습니다. 매출 합계를 현재 보유 현금으로 해석하지 않습니다.', 'neutral')) +
+      card(head('발주 전에 확인할 것') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 메뉴와 재료를 연결하세요</strong><p>메뉴별 레시피·단위 대응 자료가 필요합니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>남은 재고·폐기를 확인하세요</strong><p>자료가 없어 과다 매입 수량이나 다음 달 발주량은 계산하지 않습니다.</p></div></div></div><div class="v-check-strip"><span>현재 확인 가능</span><strong>매입금액 순위</strong><span>추가 연결 필요</span><strong>재고·폐기·레시피</strong></div>') + '</div>' +
+      '<div class="v-grid2">' + card(head('자금 흐름', badge('연결 전', 'neutral')) + '<p class="v-subtitle">보유 현금으로 오해하지 않도록 연결되지 않은 항목을 구분합니다.</p><div class="v-connection-grid"><div><span>현금잔액</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div><div><span>예상 입출금</span><strong>미연결</strong></div></div>' + note('현재는 매출·지출 차이만 확인할 수 있으며 실제 자금 흐름 판단에는 위 자료가 필요합니다.', 'neutral')) +
       card(head('POS 집계 확인', badge('DB 대신 로컬 생성 자료', 'neutral')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>최근 일자</th><th>시간</th><th>품목</th><th class="right">순매출</th></tr></thead><tbody>' +
         analysis.pos.filter(r => r.netAmount > 0).slice(-5).map(r => '<tr><td>' + r.date.slice(5) + '</td><td>' + r.hour + '시</td><td>' + D.menu.find(m => m.id === r.itemId).name + '</td><td class="right">' + money(r.netAmount) + '</td></tr>').join('') +
         '</tbody></table></div><p class="v-metadata v-space">취소 ' + number(analysis.cancellations) + '개 차감 · 실 DB/POS 기기 미연결</p>') + '</div>';
@@ -251,7 +320,7 @@
       '<article class="card v-card v-diagnosis"><span class="v-tag">규칙 기반 진단 시안 · 요인 후보</span><h2>' + recoveryData.diagnosis.title + '</h2><p>' + recoveryData.diagnosis.explanation + '</p><div class="v-evidence"><div><span>' + r.label + ' 통행량</span><strong>' + number(r.passersby) + '명</strong></div><div><span>같은 시간 입장객</span><strong>' + number(r.entrants) + '명</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div></div><p class="v-metadata">판단 임계값과 규칙 버전은 미정이며, 이 화면은 승인된 생성 시나리오를 표시합니다.</p></article>' +
       '<article class="card v-card v-action-plan"><div class="v-row v-between"><div><h2>회복 플랜 제안</h2><p class="v-subtitle">분석을 오늘 실행할 행동으로 바꿉니다.</p></div>' + badge('규칙 기반 시안', 'neutral') + '</div><div class="v-plan-list">' + recoveryData.actions.map((item, i) => '<div class="v-plan-item"><span>0' + (i + 1) + '</span><div><small>' + item.time + '</small><strong>' + item.title + '</strong><p>' + item.detail + '</p></div></div>').join('') + '</div><button class="v-button primary v-plan-start" type="button" data-action="start-recovery"' + (state.recoveryStarted ? ' disabled' : '') + '>' + (state.recoveryStarted ? '실행 기록 시안 진행 중' : '실행 기록 시안 시작하기') + '</button><p class="v-metadata">현재 브라우저 안에서만 상태가 바뀌며 DB에 저장되지 않습니다.</p></article>' +
       '</aside></div>' +
-      '<section class="card v-card v-recovery-compare"><div class="v-row v-between"><div><h2>실행 전·후 비교</h2><p class="v-subtitle">같은 매장·요일·시간대의 유입률, 결제 건수, 순매출을 함께 비교합니다.</p></div>' + badge('7일 비교', 'amber') + '</div><div class="v-compare-flow"><article class="current"><span>분석일 · 실행 전</span><strong>유입률 ' + ratioText(r.entryRate) + '</strong><p>유효 결제 ' + number(r.validPayments) + '건 · 순매출 ' + money(r.netSales) + '</p></article><i aria-hidden="true">→</i><article class="' + (state.recoveryStarted ? 'active' : '') + '"><span>이번 주 · 실행</span><strong>' + recoveryData.comparison.actionLabel + '</strong><p>' + actionState + '</p></article><i aria-hidden="true">→</i><article class="future"><span>' + dateText(recoveryData.comparison.followUpDate) + ' · 결과</span><strong>데이터 집계 대기</strong><p>자료가 준비되기 전에는 성공·효과 수치를 표시하지 않습니다.</p></article></div></section>' +
+      '<section class="card v-card v-recovery-compare"><div class="v-row v-between"><div><h2>실행 전·후 비교</h2><p class="v-subtitle">같은 매장·요일·시간대의 유입률, 결제 건수, 순매출을 함께 비교합니다.</p></div>' + badge('7일 비교', 'amber') + '</div><div class="v-compare-flow"><article class="current"><span>분석일 · 실행 전</span><strong>유입률 ' + ratioText(r.entryRate) + '</strong><p>유효 결제 ' + number(r.validPayments) + '건 · 순매출 ' + money(r.netSales) + '</p></article><i aria-hidden="true">→</i><article class="' + (state.recoveryStarted ? 'active' : '') + '"><span>이번 주 · 실행</span><strong>' + recoveryData.comparison.actionLabel + '</strong><p>' + actionState + '</p></article><i aria-hidden="true">→</i><article class="future"><span>' + dateText(recoveryData.comparison.followUpDate) + ' · 결과</span><strong>데이터 집계 대기</strong><p>자료가 준비되기 전에는 성공·효과 수치를 표시하지 않습니다.</p></article></div><div class="v-compare-metrics" aria-label="전후 비교 대상"><div><span>유입률</span><strong>' + ratioText(r.entryRate) + ' → 집계 대기</strong></div><div><span>유효 결제</span><strong>' + number(r.validPayments) + '건 → 집계 대기</strong></div><div><span>순매출</span><strong>' + money(r.netSales) + ' → 집계 대기</strong></div></div></section>' +
       '<div class="v-grid2"><section class="card v-card">' + head('지도·상권 보조 근거', badge('카카오맵 미연결', 'neutral')) + '<p class="v-subtitle">핵심 진단은 CCTV·POS이며, 지도·동종업종·행사는 원인 후보를 해석하는 보조 자료입니다.</p><label class="v-row v-subtitle v-space">반경 배치 예시 <input class="v-select" type="number" id="mapRadius" min="100" max="1000" step="100" value="' + state.radius + '" style="width:100px" aria-label="지도 배치 예시 반경">m</label><div id="mapPreview" class="v-space">' + mapPreview() + '</div></section>' +
       card(head('보조 자료 연결 상태') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>동종업종·메뉴·영업시간</strong><p>공급원과 비교 기준이 미정이므로 경쟁력 사실을 생성하지 않습니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>상권 고객층</strong><p>연령대·직장인 비중을 확보한 뒤 회복 행동의 대상을 보완합니다.</p></div></div><div class="v-list-item"><span class="v-number">03</span><div><strong>행사·대목</strong><p>일정·위치·변경 여부가 확인된 경우에만 알림과 준비 안내에 사용합니다.</p></div></div></div>') + '</div>';
   }
@@ -284,7 +353,8 @@
     return note('목록·조건 매칭을 확인하기 위한 가상 공고입니다. 실제 신청 가능한 사업이 아니며, 지원금·접수기간·적합도 %를 임의로 표시하지 않습니다.', 'amber') +
       '<div class="card v-card v-space"><div class="v-tabs" role="tablist" aria-label="정책 목록 종류"><button type="button" role="tab" data-policy-view="recommended" aria-selected="' + (state.policyView === 'recommended') + '" class="' + (state.policyView === 'recommended' ? 'active' : '') + '">오늘의 추천공고</button><button type="button" role="tab" data-policy-view="all" aria-selected="' + (state.policyView === 'all') + '" class="' + (state.policyView === 'all' ? 'active' : '') + '">전체 리스트</button></div>' +
       '<div class="v-row v-space"><input class="v-search" id="policySearch" type="search" placeholder="공고 제목 검색" aria-label="공고 제목 검색" value="' + esc(state.keyword) + '"><select class="v-select" id="policyCategory" aria-label="지원 분야"><option value="all">전체 분야</option><option value="금융"' + (state.category === '금융' ? ' selected' : '') + '>금융</option><option value="창업"' + (state.category === '창업' ? ' selected' : '') + '>창업</option></select></div>' +
-      '<p class="v-metadata v-space">수집 계획: 금융·창업 분야 + 제목에 소상공인/골목/전통시장 포함. 현재는 실제 수집 없이 예시 순서로 표시합니다. 추천은 불일치 예시를 제외한 목록이며, 미확인 조건이 남아 있을 수 있습니다.</p></div>' +
+      '<p class="v-metadata v-space">수집 계획: 금융·창업 분야 + 제목에 소상공인/골목/전통시장 포함. 현재는 실제 수집 없이 예시 순서로 표시합니다. 추천은 불일치 예시를 제외한 목록이며, 미확인 조건이 남아 있을 수 있습니다.</p>' +
+      '<div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div></div>' +
       '<div id="policyResults" class="v-space">' + policyResults() + '</div>';
   }
   const reportPrompts = ['매출과 지출을 함께 분석해 주세요.', '시간대별 운영 전략을 정리해 주세요.', '회복 플랜을 요약해 주세요.'];
@@ -322,8 +392,8 @@
   function render() {
     const dashboardView = state.view === 'dashboard';
     $('#mainContent').classList.toggle('dashboard-view', dashboardView);
-    $('#pageHeading').hidden = dashboardView;
-    $('#dataNotice').hidden = dashboardView;
+    $('#pageHeading').hidden = true;
+    $('#dataNotice').hidden = true;
     $('#pageTitle').textContent = captions[state.view];
     $('#viewEyebrow').textContent = views[state.view];
     $('#pageContext').textContent = state.profile.name + '님 · ' + state.profile.region + ' · ' + state.profile.industry;
@@ -335,8 +405,11 @@
     document.querySelectorAll('[data-view]').forEach(el => { el.classList.toggle('active', el.dataset.view === state.view); if (el.classList.contains('nav-item')) { if (el.dataset.view === state.view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); } });
     const renders = { dashboard, market, finance, recovery, policies, secretary, profile };
     $('#viewRoot').innerHTML = renders[state.view]() + sourceFoot;
+    sectionizeView(state.view);
     $('#periodSelect').value = state.periodMode;
-    $('#customPeriod').hidden = dashboardView || state.periodMode !== 'custom';
+    $('#customPeriod').hidden = true;
+    if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
+    if ($('#sectionCustomPeriod')) $('#sectionCustomPeriod').hidden = state.periodMode !== 'custom';
     if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
     if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
     updateBanner();
@@ -347,8 +420,12 @@
     $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible');
     $('#menuButton').setAttribute('aria-expanded', 'false');
     if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    (state.view === 'dashboard' ? $('#bannerTitle') : $('#pageTitle')).focus({ preventScroll: true });
+    const root = $('#viewRoot');
+    if (typeof root.scrollTo === 'function') root.scrollTo({ top: 0, behavior: 'auto' });
+    else root.scrollTop = 0;
+    const focusTarget = (state.view === 'dashboard' ? $('#bannerTitle') : $('#viewRoot .v-screen-section')) || root;
+    focusTarget.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
   function notice(text) {
     const el = $('#demoNotice'); el.textContent = text; el.classList.add('visible');
@@ -517,10 +594,12 @@
     if (el.id === 'policyCategory') { state.category = el.value; state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
     if (el.id === 'guideHour') $('#guidanceContent').innerHTML = guidanceContent(Number(el.value));
     if (el.id === 'mapRadius') { state.radius = Math.max(100, Math.min(1000, Number(el.value) || 500)); el.value = state.radius; $('#mapPreview').innerHTML = mapPreview(); }
-    if (el.id === 'periodSelect' || el.id === 'dashboardPeriodSelect') {
+    if (el.id === 'periodSelect' || el.id === 'dashboardPeriodSelect' || el.id === 'sectionPeriodSelect') {
       state.periodMode = el.value;
       $('#periodSelect').value = state.periodMode;
-      $('#customPeriod').hidden = state.view === 'dashboard' || state.periodMode !== 'custom';
+      $('#customPeriod').hidden = true;
+      if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
+      if ($('#sectionCustomPeriod')) $('#sectionCustomPeriod').hidden = state.periodMode !== 'custom';
       if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
       if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
       if (el.value !== 'custom') { state.period = Object.assign({}, D.periods[el.value]); analysis = D.analyze(state.period); invalidateReport(); render(); }
@@ -530,10 +609,13 @@
     const form = event.target;
     if (form.id === 'aiForm') { event.preventDefault(); ask($('#aiInput').value); }
     if (form.id === 'reportForm') { event.preventDefault(); askReport($('#reportInput').value); }
-    if (form.id === 'customPeriod' || form.id === 'dashboardCustomPeriod') {
+    if (form.id === 'customPeriod' || form.id === 'dashboardCustomPeriod' || form.id === 'sectionCustomPeriod') {
       event.preventDefault();
       const dashboardForm = form.id === 'dashboardCustomPeriod';
-      const p = D.customPeriod($(dashboardForm ? '#dashboardPeriodStart' : '#periodStart').value, $(dashboardForm ? '#dashboardPeriodEnd' : '#periodEnd').value);
+      const sectionForm = form.id === 'sectionCustomPeriod';
+      const startSelector = dashboardForm ? '#dashboardPeriodStart' : sectionForm ? '#sectionPeriodStart' : '#periodStart';
+      const endSelector = dashboardForm ? '#dashboardPeriodEnd' : sectionForm ? '#sectionPeriodEnd' : '#periodEnd';
+      const p = D.customPeriod($(startSelector).value, $(endSelector).value);
       if (!p) { notice('생성 자료가 있는 2026.07.01~09.02 안에서 시작일과 종료일을 확인해 주세요.'); return; }
       state.periodMode = 'custom';
       state.period = p; analysis = D.analyze(p); invalidateReport(); render();
@@ -561,6 +643,10 @@
     $('#menuButton').setAttribute('aria-expanded', String(open));
   });
   $('#navBackdrop').addEventListener('click', () => { $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible'); $('#menuButton').setAttribute('aria-expanded', 'false'); });
+  $('#logoutLink').addEventListener('click', event => {
+    event.preventDefault();
+    window.location.replace(event.currentTarget.href);
+  });
   $('#aiToggle').addEventListener('click', () => setChat(!state.chatOpen));
   $('#aiClose').addEventListener('click', () => setChat(false));
   document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (state.chatOpen) setChat(false); $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible'); $('#menuButton').setAttribute('aria-expanded', 'false'); } });

@@ -1,6 +1,6 @@
 # iM파트너 데이터베이스 명세서
 
-- 개정일: 2026-09-04 / 목표 논리 스키마
+- 개정일: 2026-09-08 / 목표 논리 스키마
 - MySQL·Django ORM 예정. 실제 DB·모델·마이그레이션은 아직 생성하지 않았습니다.
 - [데이터 명세](04_data-spec.md)와 [API 명세](08_api-spec.md)를 함께 적용합니다.
 
@@ -14,31 +14,32 @@
 - 회복 플랜의 핵심 근거는 CCTV 익명 집계와 POS이며, 지도·상권 자료는 보조 근거로 분리합니다.
 - CCTV 원본 영상·얼굴·개인 식별자는 일반 분석 테이블과 화면 API에 저장하지 않습니다. 실제 처리·보관 정책은 장비와 제공 계약 확인 후 확정합니다.
 - 아래 추가 테이블은 필요한 데이터 계약이며 모든 기능을 즉시 구현하겠다는 일정 확정이 아닙니다.
+- 현재 이력·무결성 설계는 MySQL의 키·제약조건·출처·버전·감사 필드를 사용합니다. 블록체인·분산원장·스마트계약 테이블은 현재 범위에 없으며 도입 여부는 별도 논의 중입니다.
 
 ## 2. 테이블 목록과 관계
 
-| 테이블 | 상태 | 역할 |
+| 테이블 | 목표 설계 구분 | 역할 |
 |---|---|---|
-| Django 인증 사용자 | 신규 설계 | 아이디·이메일·비밀번호 해시 |
-| user_profiles | 신규 | 이름·전화번호·나이 |
-| store_profiles | 기존 확장 | 소유자·사업장 소재지·직원 수·지도 기준 |
-| data_sources | 신규 | 출처·권한·검증·자료 버전 |
-| card_consumptions | 기존 확장 | 카드소비 집계 |
-| foot_traffic | 기존 확장 | 상권 유동인구 집계 |
-| sales_expenses | 기존 확장 | POS 거래와 지출 |
-| store_items / transaction_items | 조건부 신규 | 품목과 거래 품목 상세 |
-| inventory_snapshots / item_mappings | 조건부 신규 | 재고·판매/매입 품목 대응 |
-| store_funnel_counts | 신규 | CCTV 익명 통행·체류·입장 집계 |
-| cashflow_inputs | 기존 확장 | 현금·예상 입출금과 가정 |
-| delivery_metrics | 유지·출처 보강 | 대구로 운영지표 |
-| financial_benchmarks | 유지·출처 보강 | 업종 평균 비교 |
-| policy_support_programs | 기존 확장 | 원문·자격·갱신 |
-| event_weather_data | 기존 확장 | 행사·날씨·뉴스·일정 |
-| nearby_places | 신규 | 상권 점포 좌표와 확인된 경쟁 근거 |
-| analysis_runs / analysis_insights | 기존 확장 | 분석 조건·결과·근거·규칙 |
-| recovery_experiments | 신규 | 실행 행동·기준기간·7일 후 비교 |
-| assistant_sessions / assistant_messages | 신규 | AI 비서 대화와 분석 연결 |
-| report_files | 신규 | 실제 PDF 생성·접근 관리 |
+| Django 인증 사용자 | 목표 신규 | 아이디·이메일·비밀번호 해시 |
+| user_profiles | 목표 신규 | 이름·전화번호·나이 |
+| store_profiles | 이전 초안명 기반 목표 확장 | 소유자·사업장 소재지·직원 수·지도 기준 |
+| data_sources | 목표 신규 | 출처·권한·검증·자료 버전 |
+| card_consumptions | 이전 초안명 기반 목표 확장 | 카드소비 집계 |
+| foot_traffic | 이전 초안명 기반 목표 확장 | 상권 유동인구 집계 |
+| sales_expenses | 이전 초안명 기반 목표 확장 | POS 거래와 지출 |
+| store_items / transaction_items | 자료 확보 시 목표 신규 | 품목과 거래 품목 상세 |
+| inventory_snapshots / item_mappings | 자료 확보 시 목표 신규 | 재고·판매/매입 품목 대응 |
+| store_funnel_counts | 목표 신규 | CCTV 익명 통행·체류·입장 집계 |
+| cashflow_inputs | 이전 초안명 기반 목표 확장 | 현금·예상 입출금과 가정 |
+| delivery_metrics | 이전 초안명 유지·출처 보강 | 대구로 운영지표 |
+| financial_benchmarks | 이전 초안명 유지·출처 보강 | 업종 평균 비교 |
+| policy_support_programs | 이전 초안명 기반 목표 확장 | 원문·자격·갱신 |
+| event_weather_data | 이전 초안명 기반 목표 확장 | 행사·날씨·뉴스·일정 |
+| nearby_places | 목표 신규 | 상권 점포 좌표와 확인된 경쟁 근거 |
+| analysis_runs / analysis_insights | 이전 초안명 기반 목표 확장 | 분석 조건·결과·근거·규칙 |
+| recovery_experiments | 목표 신규 | 실행 행동·기준기간·7일 후 비교 |
+| assistant_sessions / assistant_messages | 목표 신규 | AI 비서 대화와 분석 연결 |
+| report_files | 목표 신규 | 실제 PDF 생성·접근 관리 |
 
 ```text
 인증 사용자 ─ user_profiles
@@ -56,6 +57,8 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
 ```
 
 회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. iM챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
+
+위 표의 모든 항목은 **목표 논리 스키마**입니다. 현재 저장소에는 실제 Django 모델·MySQL 테이블·마이그레이션이 없습니다. ‘이전 초안명’은 과거 설계 문서의 명칭을 재사용한다는 뜻이며 운영 DB에 이미 존재한다는 뜻이 아닙니다.
 
 ## 3. 공통 컬럼·형식
 
@@ -279,10 +282,11 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 |---|---|
 | store_profile_id / analysis_run_id | 매장·회복 플랜 분석 실행 |
 | baseline_start / baseline_end | 실행 전 비교 기준 기간 |
-| target_slot_start / target_slot_end | 개선 대상 시간대 |
+| target_slot_start / target_slot_end | API의 target_slot을 정규화한 개선 대상 시작·종료 시간 |
 | action_codes / action_summary | 선택한 실행 행동·설명 |
-| started_at | 실행 시작 시각 |
-| comparison_start / comparison_end | 같은 조건으로 비교할 후속 기간 |
+| planned_start_at / started_at | 계획한 시작 시각과 실제 실행 시작 시각 |
+| comparison_due_at | 후속 비교가 가능해질 예정 시각 |
+| comparison_start / comparison_end | 실제로 비교에 사용한 후속 기간 |
 | status | planned / running / waiting / comparable / not_comparable / completed |
 | rule_version | 진단·비교 규칙 버전 |
 
@@ -290,7 +294,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 
 ## 12. AI 비서 대화와 PDF
 
-- assistant_sessions: user_id, store_profile_id, analysis_run_id(nullable), title, status.
+- assistant_sessions: user_id, store_profile_id, analysis_run_id(nullable), title, status. 외부 API 경로의 `secretary-sessions`가 이 내부 테이블에 대응합니다.
 - assistant_messages: session_id, role, content, analysis_run_id(nullable), evidence_refs, created_at.
 - report_files: session_id, analysis_run_id, owner_id, status(pending/generating/completed/failed), file_path, file_name, mime_type, generated_at, error_code.
 - 생성된 PDF는 보호 저장소의 파일 경로로 관리하고 공개 URL을 DB에 무조건 저장하지 않습니다.
@@ -303,7 +307,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 - 수집 거래: store_profile_id + source_id + external_transaction_id 기준 중복 방지. 품목은 거래 ID + external_line_id.
 - 카드·유동: source_id + 지역·업종(카드) + 기간·집계 단위·시간·고객 구간. 월/일·전체/세부 집계 중복 방지.
 - CCTV 집계: store_profile_id + source_id + period_start_at + period_end_at의 중복 방지. 시간대 겹침·음수·통행자보다 큰 입장객 수를 검증.
-- 회복 실험: store_profile_id + target_slot + started_at 조회 및 상태 인덱스. 기준·비교 기간의 중복과 시간대 불일치를 검증.
+- 회복 실험: store_profile_id + target_slot_start/end + planned_start_at/started_at 조회 및 상태 인덱스. 기준·비교 기간의 중복과 시간대 불일치를 검증.
 - 정책: source_id + external_id unique, 접수기간·진행상태 인덱스.
 - 위치: 제공처 + provider_place_id unique, 좌표·업종 검색 검토.
 - 분석·파일: 소유자·가게·생성 시각·상태 인덱스.

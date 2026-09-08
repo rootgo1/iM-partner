@@ -1,6 +1,6 @@
 # 08. API 명세서
 
-- 개정일: 2026-09-04 / 승인된 목표 계약
+- 개정일: 2026-09-08 / 승인된 목표 계약
 - 방식: Django REST Framework, 기본 경로 /api/v1/, JSON
 - 현재 구현: API 서버 없음. 아래 경로는 실제 호출 가능한 주소가 아닙니다.
 - 기준: [데이터](04_data-spec.md), [DB](07_db-schema.md), [화면](06_screen-spec.md)
@@ -16,6 +16,7 @@
 - 일반 화면·분석 API는 CCTV 원본 영상·얼굴·개인 식별 정보를 반환하지 않습니다.
 - HTTP 처리 성공과 데이터 충분성은 다릅니다.
 - 상담 연계·금융 점수·정책 %의 미정 부분은 가짜 성공 응답으로 만들지 않습니다.
+- 현재 계약은 일반 HTTPS·인증·데이터베이스 기반 API를 전제로 합니다. 블록체인·분산원장·스마트계약 API는 포함하지 않으며 도입 여부는 별도 논의 중입니다.
 
 ## 2. 공통 응답
 
@@ -93,6 +94,8 @@ data_status: available / partial / no_data / not_comparable / definition_pending
 | A-29 | GET | /recovery-experiments/{experiment_id} | 7일 후 전후 비교 상태·결과 |
 
 계정 로그인·로그아웃·비밀번호 변경은 Django 인증 계층에서 처리합니다. 세부 인증 URL·가입 방식은 구현 전 별도 정의하며, 위 계약에 평문 비밀번호 조회를 추가하지 않습니다.
+
+`secretary-sessions`는 외부 API 이름이고 목표 DB의 `assistant_sessions`에 대응합니다. 구현 시 직렬화 계층에서 이 명칭을 명시적으로 매핑합니다.
 
 ## 4. A-01~A-04 분석·대시보드
 
@@ -236,7 +239,7 @@ A-24 조건: radius_m, 같은 업종의 기준. 위치는 해당 가게의 확�
 
 ### A-28 / A-29 회복 행동과 7일 후 비교
 
-A-28 입력: analysis_run_id, target_slot, action_codes, action_summary, baseline_start/end, planned_start_at. 서버는 매장 소유권과 분석 근거를 확인하고 experiment_id, status, comparison_due_at을 반환합니다.
+A-28 입력: analysis_run_id, target_slot(start/end), action_codes, action_summary, baseline_start/end, planned_start_at. 서버는 매장 소유권과 분석 근거를 확인하고 experiment_id, status, comparison_due_at을 반환합니다. DB에는 target_slot을 target_slot_start/end로 정규화하고 실제 실행 시각은 started_at에 별도로 기록합니다.
 
 A-29 응답: status, baseline, comparison, deltas, comparison_conditions, source_ids, rule_version, limitations.
 
@@ -299,5 +302,7 @@ A-26은 서버 기준 현재 날짜 이전의 완료된 7일을 기본 참고창
 - 모든 수치와 문장이 같은 데이터 버전을 쓰는지 검사.
 - 생성 CCTV·POS 자료로 공통 분석 구조를 먼저 검증하고, 실제 장비·POS·외부자료 계약과 인증 확인 후 교체합니다. 지도·상권은 보조 근거로 후속 연결합니다.
 - 기존 F-09의 우선순위를 내리지 않으며, API 명세 승인 자체로 구현 완료·유료 서비스 이용을 주장하지 않음.
+
+현재 정적 HTML은 이 API를 호출하지 않습니다. 브라우저 메모리와 `meeting-data.js`의 생성 자료로 동작하므로, 화면이 보인다는 사실을 API·인증·DB 구현 완료의 근거로 사용하지 않습니다.
 
 검증 사례는 [09_test-plan.md](09_test-plan.md)에 연결합니다.

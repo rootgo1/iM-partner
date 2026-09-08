@@ -11,6 +11,7 @@ let passed = 0;
 function check(name, fn) { fn(); console.log('PASS ' + name); passed++; }
 const html = fs.readFileSync(path.join(root, 'main-screen.html'), 'utf8');
 const code = fs.readFileSync(path.join(root, 'meeting-ui.js'), 'utf8');
+const smoothCode = fs.readFileSync(path.join(root, 'smooth-scroll.js'), 'utf8');
 check('Local assets exist and no external script/style dependency', () => {
   for (const m of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css))"/g)) assert.ok(fs.existsSync(path.resolve(root, m[1])), m[1]);
   assert.ok(!/<(?:script|link)[^>]+(?:src|href)="https?:/i.test(html));
@@ -27,12 +28,26 @@ check('Local assets exist and no external script/style dependency', () => {
   }
   assert.match(html, /<title>iM파트너 - 소상공인 경영·금융 도우미<\/title>/);
   assert.match(html, /<link rel="icon" type="image\/x-icon" href="\.\/assets\/brand\/im-bank-favicon\.ico">/);
+  assert.match(html, /id="logoutLink" href="\.\/login-preview\/index\.html\?signed_out=1"/);
+  assert.match(code, /window\.location\.replace\(event\.currentTarget\.href\)/);
   assert.ok(!html.includes('class="toggle-label"'));
   assert.match(html, /<span class="toggle-icon" aria-hidden="true"><\/span>/);
   assert.ok(!code.includes("toggle-icon').textContent"));
   assert.ok(!html.includes('class="top-nav"'));
   assert.ok(!html.includes('iM 파트너'));
   assert.ok(html.includes('iM챗봇'));
+  assert.ok(!code.includes("addEventListener('wheel'"));
+  assert.ok(!code.includes('handleSectionWheel'));
+  assert.match(html, /vendor\/lenis\/lenis\.min\.js/);
+  assert.ok(!html.includes('lenis-snap.min.js'));
+  assert.match(html, /smooth-scroll\.js/);
+  assert.match(smoothCode, /lerp: 0\.18/);
+  assert.match(smoothCode, /INPUT_QUIET_TIME = 120/);
+  assert.match(smoothCode, /SECTION_COMMIT_RATIO = 0\.38/);
+  assert.match(smoothCode, /data-scroll-mode/);
+  assert.ok(!smoothCode.includes('new window.Snap'));
+  assert.match(smoothCode, /prefers-reduced-motion: no-preference/);
+  assert.ok(fs.existsSync(path.resolve(root, 'vendor/lenis/LICENSE')));
 });
 for (const [label, p] of Object.entries(D.periods)) check(label + ': POS, costs, daily chart and categories reconcile', () => {
   const a = D.analyze(p);
@@ -112,7 +127,7 @@ function parse(text) {
   for (const tag of text.matchAll(/<([a-z][\w-]*)\b([^>]*)>/gi)) {
     const attrs = Object.fromEntries([...tag[2].matchAll(/([\w-]+)="([^"]*)"/g)].map(m => [m[1], m[2]]));
     if (!attrs.id && tag[1] !== 'button') continue;
-    const e = new Element(attrs.id); e.attrs = attrs; e.className = attrs.class || ''; e.value = attrs.value || '';
+    const e = new Element(attrs.id); e.attrs = attrs; e.className = attrs.class || ''; e.value = attrs.value || ''; e.href = attrs.href;
     for (const [k, v] of Object.entries(attrs)) if (k.startsWith('data-')) e.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
     if (attrs.id) nodes.set(attrs.id, e);
     if (tag[1] === 'button') buttons.push(e);
@@ -130,9 +145,10 @@ const document = {
   createElement: () => new Element(), documentElement: new Element()
 };
 const location = { hash: '' };
+let replacedUrl = '';
 let pendingPdf;
 const context = {
-  window: { IM_MEETING_DEMO: D, IM_REPORT_PDF: { generate: () => new Promise(resolve => { pendingPdf = resolve; }) }, scrollTo() {}, addEventListener() {}, matchMedia: () => ({ matches: false }), innerWidth: 1440 },
+  window: { IM_MEETING_DEMO: D, IM_REPORT_PDF: { generate: () => new Promise(resolve => { pendingPdf = resolve; }) }, location: { replace: url => { replacedUrl = url; } }, scrollTo() {}, addEventListener() {}, matchMedia: () => ({ matches: false }), innerWidth: 1440 },
   document, location, history: { replaceState: (_, __, hash) => { location.hash = hash; } },
   Intl, Date, console, setInterval() {}, setTimeout() { return 1; }, clearTimeout() {},
   URL: { createObjectURL: () => 'blob:test-report', revokeObjectURL() {} },
@@ -145,14 +161,20 @@ vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and all seven navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-signal-context"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
   assert.ok(nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
   for (const view of ['dashboard', 'market', 'finance', 'recovery', 'policies', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
-  assert.equal(nodes.get('pageHeading').hidden, false);
-  assert.equal(nodes.get('dataNotice').hidden, false);
+  click({ view: 'finance' });
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-finance-summary"'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-connection-grid"'));
+  click({ view: 'policies' });
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
+  assert.equal(nodes.get('pageHeading').hidden, true);
+  assert.equal(nodes.get('dataNotice').hidden, true);
 });
 check('Chatbot answers follow period changes and do not invent absent data', () => {
   click({ question: '현재 매출이 왜 떨어졌나요?' });
@@ -173,6 +195,7 @@ check('Report prompts, sidebar, chat controls, calendar and policy modal', () =>
   assert.ok(nodes.get('viewRoot').innerHTML.includes('5,730,500원'));
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="reportResult" hidden'));
   nodes.get('sidebarToggle').events.click(); assert.ok(shell.classList.contains('sidebar-collapsed'));
+  nodes.get('logoutLink').events.click({ preventDefault() {}, currentTarget: nodes.get('logoutLink') }); assert.equal(replacedUrl, './login-preview/index.html?signed_out=1');
   nodes.get('aiClose').events.click(); assert.equal(nodes.get('aiPanel').inert, true);
   click({ view: 'policies' }); click({ policy: '1' }); assert.equal(nodes.get('policyModal').open, true);
   click({ action: 'close-modal' }); assert.equal(nodes.get('policyModal').open, false);
