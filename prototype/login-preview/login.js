@@ -48,7 +48,7 @@
 
   function resetLoginButton() {
     loginButton.disabled = false;
-    loginButton.querySelector("span").textContent = "시연용 로그인";
+    loginButton.querySelector("span").textContent = "입력 후 데모 시작";
   }
 
   function cancelPendingLogin(message) {

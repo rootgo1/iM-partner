@@ -66,8 +66,8 @@ check("prototype credentials cannot submit or leave the page", () => {
   assert.ok(!/<form[^>]+id="demoLoginForm"/.test(html));
   assert.ok(!/id="user(?:Id|Password)"[^>]+\bname=/.test(html));
   assert.match(html, /id="loginButton" type="button"/);
-  assert.match(html, /실제 iM뱅크 또는 다른 서비스의 계정정보는 입력하지 마세요/);
-  assert.match(html, /입력값은 저장하거나 외부로 전송하지 않으며/);
+  assert.match(html, /실제 계정정보 입력 금지/);
+  assert.match(html, /입력값은 저장·전송되지 않으며 실제 인증은 진행하지 않습니다/);
   assert.ok(!/fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage/.test(js));
 });
 
@@ -92,6 +92,7 @@ check("responsive and accessibility contracts are present", () => {
   assert.match(html, /id="loginStatus"[^>]+aria-live="polite"/);
   assert.match(html, /id="accessCard"[^>]+tabindex="-1"/);
   assert.match(css, /@media \(max-width: 1060px\)/);
+  assert.match(css, /@media \(min-width: 1061px\) and \(max-height: 820px\)/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);

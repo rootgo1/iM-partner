@@ -372,36 +372,6 @@ input:focus-visible,
   filter: drop-shadow(0 24px 22px rgba(21, 70, 64, 0.22));
 }
 
-.signal-card {
-  position: absolute;
-  top: 4%;
-  left: -27%;
-  min-width: 190px;
-  padding: 13px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.52);
-  border-radius: 14px;
-  color: var(--ink-850);
-  background: rgba(255, 255, 255, 0.91);
-  box-shadow: 0 15px 34px rgba(25, 78, 70, 0.18);
-  backdrop-filter: blur(8px);
-}
-
-.signal-card span,
-.signal-card strong {
-  display: block;
-}
-
-.signal-card span {
-  color: var(--ink-550);
-  font-size: 12px;
-}
-
-.signal-card strong {
-  margin-top: 2px;
-  color: var(--mint-900);
-  font-size: 15px;
-}
-
 .access-card {
   min-width: 0;
   padding: 34px 34px 28px;
@@ -853,6 +823,93 @@ input:focus-visible,
   transform: translateY(0);
 }
 
+@media (min-width: 1061px) and (max-height: 820px) {
+  .guest-main {
+    padding-top: 27px;
+  }
+
+  .value-panel {
+    min-height: 620px;
+    padding-top: 36px;
+    padding-bottom: 30px;
+  }
+
+  .eyebrow {
+    margin-top: 22px;
+  }
+
+  .value-panel h1 {
+    font-size: clamp(42px, 4.25vw, 58px);
+  }
+
+  .lead {
+    margin-top: 17px;
+    line-height: 1.65;
+  }
+
+  .feature-list {
+    margin-top: 23px;
+  }
+
+  .access-card {
+    padding: 26px 30px 22px;
+  }
+
+  .access-heading h2 {
+    margin-top: 11px;
+    font-size: 30px;
+  }
+
+  .access-heading p {
+    line-height: 1.55;
+  }
+
+  .demo-entry {
+    min-height: 68px;
+    margin-top: 18px;
+  }
+
+  .choice-divider {
+    margin-top: 16px;
+    margin-bottom: 14px;
+  }
+
+  .form-title-row {
+    margin-bottom: 9px;
+  }
+
+  .field {
+    margin-top: 8px;
+  }
+
+  .field > input,
+  .password-field {
+    min-height: 46px;
+  }
+
+  .credential-guide {
+    margin-top: 6px;
+  }
+
+  .login-status {
+    min-height: 18px;
+    margin-top: 3px;
+  }
+
+  .login-button {
+    min-height: 48px;
+  }
+
+  .safe-notice {
+    margin-top: 14px;
+    padding: 10px 12px;
+  }
+
+  .target-notice {
+    margin-top: 8px;
+  }
+}
+
 @media (max-width: 1240px) {
   .header-inner {
     gap: 18px;
@@ -969,11 +1026,6 @@ input:focus-visible,
     margin: 8px auto -62px;
   }
 
-  .signal-card {
-    top: 6%;
-    left: -8%;
-  }
-
   .access-card {
     padding: 29px 25px 24px;
     border-radius: 22px;
@@ -1042,12 +1094,6 @@ input:focus-visible,
     width: min(330px, 98%);
     margin-top: 10px;
     margin-bottom: -50px;
-  }
-
-  .signal-card {
-    left: -2%;
-    min-width: 172px;
-    padding: 10px 12px;
   }
 
   .access-card {

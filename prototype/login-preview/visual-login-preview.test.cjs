@@ -64,14 +64,14 @@ const { chromium } = require("playwright");
       const darker = Math.min(luminance(style.color), luminance(style.backgroundColor));
       return (lighter + 0.05) / (darker + 0.05);
     });
-    assert.ok(contrast >= 4.5, "시연용 로그인 버튼 명암비가 4.5:1 이상이어야 합니다.");
+    assert.ok(contrast >= 4.5, "입력 후 데모 시작 버튼 명암비가 4.5:1 이상이어야 합니다.");
     await desktop.screenshot({ path: path.join(output, "guest-desktop-1440x1000.png"), fullPage: true });
 
     await desktop.getByRole("button", { name: "회복 플랜" }).click();
     assert.match(await desktop.locator("#targetNotice").textContent(), /골목상권 회복 플랜/);
     assert.match(await desktop.locator("#demoEntryLink").getAttribute("href"), /#recovery$/);
 
-    await desktop.getByRole("button", { name: "시연용 로그인", exact: true }).click();
+    await desktop.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
     assert.equal(await desktop.locator("#userId").getAttribute("aria-invalid"), "true");
     assert.match(await desktop.locator("#loginStatus").textContent(), /임의 아이디를 입력/);
 
@@ -79,9 +79,23 @@ const { chromium } = require("playwright");
     await desktop.locator("#userPassword").fill("preview-password");
     await desktop.getByRole("button", { name: "보기" }).click();
     assert.equal(await desktop.locator("#userPassword").getAttribute("type"), "text");
-    await desktop.getByRole("button", { name: "시연용 로그인", exact: true }).click();
+    await desktop.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
     await desktop.waitForURL(/main-screen\.html#recovery$/);
     assert.match(desktop.url(), /main-screen\.html#recovery$/);
+
+    const notebook = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
+    collectErrors(notebook, "notebook");
+    await notebook.goto(loginUrl, { waitUntil: "load" });
+    await notebook.evaluate(() => document.fonts.ready);
+    const notebookLayout = await notebook.evaluate(() => ({
+      bodyWidth: document.body.scrollWidth,
+      viewportWidth: window.innerWidth,
+      loginButtonBottom: document.querySelector("#loginButton").getBoundingClientRect().bottom,
+      viewportHeight: window.innerHeight
+    }));
+    assert.ok(notebookLayout.bodyWidth <= notebookLayout.viewportWidth, "일반 노트북에서 가로 넘침이 없어야 합니다.");
+    assert.ok(notebookLayout.loginButtonBottom <= notebookLayout.viewportHeight - 12, "일반 노트북 첫 화면에 입력 후 데모 시작 버튼이 모두 보여야 합니다.");
+    await notebook.screenshot({ path: path.join(output, "guest-notebook-1366x768.png") });
 
     const rootPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
     collectErrors(rootPage, "root");
@@ -129,7 +143,7 @@ const { chromium } = require("playwright");
     await noScriptContext.close();
 
     assert.deepEqual(errors, []);
-    console.log("PASS desktop/mobile layout, target selection, guest/login entry, logout return, and no-script safety");
+    console.log("PASS desktop/notebook/mobile layout, target selection, guest/login entry, logout return, and no-script safety");
     console.log("OUTPUT " + output);
   } finally {
     await browser.close();
