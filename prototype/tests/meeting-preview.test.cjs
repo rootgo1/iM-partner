@@ -34,6 +34,8 @@ check('Local assets exist and no external script/style dependency', () => {
   assert.match(html, /<span class="toggle-icon" aria-hidden="true"><\/span>/);
   assert.ok(!code.includes("toggle-icon').textContent"));
   assert.ok(!html.includes('class="top-nav"'));
+  assert.ok(!html.includes('class="data-chip"'));
+  assert.match(html, /<div class="demo-label">생성 데이터 기반 시연/);
   assert.ok(!html.includes('iM 파트너'));
   assert.ok(html.includes('iM챗봇'));
   assert.ok(!code.includes("addEventListener('wheel'"));

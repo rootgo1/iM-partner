@@ -161,7 +161,6 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .topbar { position: sticky; top: 0; z-index: 12; padding: 0 30px; min-height: 80px; gap: 16px; }
 .topbar-left { gap: 22px; }
 .topbar-actions { gap: 12px; }
-.data-chip { font-size: 12px; white-space: nowrap; }
 .content { padding: 30px; max-width: 1580px; }
 .content.dashboard-view { padding-top: 24px; }
 .page-heading { align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
@@ -475,7 +474,6 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
   .v-recovery-hero-stats { max-width: 720px; }
 }
 @container (max-width: 780px) {
-  .topbar .data-chip { display: none; }
   .v-grid2, .v-policy-grid { grid-template-columns: 1fr; }
   .v-dashboard-support { grid-template-columns: 1fr; }
   .v-funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }

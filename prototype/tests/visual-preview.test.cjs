@@ -325,6 +325,7 @@ const { chromium } = require('playwright');
   assert.match(await page.locator('#viewRoot').innerText(), /시간대별 소비 흐름/);
   assert.equal(await page.locator('#mainNavigation .nav-item').count(), 5);
   assert.equal(await page.locator('.topbar .profile, .topbar .logout-link').count(), 0);
+  assert.equal(await page.locator('.topbar .data-chip').count(), 0);
   assert.equal(await page.locator('#profileInitials').innerText(), '소현');
   const opticalProductGap = await page.locator('.ai-toggle .im-product-name').evaluate(label => {
     const latin = label.firstElementChild.getBoundingClientRect();
