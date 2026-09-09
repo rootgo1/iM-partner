@@ -143,34 +143,8 @@ input:focus-visible,
   font-weight: 700;
 }
 
-.guest-nav {
-  min-width: 0;
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.guest-nav-item {
-  min-height: 42px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.88);
-  background: transparent;
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: color 150ms ease, background 150ms ease;
-}
-
-.guest-nav-item:hover,
-.guest-nav-item.is-active {
-  color: #fff;
-  background: rgba(35, 111, 99, 0.28);
-}
-
 .header-demo-link {
+  margin-left: auto;
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid rgba(255, 255, 255, 0.62);
@@ -344,32 +318,6 @@ input:focus-visible,
 .feature-list small {
   color: rgba(255, 255, 255, 0.77);
   font-size: 13px;
-}
-
-.preview-art {
-  position: absolute;
-  z-index: 2;
-  right: -72px;
-  bottom: -86px;
-  width: min(52%, 410px);
-  aspect-ratio: 1;
-  pointer-events: none;
-}
-
-.art-halo {
-  position: absolute;
-  inset: 8% 4% 4% 8%;
-  border-radius: 50%;
-  background: rgba(236, 255, 216, 0.22);
-  filter: blur(4px);
-}
-
-.preview-art img {
-  position: relative;
-  width: 100%;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 24px 22px rgba(21, 70, 64, 0.22));
 }
 
 .access-card {
@@ -915,12 +863,6 @@ input:focus-visible,
     gap: 18px;
   }
 
-  .guest-nav-item {
-    padding-right: 8px;
-    padding-left: 8px;
-    font-size: 13px;
-  }
-
   .guest-main,
   .site-footer {
     width: min(1180px, calc(100% - 40px));
@@ -937,14 +879,6 @@ input:focus-visible,
 }
 
 @media (max-width: 1060px) {
-  .guest-nav {
-    display: none;
-  }
-
-  .header-demo-link {
-    margin-left: auto;
-  }
-
   .guest-shell {
     grid-template-columns: 1fr;
   }
@@ -955,12 +889,6 @@ input:focus-visible,
 
   .value-panel h1 {
     max-width: 650px;
-  }
-
-  .preview-art {
-    right: -35px;
-    bottom: -86px;
-    width: 390px;
   }
 
   .access-card {
@@ -1000,7 +928,7 @@ input:focus-visible,
 
   .value-panel {
     min-height: 0;
-    padding: 30px 24px 0;
+    padding: 30px 24px;
     border-radius: 22px;
     display: flex;
     flex-direction: column;
@@ -1016,14 +944,6 @@ input:focus-visible,
 
   .feature-list li {
     grid-template-columns: 31px 90px 1fr;
-  }
-
-  .preview-art {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: min(390px, 88%);
-    margin: 8px auto -62px;
   }
 
   .access-card {
@@ -1057,7 +977,7 @@ input:focus-visible,
   }
 
   .value-panel {
-    padding: 26px 20px 0;
+    padding: 26px 20px;
   }
 
   .demo-badge {
@@ -1088,12 +1008,6 @@ input:focus-visible,
 
   .feature-list small {
     grid-column: 2;
-  }
-
-  .preview-art {
-    width: min(330px, 98%);
-    margin-top: 10px;
-    margin-bottom: -50px;
   }
 
   .access-card {

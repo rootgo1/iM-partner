@@ -1252,7 +1252,30 @@
       <div class="demo-label">생성 데이터 기반 시연<br>프론트엔드 1차 구현</div>
       <div class="nav-title">MY BUSINESS</div>
       <nav class="nav-list" id="mainNavigation" aria-label="파트너 메뉴"></nav>
-      <div class="sidebar-footer">분석 대상<br><strong id="storeContext">서문시장 음식점</strong><br>실제 POS · DB 미연결</div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-footer">분석 대상<br><strong id="storeContext">서문시장 음식점</strong><br>실제 POS · DB 미연결</div>
+        <div class="sidebar-account">
+          <div class="sidebar-account-menu" id="profileMenu" role="menu" aria-labelledby="profileMenuButton" hidden>
+            <div class="sidebar-account-summary">
+              <span class="sidebar-account-avatar" id="profileMenuInitials" aria-hidden="true">이소</span>
+              <span><strong id="profileMenuName">이소현</strong><small id="profileMenuStore">서문시장 음식점</small></span>
+            </div>
+            <button class="sidebar-account-action" type="button" data-view="profile" role="menuitem">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg>
+              <span>내 프로필 관리</span>
+            </button>
+            <a class="sidebar-account-action danger" id="logoutLink" href="./login-preview/index.html?signed_out=1" role="menuitem" aria-label="로그아웃하고 비로그인 화면으로 이동">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"></path></svg>
+              <span>로그아웃</span>
+            </a>
+          </div>
+          <button class="sidebar-account-trigger" id="profileMenuButton" type="button" aria-haspopup="menu" aria-controls="profileMenu" aria-expanded="false">
+            <span class="sidebar-account-avatar" id="profileInitials" aria-hidden="true">이소</span>
+            <span class="sidebar-account-copy"><strong id="profileName">이소현</strong><small id="profileStoreName">서문시장 음식점</small></span>
+            <svg class="sidebar-account-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"></path></svg>
+          </button>
+        </div>
+      </div>
     </aside>
     <button class="v-nav-backdrop" id="navBackdrop" type="button" tabindex="-1" aria-label="메뉴 닫기"></button>
     <main class="main">
@@ -1264,17 +1287,12 @@
         <div class="topbar-actions">
           <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>iM챗봇</span></button>
           <span class="data-chip">생성 데이터</span>
-          <button class="profile" type="button" data-view="profile" aria-label="내 프로필 보기"><span class="avatar" id="profileInitials" aria-hidden="true">이소</span><span id="profileName">이소현</span></button>
-          <a class="logout-link" id="logoutLink" href="./login-preview/index.html?signed_out=1" aria-label="로그아웃하고 비로그인 화면으로 이동">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"></path></svg>
-            <span>로그아웃</span>
-          </a>
         </div>
       </header>
       <div class="content" id="mainContent">
         <section class="page-heading" id="pageHeading" aria-label="분석 조건">
           <div>
-            <div class="eyebrow" id="viewEyebrow">대시보드</div>
+            <div class="eyebrow" id="viewEyebrow">홈</div>
             <h1 id="pageTitle" tabindex="-1">가게의 오늘을 살펴보세요.</h1>
             <p class="page-description" id="pageContext">이소현님 · 대구 중구 · 음식점</p>
             <p class="v-metadata" id="periodContext">2026.08.01 - 08.31 · 생성 데이터</p>

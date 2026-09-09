@@ -158,19 +158,26 @@ function click(dataset) { const e = new Element(); e.dataset = dataset; listener
 function change(id, value) { nodes.get(id).value = value; listeners.change({ target: nodes.get(id) }); }
 function submit(id, values) { const form = nodes.get(id); form.values = values; listeners.submit({ target: form, preventDefault() {} }); }
 vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
-check('Initial render and all seven navigation targets', () => {
+check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-signal-context"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
   assert.ok(nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
-  for (const view of ['dashboard', 'market', 'finance', 'recovery', 'policies', 'secretary', 'profile']) {
+  assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
+  assert.match(nodes.get('mainNavigation').innerHTML, />상권·매출 분석</);
+  assert.ok(!nodes.get('mainNavigation').innerHTML.includes('상권·시간 분석'));
+  assert.ok(!nodes.get('mainNavigation').innerHTML.includes('매출·지출 분석'));
+  for (const view of ['dashboard', 'analysis', 'recovery', 'policies', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
-  click({ view: 'finance' });
+  click({ view: 'analysis' });
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-finance-summary"'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-connection-grid"'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('시간대별 소비 흐름'));
+  click({ view: 'market' });
+  assert.equal(location.hash, '#analysis');
   click({ view: 'policies' });
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
   assert.equal(nodes.get('pageHeading').hidden, true);

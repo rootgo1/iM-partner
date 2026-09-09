@@ -6,8 +6,7 @@ body { font-family: var(--font-im-ui); font-size: 16px; font-weight: 400; letter
 .v-skip:focus { top: 12px; }
 .v-data-notice { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 18px 0; color: #7b8e84; font-size: 12px; }
 .ai-toggle { white-space: nowrap; }
-.profile { max-width: 160px; }
-#profileName { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#profileName, #profileStoreName, #profileMenuName, #profileMenuStore { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #pageContext, #storeContext, .ai-message { overflow-wrap: anywhere; }
 button, input, textarea, select { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -21,30 +20,87 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .demo-label { font-size: 12px; }
 .nav-item { font-size: 14px; margin-bottom: 3px; }
 .nav-icon svg { width: 19px; height: 19px; }
+.sidebar-bottom { margin-top: auto; display: grid; gap: 10px; }
+.sidebar-footer { margin-top: 0; }
+.sidebar-account { position: relative; min-width: 0; }
+.sidebar-account-trigger {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid #dce9e6;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #24464d;
+  background: #f1f7f5;
+  text-align: left;
+  transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+}
+.sidebar-account-trigger:hover,
+.sidebar-account-trigger.active { border-color: #b9d8d1; background: #e6f2ef; }
+.sidebar-account-trigger:active { transform: translateY(1px); }
+.sidebar-account-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: linear-gradient(145deg, #3d8e82, #78b8a5);
+  font-size: 12px;
+  font-weight: 800;
+}
+.sidebar-account-copy { min-width: 0; display: grid; flex: 1 1 auto; line-height: 1.35; }
+.sidebar-account-copy strong { min-width: 0; font-size: 13px; }
+.sidebar-account-copy small { min-width: 0; margin-top: 2px; color: #78908b; font-size: 10px; }
+.sidebar-account-chevron { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: #6e8983; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 150ms ease; }
+.sidebar-account-trigger[aria-expanded="true"] .sidebar-account-chevron { transform: rotate(180deg); }
+.sidebar-account-menu {
+  position: absolute;
+  z-index: 60;
+  right: 0;
+  bottom: calc(100% + 9px);
+  left: 0;
+  padding: 8px;
+  border: 1px solid #d8e6e2;
+  border-radius: 16px;
+  color: #29474d;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 18px 42px rgba(32, 78, 70, .2);
+}
+.sidebar-account-summary { min-width: 0; padding: 7px 7px 12px; border-bottom: 1px solid #e6eeec; display: flex; align-items: center; gap: 10px; }
+.sidebar-account-summary > span:last-child { min-width: 0; display: grid; line-height: 1.4; }
+.sidebar-account-summary strong { min-width: 0; font-size: 13px; }
+.sidebar-account-summary small { min-width: 0; margin-top: 2px; color: #7a8d89; font-size: 10px; }
+.sidebar-account-action {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 5px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3f5b60;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sidebar-account-action:hover,
+.sidebar-account-action.active { color: #1f675f; background: #edf6f3; }
+.sidebar-account-action.danger:hover { color: #a93e47; background: #fff0f1; }
+.sidebar-account-action svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.app-shell.sidebar-collapsed .sidebar-account-trigger { width: 52px; min-height: 52px; margin: 0 auto; padding: 7px; justify-content: center; }
+.app-shell.sidebar-collapsed .sidebar-account-copy,
+.app-shell.sidebar-collapsed .sidebar-account-chevron { display: none; }
+.app-shell.sidebar-collapsed .sidebar-account-menu { position: fixed; right: auto; bottom: 16px; left: 78px; width: 244px; }
 .topbar { position: sticky; top: 0; z-index: 12; padding: 0 30px; min-height: 80px; gap: 16px; }
 .topbar-left { gap: 22px; }
 .topbar-actions { gap: 12px; }
-.profile { border: 0; background: none; color: inherit; padding: 0; }
-.logout-link {
-  min-height: 40px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, .48);
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #fff;
-  background: rgba(255, 255, 255, .12);
-  font-size: 12px;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 150ms ease, transform 120ms ease;
-}
-.logout-link:hover { background: rgba(255, 255, 255, .23); }
-.logout-link:active { transform: translateY(1px); }
-.logout-link svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .data-chip { font-size: 12px; white-space: nowrap; }
 .content { padding: 30px; max-width: 1580px; }
 .content.dashboard-view { padding-top: 24px; }
@@ -411,7 +467,6 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
   .topbar-actions { gap: 7px; }
   .topbar-brand { font-size: 19px; }
   .topbar-brand-mark { width: 37px; height: 25px; }
-  .topbar-actions .profile { display: none; }
   .content { padding: 22px 16px; }
   .content.dashboard-view { padding-top: 16px; }
   .v-grid3, .v-form-grid, .v-policy-grid { grid-template-columns: 1fr; }
@@ -461,9 +516,9 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
   .v-screen-section .v-recovery-signal { margin-top: 0; }
   .v-screen-section .v-recovery-compare { margin-top: 0; }
   .v-screen-section--dashboard-3 .v-recovery-signal { min-height: min(54vh, 455px); }
-  .v-screen-section--finance-1 .v-finance-summary { margin-top: 20px; }
-  .v-screen-section--finance-3 .v-grid2 > .v-card,
-  .v-screen-section--finance-4 .v-grid2 > .v-card { min-height: 370px; }
+  .v-screen-section--analysis-1 .v-finance-summary { margin-top: 20px; }
+  .v-screen-section--analysis-4 .v-grid2 > .v-card,
+  .v-screen-section--analysis-6 .v-grid2 > .v-card { min-height: 370px; }
   .v-screen-section--recovery-4 .v-recovery-compare { padding-top: 28px; padding-bottom: 28px; }
   .v-screen-section--policies-1 .v-card { padding-top: 28px; padding-bottom: 28px; }
   .v-screen-section--dashboard-4 .v-dashboard-support { margin-top: 0; margin-bottom: 0; }
@@ -486,8 +541,4 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
-}
-@media (max-width: 460px) {
-  .logout-link { width: 40px; min-width: 40px; padding: 0; }
-  .logout-link span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 }

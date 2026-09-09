@@ -12,12 +12,7 @@
   const toast = document.getElementById("toast");
 
   const viewNames = {
-    dashboard: "대시보드",
-    market: "상권·시간 분석",
-    finance: "매출·지출 분석",
-    recovery: "골목상권 회복 플랜",
-    policies: "정책·지원사업",
-    secretary: "AI 비서"
+    dashboard: "홈"
   };
 
   let targetView = "dashboard";

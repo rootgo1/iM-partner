@@ -269,15 +269,27 @@ const { chromium } = require('playwright');
   }, 0);
   assert.ok(rebound <= 2, 'interrupted settling must not rebound toward the abandoned section');
 
-  await page.getByRole('button', { name: '매출·지출 분석', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.includes('매출과 남는 돈'));
+  await page.getByRole('button', { name: '상권·매출 분석', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.includes('상권의 기회와 가게의 매출'));
   assert.equal(await page.locator('#pageHeading').isHidden(), true);
   assert.equal(await page.locator('#dataNotice').isHidden(), true);
-  assert.equal(await page.locator('#viewRoot > .v-screen-section').count(), 4);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').count(), 6);
   assert.equal(await page.locator('#sectionPeriodSelect').isVisible(), true);
   assert.equal(await page.locator('#sectionPeriodSelect').inputValue(), 'month');
   assert.match(await page.locator('#viewRoot').innerText(), /월세/);
   assert.match(await page.locator('#viewRoot').innerText(), /매입금액 TOP 3/);
+  assert.match(await page.locator('#viewRoot').innerText(), /시간대별 소비 흐름/);
+  assert.equal(await page.locator('#mainNavigation .nav-item').count(), 5);
+  assert.equal(await page.locator('.topbar .profile, .topbar .logout-link').count(), 0);
+
+  await page.locator('#profileMenuButton').click();
+  assert.equal(await page.locator('#profileMenu').isVisible(), true);
+  const profileMenuBox = await page.locator('#profileMenu').boundingBox();
+  assert.ok(profileMenuBox && profileMenuBox.x >= 0 && profileMenuBox.y >= 0, 'profile menu must stay inside the viewport');
+  await page.screenshot({ path: path.join(output, 'sidebar-profile-menu-1920.png'), fullPage: false });
+  await page.locator('#profileMenu [data-view="profile"]').click();
+  await page.waitForFunction(() => location.hash === '#profile');
+  assert.equal(await page.locator('#profileMenu').isHidden(), true);
 
   await page.getByRole('link', { name: 'iM파트너 메인 페이지로 이동' }).click();
   await page.waitForFunction(() => location.hash === '#dashboard');
@@ -352,8 +364,8 @@ const { chromium } = require('playwright');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.setViewportSize({ width: 1366, height: 768 });
-  const densityViews = ['dashboard', 'market', 'finance', 'recovery', 'policies', 'secretary', 'profile'];
-  const densityShots = new Set(['dashboard-3', 'finance-1', 'finance-3', 'finance-4', 'recovery-4', 'policies-1']);
+  const densityViews = ['dashboard', 'analysis', 'recovery', 'policies', 'secretary', 'profile'];
+  const densityShots = new Set(['dashboard-3', 'analysis-1', 'analysis-2', 'analysis-4', 'analysis-6', 'recovery-4', 'policies-1']);
   for (const view of densityViews) {
     await page.goto(url + '?qa=density#' + view, { waitUntil: 'load' });
     await page.waitForSelector('#viewRoot > .v-screen-section');
@@ -377,8 +389,26 @@ const { chromium } = require('playwright');
       if (densityShots.has(shotKey)) await page.screenshot({ path: path.join(output, 'density-' + shotKey + '-1366.png'), fullPage: false });
     }
   }
+
+  const loginUrl = pathToFileURL(path.resolve(__dirname, '../login-preview/index.html')).href;
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(loginUrl + '?qa=guest-clean', { waitUntil: 'load' });
+  assert.equal(await page.locator('.guest-nav, [data-login-required], .preview-art').count(), 0);
+  assert.equal(await page.locator('.guest-header .brand').count(), 1);
+  assert.equal(await page.getByRole('link', { name: '데모 시작', exact: true }).count(), 1);
+  assert.match(await page.locator('#targetNotice').innerText(), /홈/);
+  const guestOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert.ok(guestOverflow <= 1, 'guest desktop horizontal overflow: ' + guestOverflow);
+  await page.screenshot({ path: path.join(output, 'guest-clean-1440.png'), fullPage: false });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(loginUrl + '?qa=guest-clean-mobile', { waitUntil: 'load' });
+  const guestMobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert.ok(guestMobileOverflow <= 1, 'guest mobile horizontal overflow: ' + guestMobileOverflow);
+  assert.equal(await page.locator('.preview-art').count(), 0);
+  await page.screenshot({ path: path.join(output, 'guest-clean-390.png'), fullPage: false });
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log('PASS iM Bank-style font, Lenis smooth scrolling, section settling, full-page density, interactions, PDF and responsive layouts');
+  console.log('PASS iM Bank-style font, consolidated navigation, profile menu, clean guest entry, smooth scrolling and responsive layouts');
   } finally {
     if (browser) await browser.close();
   }

@@ -15,11 +15,13 @@
   const note = (text, variant) => '<div class="v-note ' + (variant || '') + '">' + text + '</div>';
   const card = body => '<article class="card v-card">' + body + '</article>';
   const head = (title, extra) => '<div class="v-row v-between"><h2>' + title + '</h2>' + (extra || '') + '</div>';
-  const views = { dashboard: '대시보드', market: '상권·시간 분석', finance: '매출·지출 분석', recovery: '골목상권 회복 플랜', policies: '정책·지원사업', secretary: 'AI 비서', profile: '내 프로필' };
+  const views = { dashboard: '홈', analysis: '상권·매출 분석', recovery: '회복플랜', policies: '정책·지원사업', secretary: 'AI 비서', profile: '내 프로필' };
+  const navigationViews = ['dashboard', 'analysis', 'recovery', 'policies', 'secretary'];
+  const legacyViews = { market: 'analysis', finance: 'analysis' };
+  const normalizeView = view => legacyViews[view] || view;
   const captions = {
     dashboard: '가게의 오늘을 살펴보세요.',
-    market: '언제, 무엇을 준비해야 할까요?',
-    finance: '매출과 남는 돈을 함께 보세요.',
+    analysis: '상권의 기회와 가게의 매출을 함께 보세요.',
     recovery: '분석에서, 오늘의 실행으로.',
     policies: '내 가게에 맞는 지원을 찾아보세요.',
     secretary: '질문으로 분석하고, 문서로 남기세요.',
@@ -36,9 +38,8 @@
   const sourceFoot = '<p class="v-footer">생성 데이터 기반 시연 · 실제 POS·카드사·통신사 원자료가 아닙니다. 이 화면에는 DB·외부 API·실제 AI가 연결되어 있지 않습니다.</p>';
   function icon(name) {
     const paths = {
-      dashboard: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-      market: '<path d="M3 20V10m6 10V4m6 16v-7m6 7V7"/>',
-      finance: '<path d="M4 4h16v16H4zM7 8h10M7 12h4M7 16h4"/>',
+      dashboard: '<path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M9 21v-7h6v7"/>',
+      analysis: '<path d="M4 20V10m5 10V5m5 15v-7m5 7V8"/><path d="m3 15 5-4 5 2 7-7"/>',
       recovery: '<path d="M3 17l6-6 4 4 8-11M14 4h7v7"/>',
       policies: '<path d="M4 7l8-4 8 4M4 20h16M6 9v8m6-8v8m6-8v8"/>',
       secretary: '<path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
@@ -46,8 +47,8 @@
     };
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
   }
-  $('#mainNavigation').innerHTML = Object.entries(views).map(([id, name]) =>
-    '<button type="button" class="nav-item" data-view="' + id + '" title="' + name + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + name + '</span></button>'
+  $('#mainNavigation').innerHTML = navigationViews.map(id =>
+    '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + views[id] + '</span></button>'
   ).join('');
   function metricTrend(delta, direction) {
     if (delta === undefined) return '';
@@ -158,8 +159,7 @@
   function screenGroups(view, children) {
     const groupByIndexes = indexes => indexes.map(group => group.map(index => children[index]).filter(Boolean));
     if (view === 'dashboard') return groupByIndexes([[0], [1, 2], [3], [4, 5]]);
-    if (view === 'market') return groupByIndexes([[1, 0], [2, 3]]);
-    if (view === 'finance') return groupByIndexes([[0, 1], [2, 3], [4], [5, 6]]);
+    if (view === 'analysis') return groupByIndexes([[3, 4], [0, 1], [5, 6], [7], [2], [8, 9]]);
     if (view === 'recovery') return recoveryScreenGroups(children);
     if (view === 'policies') return groupByIndexes([[1, 0], [2, 3]]);
     if (view === 'secretary') return groupByIndexes([[0, 1]]);
@@ -171,7 +171,7 @@
     const children = Array.from(root.children);
     if (!children.length || typeof root.querySelectorAll !== 'function') return;
     const groups = screenGroups(view, children).filter(group => group.length);
-    if ((view === 'market' || view === 'finance') && groups[0]) groups[0].unshift(...sectionPeriodNodes());
+    if (view === 'analysis' && groups[0]) groups[0].unshift(...sectionPeriodNodes());
     const screens = groups.map((group, index) => {
       const section = document.createElement('section');
       section.className = 'v-screen-section v-screen-section--' + view + '-' + (index + 1);
@@ -264,8 +264,8 @@
       metric('상권 카드소비 변화', pct(analysis.cardRate), undefined, state.period.comparison + ' · 생성 자료') +
       metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
       '</section><div class="v-grid2">' +
-      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">골목상권 회복 플랜 확인 →</button></article>' +
-      card(head('유동인구와 카드소비', '<button class="text-button" type="button" data-view="market">상세 분석 →</button>') + comparisonChart()) + '</div>' + recoveryDashboardCard() +
+      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">회복플랜 확인 →</button></article>' +
+      card(head('유동인구와 카드소비', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart()) + '</div>' + recoveryDashboardCard() +
       '<div class="v-grid2 v-dashboard-support">' + card(guidanceCard()) + card(head('가게 주변의 오늘', badge('연결 준비', 'neutral')) + '<div class="v-weather"><div><h3>대구 중구 날씨</h3><p class="v-subtitle">실시간 날씨 미연결</p></div><strong>—</strong></div><div class="v-space">' + calendar() + '</div>') + '</div>';
   }
   function market() {
@@ -297,7 +297,10 @@
       '<div class="v-grid2">' + card(head('자금 흐름', badge('연결 전', 'neutral')) + '<p class="v-subtitle">보유 현금으로 오해하지 않도록 연결되지 않은 항목을 구분합니다.</p><div class="v-connection-grid"><div><span>현금잔액</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div><div><span>예상 입출금</span><strong>미연결</strong></div></div>' + note('현재는 매출·지출 차이만 확인할 수 있으며 실제 자금 흐름 판단에는 위 자료가 필요합니다.', 'neutral')) +
       card(head('POS 집계 확인', badge('DB 대신 로컬 생성 자료', 'neutral')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>최근 일자</th><th>시간</th><th>품목</th><th class="right">순매출</th></tr></thead><tbody>' +
         analysis.pos.filter(r => r.netAmount > 0).slice(-5).map(r => '<tr><td>' + r.date.slice(5) + '</td><td>' + r.hour + '시</td><td>' + D.menu.find(m => m.id === r.itemId).name + '</td><td class="right">' + money(r.netAmount) + '</td></tr>').join('') +
-        '</tbody></table></div><p class="v-metadata v-space">취소 ' + number(analysis.cancellations) + '개 차감 · 실 DB/POS 기기 미연결</p>') + '</div>';
+      '</tbody></table></div><p class="v-metadata v-space">취소 ' + number(analysis.cancellations) + '개 차감 · 실 DB/POS 기기 미연결</p>') + '</div>';
+  }
+  function combinedAnalysis() {
+    return market() + finance();
   }
   function mapPreview() {
     const r = Math.min(125, Math.max(45, state.radius / 8));
@@ -400,10 +403,15 @@
     $('#periodContext').textContent = state.period.start + ' ~ ' + state.period.end + ' · ' + state.period.comparison;
     $('#profileName').textContent = state.profile.name;
     $('#profileInitials').textContent = state.profile.name.slice(0, 2);
+    $('#profileStoreName').textContent = state.profile.storeName;
+    $('#profileMenuName').textContent = state.profile.name;
+    $('#profileMenuInitials').textContent = state.profile.name.slice(0, 2);
+    $('#profileMenuStore').textContent = state.profile.storeName;
+    $('#profileMenuButton').classList.toggle('active', state.view === 'profile');
     $('#storeContext').textContent = state.profile.storeName + ' · ' + state.profile.industry;
     $('#aiContext').textContent = state.profile.storeName + ' 생성 자료 · ' + state.period.start + '~' + state.period.end;
     document.querySelectorAll('[data-view]').forEach(el => { el.classList.toggle('active', el.dataset.view === state.view); if (el.classList.contains('nav-item')) { if (el.dataset.view === state.view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); } });
-    const renders = { dashboard, market, finance, recovery, policies, secretary, profile };
+    const renders = { dashboard, analysis: combinedAnalysis, recovery, policies, secretary, profile };
     $('#viewRoot').innerHTML = renders[state.view]() + sourceFoot;
     sectionizeView(state.view);
     $('#periodSelect').value = state.periodMode;
@@ -415,8 +423,9 @@
     updateBanner();
   }
   function navigate(view) {
+    view = normalizeView(view);
     if (!views[view]) return;
-    state.view = view; render();
+    state.view = view; setProfileMenu(false); render();
     $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible');
     $('#menuButton').setAttribute('aria-expanded', 'false');
     if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
@@ -525,6 +534,13 @@
     $('#aiMessages').replaceChildren();
     appendChat('분석 조건이 바뀌었습니다. 새 조건을 기준으로 질문해 주세요.', 'bot');
   }
+  function setProfileMenu(open) {
+    const menu = $('#profileMenu');
+    const trigger = $('#profileMenuButton');
+    if (!menu || !trigger) return;
+    menu.hidden = !open;
+    trigger.setAttribute('aria-expanded', String(open));
+  }
   async function makePdf() {
     if (state.pdfBusy || !state.reportReady) return;
     state.pdfBusy = true;
@@ -553,7 +569,11 @@
     }
   }
   document.addEventListener('click', event => {
-    const el = event.target.closest('button, a'); if (!el) return;
+    const accountArea = event.target.closest('.sidebar-account');
+    const el = event.target.closest('button, a');
+    if (!el) { if (!accountArea) setProfileMenu(false); return; }
+    if (el.id === 'profileMenuButton') { event.preventDefault?.(); setProfileMenu($('#profileMenu').hidden); return; }
+    if (!accountArea) setProfileMenu(false);
     if (el.dataset.view) { event.preventDefault?.(); navigate(el.dataset.view); }
     if (el.dataset.question) ask(el.dataset.question);
     if (el.dataset.reportQuestion) askReport(el.dataset.reportQuestion);
@@ -649,7 +669,7 @@
   });
   $('#aiToggle').addEventListener('click', () => setChat(!state.chatOpen));
   $('#aiClose').addEventListener('click', () => setChat(false));
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') { if (state.chatOpen) setChat(false); $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible'); $('#menuButton').setAttribute('aria-expanded', 'false'); } });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') { setProfileMenu(false); if (state.chatOpen) setChat(false); $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible'); $('#menuButton').setAttribute('aria-expanded', 'false'); } });
   $('#chatResizeHandle').addEventListener('pointerdown', event => {
     const handle = event.currentTarget; handle.setPointerCapture(event.pointerId);
     const startX = event.clientX, startWidth = $('#aiPanel').getBoundingClientRect().width;
@@ -658,7 +678,9 @@
     handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', stop); handle.addEventListener('pointercancel', stop);
   });
   setInterval(() => { if (!state.bannerPaused && !document.hidden && state.view === 'dashboard' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) { state.bannerIndex = (state.bannerIndex + 1) % banners.length; updateBanner(); } }, 8000);
-  window.addEventListener('hashchange', () => { const view = location.hash.slice(1); if (views[view]) navigate(view); });
-  state.view = views[location.hash.slice(1)] ? location.hash.slice(1) : 'dashboard';
+  window.addEventListener('hashchange', () => { const view = normalizeView(location.hash.slice(1)); if (views[view]) navigate(view); });
+  const initialView = normalizeView(location.hash.slice(1));
+  state.view = views[initialView] ? initialView : 'dashboard';
+  if (location.hash && location.hash !== '#' + state.view) history.replaceState(null, '', '#' + state.view);
   render();
 })();
