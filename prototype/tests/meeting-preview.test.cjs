@@ -165,8 +165,14 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
   assert.ok(nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
+  assert.equal(nodes.get('profileInitials').textContent, '소현');
+  assert.equal(nodes.get('profileMenuInitials').textContent, '소현');
   assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
-  assert.match(nodes.get('mainNavigation').innerHTML, />상권·매출 분석</);
+  assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
+  assert.match(nodes.get('mainNavigation').innerHTML, />회복전략</);
+  assert.match(nodes.get('mainNavigation').innerHTML, />지원사업</);
+  assert.match(nodes.get('mainNavigation').innerHTML, /aria-label="iM비서"/);
+  assert.match(nodes.get('mainNavigation').innerHTML, /class="im-product-name"/);
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('상권·시간 분석'));
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('매출·지출 분석'));
   for (const view of ['dashboard', 'analysis', 'recovery', 'policies', 'secretary', 'profile']) {
@@ -182,6 +188,16 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
+});
+check('Profile avatar shows the given name for common Korean name lengths', () => {
+  const base = { storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: '3' };
+  click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '황보민지' }, base));
+  assert.equal(nodes.get('profileInitials').textContent, '민지');
+  assert.equal(nodes.get('profileMenuInitials').textContent, '민지');
+  click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '고수' }, base));
+  assert.equal(nodes.get('profileInitials').textContent, '수');
+  assert.equal(nodes.get('profileMenuInitials').textContent, '수');
+  click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '이소현' }, base));
 });
 check('Chatbot answers follow period changes and do not invent absent data', () => {
   click({ question: '현재 매출이 왜 떨어졌나요?' });
@@ -232,7 +248,7 @@ check('Profile strings are escaped and region mismatch is excluded', () => {
   click({ view: 'policies' }); assert.ok(nodes.get('viewRoot').innerHTML.includes('조건에 맞는 예시가 없습니다'));
 });
 async function asyncChecks() {
-  click({ view: 'secretary' }); click({ reportQuestion: '회복 플랜을 요약해 주세요.' });
+  click({ view: 'secretary' }); click({ reportQuestion: '회복전략을 요약해 주세요.' });
   click({ action: 'make-pdf' }); const stale = pendingPdf;
   change('periodSelect', 'month'); stale({}); await new Promise(resolve => setImmediate(resolve));
   assert.equal(nodes.get('pdfLink').attrs.href, undefined);

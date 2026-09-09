@@ -1257,7 +1257,7 @@
         <div class="sidebar-account">
           <div class="sidebar-account-menu" id="profileMenu" role="menu" aria-labelledby="profileMenuButton" hidden>
             <div class="sidebar-account-summary">
-              <span class="sidebar-account-avatar" id="profileMenuInitials" aria-hidden="true">이소</span>
+              <span class="sidebar-account-avatar" id="profileMenuInitials" aria-hidden="true">소현</span>
               <span><strong id="profileMenuName">이소현</strong><small id="profileMenuStore">서문시장 음식점</small></span>
             </div>
             <button class="sidebar-account-action" type="button" data-view="profile" role="menuitem">
@@ -1270,7 +1270,7 @@
             </a>
           </div>
           <button class="sidebar-account-trigger" id="profileMenuButton" type="button" aria-haspopup="menu" aria-controls="profileMenu" aria-expanded="false">
-            <span class="sidebar-account-avatar" id="profileInitials" aria-hidden="true">이소</span>
+            <span class="sidebar-account-avatar" id="profileInitials" aria-hidden="true">소현</span>
             <span class="sidebar-account-copy"><strong id="profileName">이소현</strong><small id="profileStoreName">서문시장 음식점</small></span>
             <svg class="sidebar-account-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"></path></svg>
           </button>
@@ -1285,7 +1285,7 @@
           <a class="topbar-brand" href="#dashboard" data-view="dashboard" aria-label="iM파트너 홈으로 이동"><span class="topbar-brand-mark" aria-hidden="true"><img src="./assets/brand/im-bank-symbol.png" alt=""></span><span class="topbar-brand-name"><span>iM</span><span class="brand-korean">파트너</span></span></a>
         </div>
         <div class="topbar-actions">
-          <button class="ai-toggle" id="aiToggle" type="button" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span>iM챗봇</span></button>
+          <button class="ai-toggle" id="aiToggle" type="button" aria-label="iM챗봇" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span class="im-product-name"><span>iM</span><span class="im-product-korean">챗봇</span></span></button>
           <span class="data-chip">생성 데이터</span>
         </div>
       </header>
@@ -1316,13 +1316,13 @@
       <div id="chatResizeHandle" class="v-resize-handle" aria-hidden="true"></div>
       <div class="ai-panel-inner">
         <header class="ai-header">
-          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>iM챗봇</strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
+          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong class="im-product-name"><span>iM</span><span class="im-product-korean">챗봇</span></strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
           <button class="ai-close" id="aiClose" type="button" aria-label="iM챗봇 접기">×</button>
         </header>
         <label class="v-resize">창 너비<input id="chatWidth" type="range" min="320" max="560" value="380" step="10" aria-label="iM챗봇 창 너비"></label>
         <div class="ai-context" id="aiContext"></div>
         <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="iM챗봇 대화">
-          <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복 플랜에 관해 물어보세요.</div>
+          <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복전략에 관해 물어보세요.</div>
         </div>
         <div class="ai-suggestions" aria-label="추천 질문">
           <button class="ai-suggestion" type="button" data-question="현재 매출이 왜 떨어졌나요?">현재 매출이 왜 떨어졌나요?</button>
@@ -1344,7 +1344,7 @@
     <h2 id="policyModalTitle"></h2><div id="policyModalContent"></div>
   </dialog>
   <dialog class="v-modal" id="recoveryMetricModal" aria-labelledby="recoveryMetricModalTitle">
-    <div class="v-row v-between"><span class="v-tag">CCTV·POS 지표</span><button type="button" class="v-button small" data-action="close-recovery-definitions" aria-label="회복 플랜 지표 기준 닫기">닫기</button></div>
+    <div class="v-row v-between"><span class="v-tag">CCTV·POS 지표</span><button type="button" class="v-button small" data-action="close-recovery-definitions" aria-label="회복전략 지표 기준 닫기">닫기</button></div>
     <h2 id="recoveryMetricModalTitle">지표 계산 기준</h2>
     <div class="v-definition-list">
       <div><strong>매장 유입률</strong><span>입장객 수 ÷ 매장 앞 통행자 수 × 100</span></div>

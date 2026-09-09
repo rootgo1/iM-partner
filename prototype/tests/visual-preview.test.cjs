@@ -57,6 +57,32 @@ const { chromium } = require('playwright');
   });
   assert.equal(brandTypography.weight, '700');
   assert.ok(brandTypography.scriptGap > 0 && brandTypography.scriptGap < 4, 'iM and 파트너 need a small optical gap without a text space');
+  const navigationIconSystem = await page.evaluate(() => {
+    const active = document.querySelector('#mainNavigation .nav-item.active');
+    const inactive = document.querySelector('#mainNavigation .nav-item:not(.active)');
+    const icon = active.querySelector('.nav-icon');
+    const svg = active.querySelector('svg');
+    const activeDot = getComputedStyle(active.querySelector('.nav-icon'), '::after');
+    const inactiveDot = getComputedStyle(inactive.querySelector('.nav-icon'), '::after');
+    const activeLabel = active.querySelector('.nav-label').getBoundingClientRect();
+    const inactiveLabel = inactive.querySelector('.nav-label').getBoundingClientRect();
+    return {
+      iconWidth: icon.getBoundingClientRect().width,
+      iconHeight: icon.getBoundingClientRect().height,
+      svgWidth: svg.getBoundingClientRect().width,
+      strokeWidth: svg.getAttribute('stroke-width'),
+      activeDotOpacity: Number(activeDot.opacity),
+      inactiveDotOpacity: Number(inactiveDot.opacity),
+      labelAlignmentDelta: Math.abs(activeLabel.left - inactiveLabel.left)
+    };
+  });
+  assert.equal(navigationIconSystem.iconWidth, 32);
+  assert.equal(navigationIconSystem.iconHeight, 32);
+  assert.equal(navigationIconSystem.svgWidth, 23);
+  assert.equal(navigationIconSystem.strokeWidth, '1.75');
+  assert.ok(navigationIconSystem.activeDotOpacity >= .95, 'active navigation icon needs a clear lime accent');
+  assert.ok(navigationIconSystem.inactiveDotOpacity <= .25, 'inactive navigation dots should stay subtle');
+  assert.ok(navigationIconSystem.labelAlignmentDelta <= .5, 'active indicator must not shift navigation labels');
   const expandedBrand = await page.evaluate(() => {
     const logo = document.querySelector('.brand-mark').getBoundingClientRect();
     const toggle = document.querySelector('#sidebarToggle').getBoundingClientRect();
@@ -103,6 +129,24 @@ const { chromium } = require('playwright');
   assert.ok(collapsedBrand.iconCenterDeltaX <= 1.5 && collapsedBrand.iconCenterDeltaY <= 1.5, 'collapsed chevron must be optically centered');
   assert.ok(collapsedBrand.toggleRight <= collapsedBrand.sidebarRight + 1, 'collapsed toggle must stay inside sidebar');
   await page.locator('.sidebar').screenshot({ path: path.join(output, 'sidebar-collapsed-1920.png') });
+  await page.locator('#profileMenuButton').click();
+  assert.equal(await page.locator('#profileMenu').isVisible(), true);
+  const collapsedProfileMenu = await page.locator('#profileMenu').evaluate(menu => {
+    const box = menu.getBoundingClientRect();
+    const topElement = document.elementFromPoint(box.left + box.width / 2, box.top + 32);
+    return {
+      left: box.left,
+      right: box.right,
+      top: box.top,
+      bottom: box.bottom,
+      fullyInViewport: box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight,
+      paintedAboveMain: Boolean(topElement && menu.contains(topElement))
+    };
+  });
+  assert.equal(collapsedProfileMenu.fullyInViewport, true, 'collapsed profile menu must stay inside the viewport');
+  assert.equal(collapsedProfileMenu.paintedAboveMain, true, 'collapsed profile menu must be painted above the main content');
+  await page.screenshot({ path: path.join(output, 'sidebar-collapsed-profile-menu-1920.png'), fullPage: false });
+  await page.locator('#profileMenuButton').click();
   await page.getByRole('button', { name: '파트너 메뉴 펼치기' }).click();
   await page.waitForFunction(() => Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width - 238) < 1);
   assert.equal(await page.locator('.metric-card').count(), 4);
@@ -269,7 +313,7 @@ const { chromium } = require('playwright');
   }, 0);
   assert.ok(rebound <= 2, 'interrupted settling must not rebound toward the abandoned section');
 
-  await page.getByRole('button', { name: '상권·매출 분석', exact: true }).click();
+  await page.getByRole('button', { name: '매출진단', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.includes('상권의 기회와 가게의 매출'));
   assert.equal(await page.locator('#pageHeading').isHidden(), true);
   assert.equal(await page.locator('#dataNotice').isHidden(), true);
@@ -281,6 +325,13 @@ const { chromium } = require('playwright');
   assert.match(await page.locator('#viewRoot').innerText(), /시간대별 소비 흐름/);
   assert.equal(await page.locator('#mainNavigation .nav-item').count(), 5);
   assert.equal(await page.locator('.topbar .profile, .topbar .logout-link').count(), 0);
+  assert.equal(await page.locator('#profileInitials').innerText(), '소현');
+  const opticalProductGap = await page.locator('.ai-toggle .im-product-name').evaluate(label => {
+    const latin = label.firstElementChild.getBoundingClientRect();
+    const korean = label.lastElementChild.getBoundingClientRect();
+    return korean.left - latin.right;
+  });
+  assert.ok(opticalProductGap > 0 && opticalProductGap <= 3, 'iM product names need a subtle optical gap without a text space');
 
   await page.locator('#profileMenuButton').click();
   assert.equal(await page.locator('#profileMenu').isVisible(), true);
@@ -308,13 +359,13 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: path.join(output, 'finance-chat-1920.png'), fullPage: false });
   await page.locator('#aiClose').click();
 
-  await page.getByRole('button', { name: 'AI 비서', exact: true }).first().click();
+  await page.getByRole('button', { name: 'iM비서', exact: true }).first().click();
   await page.getByRole('button', { name: '시간대별 운영 전략을 정리해 주세요.' }).click();
   await page.getByRole('button', { name: '최종 요약 PDF 만들기' }).click();
   await page.locator('#pdfLink').waitFor({ state: 'visible' });
   assert.match(await page.locator('#pdfLink').getAttribute('href'), /^blob:/);
 
-  await page.getByRole('button', { name: '정책·지원사업', exact: true }).click();
+  await page.getByRole('button', { name: '지원사업', exact: true }).click();
   await page.getByRole('button', { name: '예시 조건 보기' }).first().click();
   assert.equal(await page.locator('#policyModal').getAttribute('open'), '');
   await page.getByRole('button', { name: '공고 예시 닫기' }).click();

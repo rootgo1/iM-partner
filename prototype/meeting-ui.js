@@ -15,7 +15,14 @@
   const note = (text, variant) => '<div class="v-note ' + (variant || '') + '">' + text + '</div>';
   const card = body => '<article class="card v-card">' + body + '</article>';
   const head = (title, extra) => '<div class="v-row v-between"><h2>' + title + '</h2>' + (extra || '') + '</div>';
-  const views = { dashboard: '홈', analysis: '상권·매출 분석', recovery: '회복플랜', policies: '정책·지원사업', secretary: 'AI 비서', profile: '내 프로필' };
+  const productName = korean => '<span class="im-product-name"><span>iM</span><span class="im-product-korean">' + korean + '</span></span>';
+  const avatarName = value => {
+    const characters = Array.from(String(value || '').trim().replace(/\s+/g, ''));
+    if (characters.length <= 1) return characters[0] || '?';
+    if (characters.length === 2) return characters[1];
+    return characters.slice(-2).join('');
+  };
+  const views = { dashboard: '홈', analysis: '매출진단', recovery: '회복전략', policies: '지원사업', secretary: 'iM비서', profile: '내 프로필' };
   const navigationViews = ['dashboard', 'analysis', 'recovery', 'policies', 'secretary'];
   const legacyViews = { market: 'analysis', finance: 'analysis' };
   const normalizeView = view => legacyViews[view] || view;
@@ -38,17 +45,17 @@
   const sourceFoot = '<p class="v-footer">생성 데이터 기반 시연 · 실제 POS·카드사·통신사 원자료가 아닙니다. 이 화면에는 DB·외부 API·실제 AI가 연결되어 있지 않습니다.</p>';
   function icon(name) {
     const paths = {
-      dashboard: '<path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M9 21v-7h6v7"/>',
-      analysis: '<path d="M4 20V10m5 10V5m5 15v-7m5 7V8"/><path d="m3 15 5-4 5 2 7-7"/>',
-      recovery: '<path d="M3 17l6-6 4 4 8-11M14 4h7v7"/>',
-      policies: '<path d="M4 7l8-4 8 4M4 20h16M6 9v8m6-8v8m6-8v8"/>',
-      secretary: '<path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
+      dashboard: '<path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.5v10.2c0 .7.6 1.3 1.3 1.3h10.4c.7 0 1.3-.6 1.3-1.3V9.5M9.5 21v-6.5h5V21"/>',
+      analysis: '<path d="M4 5v14.5c0 .3.2.5.5.5H20"/><path d="m7 15 3.2-4.2 3.1 2.4L18.5 7"/><circle cx="18.5" cy="7" r="1.5"/>',
+      recovery: '<circle cx="5" cy="18.5" r="2"/><circle cx="18.5" cy="5" r="2"/><path d="M7 18.5h3.5a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3h2"/>',
+      policies: '<path d="M6 3.5h8l4 4v12A1.5 1.5 0 0 1 16.5 21h-10A1.5 1.5 0 0 1 5 19.5V5a1.5 1.5 0 0 1 1-1.5z"/><path d="M14 3.5V8h4.5M8.5 14.5l2 2 4-4"/>',
+      secretary: '<path d="M12 3.5 14.2 9l5.3 2.2-5.3 2.2L12 19l-2.2-5.6-5.3-2.2L9.8 9 12 3.5z"/><path d="M5.5 3v3M4 4.5h3M19 17.5v3M17.5 19h3"/>',
       profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>'
     };
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
   }
   $('#mainNavigation').innerHTML = navigationViews.map(id =>
-    '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + views[id] + '</span></button>'
+    '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '" aria-label="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + (id === 'secretary' ? productName('비서') : views[id]) + '</span></button>'
   ).join('');
   function metricTrend(delta, direction) {
     if (delta === undefined) return '';
@@ -213,7 +220,7 @@
       '<div><div class="v-row"><span class="v-tag amber">CCTV·POS 생성 분석</span><span class="v-metadata">분석일 ' + dateText(recoveryData.analysisDate) + '</span></div>' +
       '<h2>' + r.label + ', 통행은 많지만<br>입장 전환을 먼저 점검해 보세요.</h2>' +
       '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>, 매장 유입률은 <strong>' + ratioText(r.entryRate) + '</strong>입니다. 확정 원인이 아닌 요인 후보를 행동으로 연결합니다.</p>' +
-      '<button class="v-button primary" type="button" data-view="recovery">전환 흐름과 회복 플랜 보기 →</button></div>' +
+      '<button class="v-button primary" type="button" data-view="recovery">전환 흐름과 회복전략 보기 →</button></div>' +
       '<div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i>→</i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i>→</i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
       '<div class="v-signal-context" aria-label="회복 신호 해석 기준"><div><span>점검 시간</span><strong>' + r.label + '</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div><div><span>판단 수준</span><strong>요인 후보</strong></div></div></div>' +
       '</section>';
@@ -264,7 +271,7 @@
       metric('상권 카드소비 변화', pct(analysis.cardRate), undefined, state.period.comparison + ' · 생성 자료') +
       metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
       '</section><div class="v-grid2">' +
-      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">회복플랜 확인 →</button></article>' +
+      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">회복전략 확인 →</button></article>' +
       card(head('유동인구와 카드소비', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart()) + '</div>' + recoveryDashboardCard() +
       '<div class="v-grid2 v-dashboard-support">' + card(guidanceCard()) + card(head('가게 주변의 오늘', badge('연결 준비', 'neutral')) + '<div class="v-weather"><div><h3>대구 중구 날씨</h3><p class="v-subtitle">실시간 날씨 미연결</p></div><strong>—</strong></div><div class="v-space">' + calendar() + '</div>') + '</div>';
   }
@@ -314,14 +321,14 @@
       '<div class="v-row"><span class="v-tag">CCTV·POS 결합 분석</span><span class="v-recovery-date">최근 완료 분석 · ' + dateText(recoveryData.analysisDate) + '</span></div>' +
       '<p class="v-recovery-kicker">가장 먼저 점검할 시간대</p><h2 id="recoveryOpportunityTitle">매출 기회 후보<br><strong>' + r.label + '</strong></h2>' +
       '<p>매장 앞 통행자는 <b>' + number(r.passersby) + '명</b>으로 많았지만 입장객은 <b>' + number(r.entrants) + '명</b>으로, 매장 유입률이 <b>' + ratioText(r.entryRate) + '</b>였습니다.</p></div>' +
-      '<div class="v-recovery-hero-stats" aria-label="회복 플랜 핵심 지표"><div><span>통행량</span><strong>' + number(r.passersby) + '명</strong><small>매장 앞 익명 집계</small></div><div><span>입장객</span><strong>' + number(r.entrants) + '명</strong><small>통행 대비 입장</small></div><div class="warn"><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong><small>입장객 ÷ 통행자</small></div><div><span>판단 상태</span><strong>요인 후보</strong><small>확정 원인 아님</small></div></div></section>' +
+      '<div class="v-recovery-hero-stats" aria-label="회복전략 핵심 지표"><div><span>통행량</span><strong>' + number(r.passersby) + '명</strong><small>매장 앞 익명 집계</small></div><div><span>입장객</span><strong>' + number(r.entrants) + '명</strong><small>통행 대비 입장</small></div><div class="warn"><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong><small>입장객 ÷ 통행자</small></div><div><span>판단 상태</span><strong>요인 후보</strong><small>확정 원인 아님</small></div></div></section>' +
       '<div class="v-recovery-source"><span class="v-tag amber">생성 데이터 기반 시연</span><span>CCTV 형식 익명 집계와 매장 내 POS 결제 형식의 생성값입니다. 실제 영상·장비·POS·외부 AI는 연결되지 않았습니다.</span></div>' +
       '<div class="v-recovery-layout"><div class="v-stack">' +
       card(head(r.label + ' 매출 전환 흐름', '<button class="text-button" type="button" data-action="show-recovery-definitions">지표 기준 보기 →</button>') + '<p class="v-subtitle">매장 앞 통행에서 결제까지 이탈이 큰 구간을 확인합니다.</p>' + recoveryFunnel()) +
       card(head('시간대별 통행·입장 비교', badge('통행량 + 유입률', 'neutral')) + '<p class="v-subtitle">서로 다른 단위를 같은 축으로 오해하지 않도록 통행량과 유입률을 각각 표시합니다.</p>' + recoveryChart()) + '</div>' +
       '<aside class="v-stack">' +
       '<article class="card v-card v-diagnosis"><span class="v-tag">규칙 기반 진단 시안 · 요인 후보</span><h2>' + recoveryData.diagnosis.title + '</h2><p>' + recoveryData.diagnosis.explanation + '</p><div class="v-evidence"><div><span>' + r.label + ' 통행량</span><strong>' + number(r.passersby) + '명</strong></div><div><span>같은 시간 입장객</span><strong>' + number(r.entrants) + '명</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div></div><p class="v-metadata">판단 임계값과 규칙 버전은 미정이며, 이 화면은 승인된 생성 시나리오를 표시합니다.</p></article>' +
-      '<article class="card v-card v-action-plan"><div class="v-row v-between"><div><h2>회복 플랜 제안</h2><p class="v-subtitle">분석을 오늘 실행할 행동으로 바꿉니다.</p></div>' + badge('규칙 기반 시안', 'neutral') + '</div><div class="v-plan-list">' + recoveryData.actions.map((item, i) => '<div class="v-plan-item"><span>0' + (i + 1) + '</span><div><small>' + item.time + '</small><strong>' + item.title + '</strong><p>' + item.detail + '</p></div></div>').join('') + '</div><button class="v-button primary v-plan-start" type="button" data-action="start-recovery"' + (state.recoveryStarted ? ' disabled' : '') + '>' + (state.recoveryStarted ? '실행 기록 시안 진행 중' : '실행 기록 시안 시작하기') + '</button><p class="v-metadata">현재 브라우저 안에서만 상태가 바뀌며 DB에 저장되지 않습니다.</p></article>' +
+      '<article class="card v-card v-action-plan"><div class="v-row v-between"><div><h2>회복전략 제안</h2><p class="v-subtitle">분석을 오늘 실행할 행동으로 바꿉니다.</p></div>' + badge('규칙 기반 시안', 'neutral') + '</div><div class="v-plan-list">' + recoveryData.actions.map((item, i) => '<div class="v-plan-item"><span>0' + (i + 1) + '</span><div><small>' + item.time + '</small><strong>' + item.title + '</strong><p>' + item.detail + '</p></div></div>').join('') + '</div><button class="v-button primary v-plan-start" type="button" data-action="start-recovery"' + (state.recoveryStarted ? ' disabled' : '') + '>' + (state.recoveryStarted ? '실행 기록 시안 진행 중' : '실행 기록 시안 시작하기') + '</button><p class="v-metadata">현재 브라우저 안에서만 상태가 바뀌며 DB에 저장되지 않습니다.</p></article>' +
       '</aside></div>' +
       '<section class="card v-card v-recovery-compare"><div class="v-row v-between"><div><h2>실행 전·후 비교</h2><p class="v-subtitle">같은 매장·요일·시간대의 유입률, 결제 건수, 순매출을 함께 비교합니다.</p></div>' + badge('7일 비교', 'amber') + '</div><div class="v-compare-flow"><article class="current"><span>분석일 · 실행 전</span><strong>유입률 ' + ratioText(r.entryRate) + '</strong><p>유효 결제 ' + number(r.validPayments) + '건 · 순매출 ' + money(r.netSales) + '</p></article><i aria-hidden="true">→</i><article class="' + (state.recoveryStarted ? 'active' : '') + '"><span>이번 주 · 실행</span><strong>' + recoveryData.comparison.actionLabel + '</strong><p>' + actionState + '</p></article><i aria-hidden="true">→</i><article class="future"><span>' + dateText(recoveryData.comparison.followUpDate) + ' · 결과</span><strong>데이터 집계 대기</strong><p>자료가 준비되기 전에는 성공·효과 수치를 표시하지 않습니다.</p></article></div><div class="v-compare-metrics" aria-label="전후 비교 대상"><div><span>유입률</span><strong>' + ratioText(r.entryRate) + ' → 집계 대기</strong></div><div><span>유효 결제</span><strong>' + number(r.validPayments) + '건 → 집계 대기</strong></div><div><span>순매출</span><strong>' + money(r.netSales) + ' → 집계 대기</strong></div></div></section>' +
       '<div class="v-grid2"><section class="card v-card">' + head('지도·상권 보조 근거', badge('카카오맵 미연결', 'neutral')) + '<p class="v-subtitle">핵심 진단은 CCTV·POS이며, 지도·동종업종·행사는 원인 후보를 해석하는 보조 자료입니다.</p><label class="v-row v-subtitle v-space">반경 배치 예시 <input class="v-select" type="number" id="mapRadius" min="100" max="1000" step="100" value="' + state.radius + '" style="width:100px" aria-label="지도 배치 예시 반경">m</label><div id="mapPreview" class="v-space">' + mapPreview() + '</div></section>' +
@@ -360,19 +367,19 @@
       '<div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div></div>' +
       '<div id="policyResults" class="v-space">' + policyResults() + '</div>';
   }
-  const reportPrompts = ['매출과 지출을 함께 분석해 주세요.', '시간대별 운영 전략을 정리해 주세요.', '회복 플랜을 요약해 주세요.'];
+  const reportPrompts = ['매출과 지출을 함께 분석해 주세요.', '시간대별 운영 전략을 정리해 주세요.', '회복전략을 요약해 주세요.'];
   function secretary() {
-    return '<div class="v-grid2" style="margin-top:0"><article class="card v-card"><div class="v-row v-between"><h2>' + esc(state.profile.name) + '님의 AI 비서</h2>' + badge('규칙 기반 시안', 'neutral') +
+    return '<div class="v-grid2" style="margin-top:0"><article class="card v-card"><div class="v-row v-between"><h2>' + esc(state.profile.name) + '님의 ' + productName('비서') + '</h2>' + badge('규칙 기반 시안', 'neutral') +
       '</div><p class="v-subtitle">질문에 맞춰 생성 데이터를 분석하고 PDF 요약본으로 정리합니다.</p><div class="v-row v-space">' +
       reportPrompts.map(q => button(esc(q), 'data-report-question="' + esc(q) + '"')).join('') + '</div><div class="v-report-chat" id="reportMessages" aria-live="polite">' +
       (state.reportMessages.length ? state.reportMessages.map(m => '<div class="ai-message ' + m.type + '">' + esc(m.text) + '</div>').join('') :
-        '<div class="ai-message bot">어떤 부분을 살펴볼까요?\n매출·지출, 시간대, 회복 플랜에 관해 질문해 주세요.\n외부 AI 대신 현재 생성 데이터를 읽는 규칙 기반 분석입니다.</div>') +
-      '</div><form class="v-compose" id="reportForm"><textarea id="reportInput" maxlength="500" required placeholder="예: 지출을 줄이려면 무엇부터 확인해야 하나요?" aria-label="AI 비서 분석 질문"></textarea><button class="v-button primary" type="submit">분석하기</button></form>' +
+        '<div class="ai-message bot">어떤 부분을 살펴볼까요?\n매출·지출, 시간대, 회복전략에 관해 질문해 주세요.\n외부 AI 대신 현재 생성 데이터를 읽는 규칙 기반 분석입니다.</div>') +
+      '</div><form class="v-compose" id="reportForm"><textarea id="reportInput" maxlength="500" required placeholder="예: 지출을 줄이려면 무엇부터 확인해야 하나요?" aria-label="iM비서 분석 질문"></textarea><button class="v-button primary" type="submit">분석하기</button></form>' +
       '<div id="reportResult"' + (state.reportReady ? '' : ' hidden') + ' class="v-report-result"><h3>분석 내용이 준비되었습니다.</h3><p class="v-subtitle">근거·실행 제안·제한 사항을 한 장으로 정리합니다.</p>' +
       button(state.pdfBusy ? '요약본 생성 중…' : '최종 요약 PDF 만들기', 'data-action="make-pdf" id="makePdfButton"' + (state.pdfBusy ? ' disabled' : ''), true) +
       '<div id="pdfDownload"' + (state.reportBlobUrl ? '' : ' hidden') + '><p class="v-subtitle">최종 요약본 분석이 완료되었습니다.</p><a class="v-download" id="pdfLink"' +
       (state.reportBlobUrl ? ' href="' + state.reportBlobUrl + '"' : '') + ' download="iM파트너_분석요약.pdf">iM파트너_분석요약.pdf 다운로드</a></div></div></article>' +
-      '<div class="v-stack">' + card(head('iM챗봇과 이렇게 달라요') + '<div class="v-list"><div><h3>iM챗봇</h3><p class="v-subtitle">어느 탭에서든 짧은 데이터 질문에 답합니다.</p></div><div><h3>AI 비서</h3><p class="v-subtitle">분석을 요청하고 최종 요약본을 PDF로 보관합니다.</p></div></div>') +
+      '<div class="v-stack">' + card(head(productName('챗봇') + '과 이렇게 달라요') + '<div class="v-list"><div><h3>' + productName('챗봇') + '</h3><p class="v-subtitle">어느 탭에서든 짧은 데이터 질문에 답합니다.</p></div><div><h3>' + productName('비서') + '</h3><p class="v-subtitle">분석을 요청하고 최종 요약본을 PDF로 보관합니다.</p></div></div>') +
       card(head('이번 분석의 기준') + '<p class="v-subtitle">' + esc(state.profile.region) + ' · ' + esc(state.profile.industry) + '<br>' + state.period.start + ' ~ ' + state.period.end + '</p><div class="v-space">' +
       badge('생성 데이터') + '</div><p class="v-metadata v-space">실제 AI·DB 미연결<br>상담원 연결 채널은 아직 정해지지 않았습니다.</p>') + '</div></div>';
   }
@@ -402,10 +409,10 @@
     $('#pageContext').textContent = state.profile.name + '님 · ' + state.profile.region + ' · ' + state.profile.industry;
     $('#periodContext').textContent = state.period.start + ' ~ ' + state.period.end + ' · ' + state.period.comparison;
     $('#profileName').textContent = state.profile.name;
-    $('#profileInitials').textContent = state.profile.name.slice(0, 2);
+    $('#profileInitials').textContent = avatarName(state.profile.name);
     $('#profileStoreName').textContent = state.profile.storeName;
     $('#profileMenuName').textContent = state.profile.name;
-    $('#profileMenuInitials').textContent = state.profile.name.slice(0, 2);
+    $('#profileMenuInitials').textContent = avatarName(state.profile.name);
     $('#profileMenuStore').textContent = state.profile.storeName;
     $('#profileMenuButton').classList.toggle('active', state.view === 'profile');
     $('#storeContext').textContent = state.profile.storeName + ' · ' + state.profile.industry;
@@ -449,8 +456,8 @@
   function answer(question) {
     const r = recoveryData.opportunity;
     if (/(프로필|내 이름|내 정보|가입|비밀번호)/.test(question)) return { known: true, text: '현재 화면 프로필은 ' + state.profile.name + '님, ' + state.profile.region + ' 소재 ' + state.profile.industry + '입니다.\n프로필 수정은 표시·가상 공고 조건 확인에만 적용됩니다. 생성 POS는 예시 음식점 자료이며 실제 계정 생성·비밀번호 저장은 제공하지 않습니다.' };
-    if (/(날씨|뉴스|행사|축제|캘린더|달력)/.test(question)) return { known: true, text: '현재 날씨·뉴스·행사 일정은 연결 전입니다. 대시보드와 회복 플랜에서 예정 영역을 확인할 수 있습니다.\n실제 일정이나 추천 상품을 임의로 안내하지 않습니다.' };
-    if (/(정책|지원|공고)/.test(question)) return { known: true, text: '근거: 현재는 실제 공고 대신 화면 구성용 예시만 있습니다.\n확인: 지역·업종·직원 수·나이 조건을 구분합니다. 적합도 % 산식은 미정입니다.\n행동: 정책·지원사업 탭에서 예시 조건을 확인하세요. 실제 신청 자격은 확정할 수 없습니다.' };
+    if (/(날씨|뉴스|행사|축제|캘린더|달력)/.test(question)) return { known: true, text: '현재 날씨·뉴스·행사 일정은 연결 전입니다. 홈과 회복전략에서 예정 영역을 확인할 수 있습니다.\n실제 일정이나 추천 상품을 임의로 안내하지 않습니다.' };
+    if (/(정책|지원|공고)/.test(question)) return { known: true, text: '근거: 현재는 실제 공고 대신 화면 구성용 예시만 있습니다.\n확인: 지역·업종·직원 수·나이 조건을 구분합니다. 적합도 % 산식은 미정입니다.\n행동: 지원사업 메뉴에서 예시 조건을 확인하세요. 실제 신청 자격은 확정할 수 없습니다.' };
     if (/(고객|직장|연령|나이)/.test(question)) return { known: true, text: '근거: 연령대·직장인 비중 자료는 연결되지 않았습니다.\n해석: 특정 고객층을 추천할 근거가 부족합니다.\n행동: 방문·소비 고객층 자료를 확보한 뒤 메뉴와 홍보 대상을 정하세요.' };
     if (/(CCTV|통행|체류|입장|유입|구매전환|객단가|전환율)/i.test(question)) return { known: true, text: '근거: ' + recoveryData.analysisDate + ' ' + r.label + ' 생성 집계에서 통행자 ' + number(r.passersby) + '명, 입장객 ' + number(r.entrants) + '명, 유효 결제 ' + number(r.validPayments) + '건입니다.\n해석: 매장 유입률은 ' + ratioText(r.entryRate) + ', 추정 구매전환율은 ' + ratioText(r.estimatedPurchaseRate) + '로 통행→입장 구간을 먼저 살펴볼 요인 후보입니다.\n행동: 17시 30분부터 대표 메뉴와 가격을 노출하고 7일 후 같은 조건을 비교하세요. 실제 CCTV·POS가 아닌 생성 시나리오입니다.' };
     if (/(현금|자금|잔액|대출|금융|체온)/.test(question)) return { known: true, text: '근거: 매출 ' + money(analysis.sales) + ', 지출 ' + money(analysis.expense) + '입니다.\n해석: 이 차이는 현재 현금이나 영업이익이 아닙니다. 체온계 점수·금융 효과 산식은 미정입니다.\n행동: 보유 현금, 정산일, 예정 출금을 확인하세요. 대출 심사·신청은 제공하지 않습니다.' };
@@ -458,7 +465,7 @@
     if (/(시간|언제|요일|준비)/.test(question)) return { known: true, text: '근거: 최근 완료된 CCTV·POS 생성 시나리오에서 ' + r.label + ' 통행자는 ' + number(r.passersby) + '명, 매장 유입률은 ' + ratioText(r.entryRate) + '입니다.\n해석: 이 시간대는 자동 산식이 아닌 기능 검토용 매출 기회 후보입니다.\n행동: 17시 30분부터 대표 메뉴 노출과 혜택 안내를 준비하고 같은 요일·시간대를 7일 뒤 비교하세요.' };
     if (/(행동|실행|플랜|회복|방법)/.test(question)) return { known: true, text: '근거: ' + r.label + ' 통행자 ' + number(r.passersby) + '명 중 입장객은 ' + number(r.entrants) + '명으로 유입률은 ' + ratioText(r.entryRate) + '입니다.\n해석: 통행→입장 구간의 외부 주목도를 먼저 점검할 요인 후보입니다.\n행동: 17시 30분 대표 메뉴 입간판과 18~20시 2인 세트 안내를 실행한 뒤 7일 후 유입률·결제·순매출을 비교하세요. 할인율과 효과 수치는 정해진 값이 없습니다.' };
     if (/(매출|왜|떨어|변화|소비|유동|상권)/.test(question)) return { known: true, text: '근거: ' + causeText() + '\n해석: 실제 관측이 아닌 생성 자료이며, 매출 변화의 확정 원인은 아닙니다.\n행동: ' + analysis.action };
-    return { known: false, text: '현재 데이터로는 답변하기 어렵습니다. 매출·지출, 시간대, 회복 플랜, 정책 조건에 관해 간단히 질문해 주세요.\n상담원과 연결 채널은 아직 미정이어서 지금 연결해 드릴 수 없습니다.' };
+    return { known: false, text: '현재 데이터로는 답변하기 어렵습니다. 매출·지출, 시간대, 회복전략, 지원사업 조건에 관해 간단히 질문해 주세요.\n상담원과 연결 채널은 아직 미정이어서 지금 연결해 드릴 수 없습니다.' };
   }
   function appendChat(text, type) {
     const el = document.createElement('div'); el.className = 'ai-message ' + type; el.textContent = text;
