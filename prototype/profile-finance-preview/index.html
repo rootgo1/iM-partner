@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iM파트너 · 프로필 금융 체온계 독립 미리보기</title>
+  <link rel="stylesheet" href="../assets/fonts/noto-sans-kr.css">
+  <link rel="stylesheet" href="./profile-finance.css">
+  <link rel="stylesheet" href="./preview.css">
+</head>
+<body>
+  <main class="ipf-preview-page">
+    <header class="ipf-preview-heading">
+      <div>
+        <span class="ipf-preview-kicker">독립 컴포넌트 미리보기</span>
+        <h1>프로필에서 확인하는 금융 체온계</h1>
+        <p>프로필 이름 옆에서 나의 금융 온도를 확인하고, 상세 근거는 홈 대시보드에서 확인합니다.</p>
+      </div>
+      <span class="ipf-preview-safe">홈과 동일 기준</span>
+    </header>
+
+    <section class="ipf-preview-layout" aria-label="프로필 금융 체온계 미리보기">
+      <div class="ipf-preview-controls" aria-label="데이터 상태 선택">
+        <span>상태 미리보기</span>
+        <div>
+          <button type="button" data-preview-state="partial" aria-pressed="true">연결 2/4</button>
+          <button type="button" data-preview-state="complete" aria-pressed="false">연결 4/4</button>
+          <button type="button" data-preview-state="unavailable" aria-pressed="false">연결 없음</button>
+        </div>
+      </div>
+
+      <div class="ipf-preview-stage">
+        <div class="ipf-preview-sidebar" aria-label="파트너 메뉴 예시">
+          <div class="ipf-preview-brand"><span aria-hidden="true"></span><strong>파트너 메뉴</strong></div>
+          <div class="ipf-preview-nav" aria-hidden="true">
+            <span class="is-active">홈</span>
+            <span>매출진단</span>
+            <span>회복전략</span>
+          </div>
+
+          <div class="ipf-preview-account">
+            <section class="ipf-preview-popover" id="previewProfilePopover" role="dialog" aria-label="이소현님의 프로필 메뉴">
+              <div class="ipf-preview-identity">
+                <span class="ipf-preview-avatar" aria-hidden="true">소현</span>
+                <span><span class="ipf-preview-name-row"><strong>이소현</strong><span class="ipf-profile-finance-badge" id="previewTemperatureBadge" aria-label="나의 금융 온도 51.9도">51.9°</span></span><small>서문시장 음식점</small></span>
+              </div>
+
+              <div id="profileFinanceMount"></div>
+
+              <div class="ipf-preview-actions">
+                <button type="button"><span class="ipf-preview-person-icon" aria-hidden="true"></span>내 프로필 관리</button>
+                <button type="button"><span class="ipf-preview-exit-icon" aria-hidden="true"></span>로그아웃</button>
+              </div>
+            </section>
+
+            <button class="ipf-preview-trigger" id="previewProfileTrigger" type="button" aria-haspopup="dialog" aria-expanded="true" aria-controls="previewProfilePopover">
+              <span class="ipf-preview-avatar" aria-hidden="true">소현</span>
+              <span><strong>이소현</strong><small>서문시장 음식점</small></span>
+              <span class="ipf-preview-chevron" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ipf-preview-explanation">
+          <span class="ipf-preview-kicker">연결 방식</span>
+          <h2>이름 옆에서 금융 온도를 바로 확인합니다.</h2>
+          <ol>
+            <li><strong>프로필을 누르면</strong> 나의 금융 온도 51.9°가 나타납니다.</li>
+            <li><strong>금융 체온계 요약을 누르면</strong> 홈의 상세 화면으로 이동합니다.</li>
+            <li><strong>상세 근거와 연결 상태</strong>는 홈에서 확인합니다.</li>
+          </ol>
+          <div class="ipf-preview-event" id="previewEventNotice" role="status" aria-live="polite">
+            금융 체온계 카드를 눌러 이동 동작을 확인해 보세요.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./profile-finance.js"></script>
+  <script src="./preview.js"></script>
+</body>
+</html>

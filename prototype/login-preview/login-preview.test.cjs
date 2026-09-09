@@ -26,8 +26,7 @@ check("all local assets exist", () => {
     "login.js",
     "../assets/brand/im-bank-favicon.ico",
     "../assets/brand/im-bank-symbol.png",
-    "../assets/fonts/noto-sans-kr.css",
-    "../assets/dashboard-banners/briefing-market.png"
+    "../assets/fonts/noto-sans-kr.css"
   ]) assert.ok(fs.existsSync(path.resolve(root, asset)), "Missing asset: " + asset);
 });
 
@@ -42,21 +41,20 @@ check("document metadata and ids are valid", () => {
   assert.equal(ids.length, new Set(ids).size, "Duplicate id detected");
   assert.match(html, /lang="ko"/);
   assert.match(html, /<title>시작하기 \| iM파트너<\/title>/);
-  assert.match(html, /<h1 id="guestTitle">내 가게의 흐름을/);
+  assert.match(html, /<h1 id="guestTitle">내 가게의 흐름을<br><strong>오늘의 행동으로<\/strong><\/h1>/);
+  assert.ok(!html.includes("오늘의 행동으로."));
+  assert.match(html, /매출·지출부터 상권의 시간대별 기회까지 한곳에서 살펴보고<br>지금 실행할 회복 행동을 확인해 보세요\./);
   assert.match(html, /<h2 id="accessTitle">iM파트너 시작하기<\/h2>/);
 });
 
 check("guest entry matches the existing product flow", () => {
   assert.match(html, /로그인 없이 데모 시작/);
   assert.match(html, /생성 데이터 기반 시연/);
-  assert.match(html, /가게·기간 확인/);
-  assert.match(html, /매출·상권 분석/);
-  assert.match(html, /회복 행동 실행/);
-  assert.match(html, /7일 뒤 비교/);
-  assert.equal((html.match(/data-login-required/g) || []).length, 6);
-  for (const view of ["dashboard", "market", "finance", "recovery", "policies", "secretary"]) {
-    assert.match(html, new RegExp('data-target-view="' + view + '"'));
-  }
+  assert.match(html, /가게 현황<\/strong><small>기간별 매출·지출과 비용 비중 확인/);
+  assert.match(html, /기회 시간대<\/strong><small>통행→입장→결제에서 먼저 볼 구간 점검/);
+  assert.match(html, /실행·비교<\/strong><small>오늘의 행동을 정하고 7일 뒤 같은 조건 확인/);
+  assert.ok(!/flow-strip|flowTitle|서비스 이용 흐름/.test(html));
+  assert.ok(!/\.flow-strip|\.site-footer/.test(css));
 });
 
 check("prototype credentials cannot submit or leave the page", () => {
@@ -67,7 +65,7 @@ check("prototype credentials cannot submit or leave the page", () => {
   assert.ok(!/id="user(?:Id|Password)"[^>]+\bname=/.test(html));
   assert.match(html, /id="loginButton" type="button"/);
   assert.match(html, /실제 계정정보 입력 금지/);
-  assert.match(html, /입력값은 저장·전송되지 않으며 실제 인증은 진행하지 않습니다/);
+  assert.match(html, /입력값은 저장·전송되지 않으며 실제 인증·금융거래·대출 신청은 진행하지 않습니다/);
   assert.ok(!/fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage/.test(js));
 });
 
@@ -92,7 +90,8 @@ check("responsive and accessibility contracts are present", () => {
   assert.match(html, /id="loginStatus"[^>]+aria-live="polite"/);
   assert.match(html, /id="accessCard"[^>]+tabindex="-1"/);
   assert.match(css, /@media \(max-width: 1060px\)/);
-  assert.match(css, /@media \(min-width: 1061px\) and \(max-height: 820px\)/);
+  assert.match(css, /@media \(min-width: 1061px\)/);
+  assert.match(css, /@media \(min-width: 1061px\) and \(max-height: 940px\)/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);

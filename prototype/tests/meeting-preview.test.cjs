@@ -11,6 +11,7 @@ let passed = 0;
 function check(name, fn) { fn(); console.log('PASS ' + name); passed++; }
 const html = fs.readFileSync(path.join(root, 'main-screen.html'), 'utf8');
 const code = fs.readFileSync(path.join(root, 'meeting-ui.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'meeting-preview.css'), 'utf8');
 const smoothCode = fs.readFileSync(path.join(root, 'smooth-scroll.js'), 'utf8');
 check('Local assets exist and no external script/style dependency', () => {
   for (const m of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css))"/g)) assert.ok(fs.existsSync(path.resolve(root, m[1])), m[1]);
@@ -29,10 +30,16 @@ check('Local assets exist and no external script/style dependency', () => {
   assert.match(html, /<title>iM파트너 - 소상공인 경영·금융 도우미<\/title>/);
   assert.match(html, /<link rel="icon" type="image\/x-icon" href="\.\/assets\/brand\/im-bank-favicon\.ico">/);
   assert.match(html, /id="logoutLink" href="\.\/login-preview\/index\.html\?signed_out=1"/);
+  assert.match(html, /id="profileMenuFinanceMount"/);
+  assert.match(html, /id="profileMenuTemperatureBadge"[^>]*>51\.9°<\/span>/);
+  assert.match(html, /id="profileTemperatureBadge"[^>]*>51\.9°<\/span>/);
   assert.match(code, /window\.location\.replace\(event\.currentTarget\.href\)/);
   assert.ok(!html.includes('class="toggle-label"'));
   assert.match(html, /<span class="toggle-icon" aria-hidden="true"><\/span>/);
   assert.ok(!code.includes("toggle-icon').textContent"));
+  assert.ok(!code.includes('v-screen-count'));
+  assert.ok(!css.includes('.v-screen-count'));
+  assert.match(css, /\.v-decision-action > \.v-guidance-time \{ z-index: 10; \}/);
   assert.ok(!html.includes('class="top-nav"'));
   assert.ok(!html.includes('class="data-chip"'));
   assert.match(html, /<div class="demo-label">생성 데이터 기반 시연/);
@@ -164,11 +171,20 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-signal-context"'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-recovery-signal-followup"'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="guideHourButton"'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="guideHourMenu"'));
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="guideHour"'));
+  click({ guideHour: '8' });
+  assert.match(nodes.get('guidanceContent').innerHTML, /오전 운영 · 08:00/);
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
   assert.equal(nodes.get('profileInitials').textContent, '소현');
   assert.equal(nodes.get('profileMenuInitials').textContent, '소현');
+  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '51.9°');
+  assert.equal(nodes.get('profileTemperatureBadge').textContent, '51.9°');
+  assert.match(nodes.get('profileMenuButton').attrs['aria-label'], /나의 금융 온도 51\.9도/);
   assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
   assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
   assert.match(nodes.get('mainNavigation').innerHTML, />회복전략</);
@@ -190,6 +206,25 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
+});
+check('Finance thermometer uses the declared partial formula without calling it comprehensive', () => {
+  click({ view: 'dashboard' });
+  const markup = nodes.get('viewRoot').innerHTML;
+  assert.match(markup, /class="v-finance-thermometer"/);
+  assert.match(markup, /style="--v-thermo-level:51\.9%"/);
+  assert.match(markup, /나의 금융 체온계/);
+  assert.match(markup, /연결 데이터 2\/4/);
+  assert.match(markup, /데이터 연결도/);
+  assert.match(markup, /매출·지출 기반 참고 온도/);
+  assert.match(markup, /나의 금융 온도<br><strong>51\.9°/);
+  assert.match(markup, /직전 기간 60\.7도에서 현재 51\.9도로 변화/);
+  assert.match(markup, /전월보다 8\.8° 낮음/);
+  assert.match(markup, /현금잔액/);
+  assert.match(markup, /예정 입출금/);
+  assert.match(markup, /\(참고용 지표\)<\/span><span>신용평가·대출심사 결과와는 무관합니다\./);
+  assert.ok(!markup.includes('영업이익률이나 현금잔액을 뜻하지 않습니다'));
+  assert.ok(!markup.includes('—°'));
+  assert.ok(!markup.includes('role="progressbar"'));
 });
 check('Profile avatar shows the given name for common Korean name lengths', () => {
   const base = { storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: '3' };
@@ -248,6 +283,12 @@ check('Profile strings are escaped and region mismatch is excluded', () => {
   click({ view: 'secretary' }); assert.ok(!nodes.get('viewRoot').innerHTML.includes('<img'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('&lt;img'));
   click({ view: 'policies' }); assert.ok(nodes.get('viewRoot').innerHTML.includes('조건에 맞는 예시가 없습니다'));
+  click({ view: 'dashboard' });
+  assert.match(nodes.get('viewRoot').innerHTML, /data-status="unavailable"/);
+  assert.match(nodes.get('viewRoot').innerHTML, /연결 데이터 0\/4/);
+  assert.match(nodes.get('viewRoot').innerHTML, /나의 금융 온도<br><strong>측정 전/);
+  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '측정 전');
+  assert.equal(nodes.get('profileTemperatureBadge').textContent, '측정 전');
 });
 async function asyncChecks() {
   click({ view: 'secretary' }); click({ reportQuestion: '회복전략을 요약해 주세요.' });

@@ -9,11 +9,14 @@
   const compact = n => (n / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 1 }) + '만';
   const number = n => Math.round(n).toLocaleString('ko-KR');
   const ratioText = n => n == null ? '—' : n.toFixed(1) + '%';
+  const financeTemperatureFromExpenseRatio = value => Number.isFinite(value)
+    ? Math.max(0, Math.min(100, 100 - value))
+    : null;
   const dateText = value => value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1.$2.$3');
   const button = (label, attrs, primary) => '<button type="button" class="v-button' + (primary ? ' primary' : '') + '" ' + attrs + '>' + label + '</button>';
   const badge = (label, variant) => '<span class="v-tag ' + (variant || '') + '">' + esc(label) + '</span>';
   const note = (text, variant) => '<div class="v-note ' + (variant || '') + '">' + text + '</div>';
-  const card = body => '<article class="card v-card">' + body + '</article>';
+  const card = (body, variant) => '<article class="card v-card' + (variant ? ' ' + variant : '') + '">' + body + '</article>';
   const head = (title, extra) => '<div class="v-row v-between"><h2>' + title + '</h2>' + (extra || '') + '</div>';
   const productName = korean => '<span class="im-product-name"><span>iM</span><span class="im-product-korean">' + korean + '</span></span>';
   const avatarName = value => {
@@ -76,11 +79,18 @@
     const x = i => 46 + i * 98, y = value => 210 - value * 1.7;
     const path = key => rows.map((r, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(r[key]).toFixed(2)).join(' ');
     const focus = rows.indexOf(analysis.focus);
-    let svg = '<svg class="v-chart" viewBox="0 0 590 260" role="img" aria-label="시간대별 유동인구와 카드소비 상대 지수, 각 지표 최댓값 100 기준"><rect x="' + (x(focus) - 26) + '" y="26" width="52" height="184" rx="9" fill="#fff2df"/>';
+    const focusRow = rows[focus];
+    const focusGap = Math.abs(focusRow.trafficIndex - focusRow.cardIndex);
+    const indexText = value => value.toFixed(1).replace(/\.0$/, '');
+    let svg = '<svg class="v-chart" viewBox="0 0 590 260" role="img" aria-label="시간대별 유동인구와 카드소비 상대 지수, 각 지표 최댓값 100 기준"><rect x="' + (x(focus) - 27) + '" y="24" width="54" height="186" rx="10" fill="#fff4e2"/><text class="v-chart-focus-label" x="' + x(focus) + '" y="18" text-anchor="middle">' + esc(focusRow.label) + ' 집중</text>';
     [0, 25, 50, 75, 100].forEach(v => { svg += '<line x1="45" x2="548" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e9efeb"/><text x="8" y="' + (y(v) + 5) + '">' + v + '</text>'; });
-    svg += '<path d="' + path('trafficIndex') + '" fill="none" stroke="#399b87" stroke-width="3"/><path d="' + path('cardIndex') + '" fill="none" stroke="#e7a04f" stroke-width="3"/>';
-    rows.forEach((r, i) => { svg += '<circle cx="' + x(i) + '" cy="' + y(r.trafficIndex) + '" r="4" fill="#399b87"/><circle cx="' + x(i) + '" cy="' + y(r.cardIndex) + '" r="4" fill="#e7a04f"/><text x="' + x(i) + '" y="241" text-anchor="middle">' + r.label + '</text>'; });
-    return '<div class="v-legend"><span><i class="v-dot"></i>유동인구</span><span><i class="v-dot orange"></i>카드소비</span></div>' + svg + '</svg><p class="v-metadata">생성 상권 자료 · 각 지표의 선택 기간 내 시간대 최댓값=100<br>개인의 구매전환율이 아닌 상대 수준의 비교입니다.</p>';
+    svg += '<path d="' + path('trafficIndex') + '" fill="none" stroke="#399b87" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="' + path('cardIndex') + '" fill="none" stroke="#e7a04f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    rows.forEach((r, i) => {
+      const selected = i === focus;
+      svg += '<circle cx="' + x(i) + '" cy="' + y(r.trafficIndex) + '" r="' + (selected ? 5.5 : 4) + '" fill="#399b87"' + (selected ? ' stroke="#fff" stroke-width="2.5"' : '') + '/><circle cx="' + x(i) + '" cy="' + y(r.cardIndex) + '" r="' + (selected ? 5.5 : 4) + '" fill="#e7a04f"' + (selected ? ' stroke="#fff" stroke-width="2.5"' : '') + '/><text x="' + x(i) + '" y="241" text-anchor="middle">' + r.label + '</text>';
+      if (selected) svg += '<text class="v-chart-point-value traffic" x="' + x(i) + '" y="' + Math.max(31, y(r.trafficIndex) - 11) + '" text-anchor="middle">' + indexText(r.trafficIndex) + '</text><text class="v-chart-point-value card" x="' + x(i) + '" y="' + (y(r.cardIndex) - 11) + '" text-anchor="middle">' + indexText(r.cardIndex) + '</text>';
+    });
+    return '<div class="v-chart-toolbar"><div class="v-legend"><span><i class="v-dot"></i>유동인구</span><span><i class="v-dot orange"></i>카드소비</span></div><span class="v-chart-focus"><small>간극 최대</small><strong>' + esc(focusRow.label) + ' · ' + indexText(focusGap) + '</strong></span></div>' + svg + '</svg><p class="v-metadata">생성 상권 자료 · 시간대별 최댓값을 100으로 환산한 상대 지수<br>개인의 구매전환율이나 매출 변화의 확정 원인이 아닙니다.</p>';
   }
   function salesChart() {
     const rows = analysis.daily, max = Math.max(1, ...rows.flatMap(r => [r.sales, r.expense]));
@@ -96,10 +106,18 @@
     if (analysis.salesRate == null) return '비교 기간 자료가 부족합니다. 현재 기간의 시간대별 지표부터 확인해 보세요.';
     return '내 가게 매출 ' + pct(analysis.salesRate) + ', 상권 카드소비 ' + pct(analysis.cardRate) + ', 유동인구 ' + pct(analysis.trafficRate) + '입니다. ' + analysis.focus.label + ' 상대 지수 차이를 운영 점검의 요인 후보로 살펴보세요.';
   }
-  function causeMarkup() {
-    const text = causeText(), boundary = text.indexOf('. ');
-    if (boundary < 0) return '<span>' + esc(text) + '</span>';
-    return '<span>' + esc(text.slice(0, boundary + 1)) + '</span><span>' + esc(text.slice(boundary + 2)) + '</span>';
+  function dashboardInsight() {
+    const focus = analysis.focus;
+    const indexText = value => value.toFixed(1).replace(/\.0$/, '');
+    const gap = Math.abs(focus.trafficIndex - focus.cardIndex);
+    const interpretation = focus.trafficIndex >= focus.cardIndex
+      ? '유동은 많지만 카드소비 연결은 상대적으로 낮습니다'
+      : '카드소비 대비 유동인구 흐름이 상대적으로 낮습니다';
+    return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">오늘의 매출 진단</span><span>핵심 신호</span></div>' +
+      '<h2>사람의 흐름과<br>소비의 흐름은 다릅니다</h2><p class="v-dashboard-insight-lead"><strong>' + esc(focus.label) + '</strong>는 두 지표의 차이가 가장 큰 시간대입니다</p>' +
+      '<div class="v-dashboard-insight-values" aria-label="' + esc(focus.label) + ' 상대 지수 비교"><div><span>유동인구 지수</span><strong>' + indexText(focus.trafficIndex) + '</strong></div><i aria-hidden="true">↔</i><div><span>카드소비 지수</span><strong>' + indexText(focus.cardIndex) + '</strong></div></div>' +
+      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + interpretation + '</strong><p>' + esc(analysis.action) + '</p><small>지수 차이 ' + indexText(gap) + ' · 구매전환율이나 확정 원인 아님</small></div>' +
+      '<button class="v-button primary v-dashboard-insight-action" type="button" data-view="recovery">회복전략 확인하기 →</button></article>';
   }
   function costText() {
     const purchase = analysis.byCategory.find(r => r.id === 'purchase');
@@ -107,24 +125,65 @@
       (analysis.comparisonAvailable ? '직전 기간보다 ' + pct(D.rate(purchase.amount, purchase.previous)) + ' 변했습니다. ' : '직전 기간 비교 자료가 부족합니다. ') +
       '매출·지출 차이는 회계상 영업이익이나 현재 현금잔액이 아닙니다.';
   }
+  function guideHourPicker(hour) {
+    const hours = Array.from({ length: 12 }, (_, index) => index + 8);
+    const label = value => String(value).padStart(2, '0') + ':00';
+    return '<div class="v-guide-hour-picker"><button class="v-guide-hour-trigger" id="guideHourButton" type="button" data-action="toggle-guide-hour" aria-labelledby="guideHourLabel guideHourValue" aria-haspopup="listbox" aria-expanded="false" aria-controls="guideHourMenu"><span id="guideHourValue">' + label(hour) + '</span><i aria-hidden="true">⌄</i></button>' +
+      '<div class="v-guide-hour-menu" id="guideHourMenu" role="listbox" aria-label="행동 안내 기준 시간" hidden>' + hours.map(value =>
+        '<button class="v-guide-hour-option" type="button" role="option" data-guide-hour="' + value + '" aria-selected="' + (value === hour) + '">' + label(value) + '</button>'
+      ).join('') + '</div></div>';
+  }
+  function setGuideHourMenu(open) {
+    const menu = $('#guideHourMenu');
+    const trigger = $('#guideHourButton');
+    if (!menu || !trigger) return;
+    menu.hidden = !open;
+    trigger.setAttribute('aria-expanded', String(open));
+    trigger.classList.toggle('open', open);
+    if (open) {
+      const selected = document.querySelector('[data-guide-hour][aria-selected="true"]');
+      if (selected) setTimeout(() => selected.focus({ preventScroll: true }), 0);
+    }
+  }
+  function selectGuideHour(value) {
+    const hour = Math.max(8, Math.min(19, Number(value)));
+    const triggerValue = $('#guideHourValue');
+    if (triggerValue) triggerValue.textContent = String(hour).padStart(2, '0') + ':00';
+    document.querySelectorAll('[data-guide-hour]').forEach(option => option.setAttribute('aria-selected', String(Number(option.dataset.guideHour) === hour)));
+    if ($('#guidanceContent')) $('#guidanceContent').innerHTML = guidanceContent(hour);
+    setGuideHourMenu(false);
+    if ($('#guideHourButton')) $('#guideHourButton').focus({ preventScroll: true });
+  }
   function guidanceCard() {
-    const hour = Number(new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\D/g, '')) % 24;
-    return head('지금, 무엇을 하면 좋을까요?', badge('지난 7일 참고')) +
-      '<label class="v-row v-subtitle">확인 시간 <select id="guideHour" class="v-select" aria-label="행동 안내 기준 시간">' +
-      Array.from({ length: 24 }, (_, h) => '<option value="' + h + '"' + (h === hour ? ' selected' : '') + '>' + String(h).padStart(2, '0') + ':00</option>').join('') +
-      '</select></label><div id="guidanceContent" class="v-space">' + guidanceContent(hour) + '</div>';
+    const currentHour = Number(new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\D/g, '')) % 24;
+    const hour = Math.max(8, Math.min(19, currentHour));
+    return '<div class="v-guidance-head"><div><span class="v-guidance-kicker">시간대별 운영 안내</span><h2>지금 무엇을 하면 좋을까요</h2></div>' + badge('지난 7일 참고', 'neutral') + '</div>' +
+      '<div class="v-guidance-time"><span id="guideHourLabel">확인 시간</span>' + guideHourPicker(hour) + '<small>생성 POS 확인 가능 시간</small></div><div id="guidanceContent" class="v-guidance-content">' + guidanceContent(hour) + '</div>' +
+      '<button class="v-button primary v-guidance-action" type="button" data-view="analysis">시간대별 매출진단 보기 →</button>';
   }
   function guidanceContent(hour) {
     const g = D.guidance(hour);
-    return '<h3>' + g.title + '</h3><p class="v-subtitle">' + g.text + '</p>' +
-      (g.average == null ? '' : '<p class="v-space"><span class="v-big">' + money(g.average) + '</span> <span class="v-metadata">해당 시간 일평균 매출</span></p>') +
-      '<p class="v-metadata v-space">시연 기준일 2026.09.03 · 8/27~9/2 생성 자료<br>관측 ' + g.count + '일 · 같은 요일은 1회 관측이며 반복 수요를 보장하지 않습니다.</p>';
+    if (g.average == null) return '<div class="v-guidance-empty"><span>선택 시간 안내</span><h3>' + g.title + '</h3><p>' + g.text + '</p></div>';
+    const quiet = g.title.indexOf('한가한 시간') === 0;
+    const periodLabel = hour < 11 ? '오전 운영' : hour < 15 ? '점심 운영' : '저녁 운영';
+    const checks = quiet
+      ? [['식사·청소 시간 검토', '영업 흐름을 방해하지 않는 시간을 확인합니다'], ['다음 영업 준비', '재료와 대표 메뉴 준비 상태를 점검합니다']]
+      : [['대표 메뉴·재료 확인', '판매 흐름이 이어지도록 재고를 먼저 확인합니다'], ['주문 응대 동선 점검', '대기와 누락이 생기지 않도록 역할을 살펴봅니다']];
+    return '<div class="v-guidance-result"><span class="v-guidance-result-label">' + periodLabel + ' · ' + String(hour).padStart(2, '0') + ':00</span><h3>' + g.title + '</h3><p>' + g.text + '</p>' +
+      '<div class="v-guidance-facts"><div><span>해당 시간 일평균 매출</span><strong>' + money(g.average) + '</strong></div><div><span>관측 범위</span><strong>' + g.count + '일</strong></div></div>' +
+      '<div class="v-guidance-checklist"><span>지금 확인할 항목</span>' + checks.map((item, index) => '<div><i>0' + (index + 1) + '</i><p><strong>' + item[0] + '</strong><small>' + item[1] + '</small></p></div>').join('') + '</div>' +
+      '<p class="v-guidance-note">시연 기준일 2026.09.03 · 8/27~9/2 생성 자료<br>같은 요일은 1회 관측이며 반복 수요를 보장하지 않습니다</p></div>';
   }
   function calendar() {
     let cells = ['일', '월', '화', '수', '목', '금', '토'].map(d => '<span class="day-name">' + d + '</span>').join('');
     cells += '<span></span><span></span>';
     for (let d = 1; d <= 30; d++) cells += '<span class="' + (d === 3 ? 'today' : '') + '">' + d + '</span>';
-    return '<div class="v-row v-between"><h3>2026년 9월</h3><span class="v-metadata">시연 기준 달력</span></div><div class="v-calendar">' + cells + '</div><p class="v-metadata">행사 일정은 아직 연결되지 않았습니다.</p>';
+    return '<div class="v-row v-between"><h3>2026년 9월</h3><span class="v-metadata">시연 기준 달력</span></div><div class="v-calendar">' + cells + '</div><div class="v-calendar-legend"><span><i></i>기준일 9월 3일</span><span>행사 일정 연결 대기</span></div>';
+  }
+  function dashboardContextCard() {
+    return '<article class="card v-card v-dashboard-context"><div class="v-dashboard-context-head"><div><span class="v-context-kicker">영업 준비 참고</span><h2>가게 주변의 오늘</h2></div>' + badge('연결 준비', 'neutral') + '</div>' +
+      '<div class="v-context-connections" aria-label="가게 주변 정보 연결 상태"><div><span>날씨 정보</span><strong>실시간 연결 대기</strong><small>기온·강수·특보</small></div><div><span>시장 주변 행사</span><strong>일정 연결 대기</strong><small>행사·휴무·변경 일정</small></div></div>' +
+      '<div class="v-context-calendar">' + calendar() + '</div><div class="v-context-principle"><span>정보 표시 기준</span><strong>확인된 정보만 안내합니다</strong><p>연결 전에는 날씨와 행사 내용을 추정해서 보여주지 않습니다</p></div></article>';
   }
   function periodOptions(selected) {
     return [
@@ -165,11 +224,11 @@
   }
   function screenGroups(view, children) {
     const groupByIndexes = indexes => indexes.map(group => group.map(index => children[index]).filter(Boolean));
-    if (view === 'dashboard') return groupByIndexes([[0], [1, 2], [3], [4, 5]]);
+    if (view === 'dashboard') return groupByIndexes([[0, 1], [2], [3], [4, 5]]);
     if (view === 'analysis') return groupByIndexes([[3, 4], [0, 1], [5, 6], [7], [2], [8, 9]]);
     if (view === 'recovery') return recoveryScreenGroups(children);
-    if (view === 'policies') return groupByIndexes([[1, 0], [2, 3]]);
-    if (view === 'secretary') return groupByIndexes([[0, 1]]);
+    if (view === 'policies') return groupByIndexes([[0], [1]]);
+    if (view === 'secretary') return groupByIndexes([[0]]);
     if (view === 'profile') return groupByIndexes([[1, 0, 2]]);
     return children.map(child => [child]);
   }
@@ -187,42 +246,73 @@
       const inner = document.createElement('div');
       inner.className = 'v-screen-inner';
       group.forEach(node => inner.append(node));
-      const count = document.createElement('span');
-      count.className = 'v-screen-count';
-      count.setAttribute('aria-hidden', 'true');
-      count.textContent = String(index + 1).padStart(2, '0') + ' / ' + String(groups.length).padStart(2, '0');
-      section.append(inner, count);
+      section.append(inner);
       return section;
     });
     root.replaceChildren(...screens);
     root.scrollTop = 0;
     if (window.IM_SMOOTH_SCROLL) window.IM_SMOOTH_SCROLL.mount(root);
   }
+  function financeThermometerCard() {
+    const summary = profileFinanceSummary();
+    const metric = summary.metric || {};
+    const hasMetric = summary.status === 'partial' && Number.isFinite(metric.value);
+    const measuredCount = Math.max(0, Number(summary.measuredCount) || 0);
+    const totalCount = Math.max(1, Number(summary.totalCount) || 4);
+    const currentTemperature = hasMetric ? financeTemperatureFromExpenseRatio(metric.value) : null;
+    const previousTemperature = hasMetric ? financeTemperatureFromExpenseRatio(metric.previousValue) : null;
+    const thermometerLevel = currentTemperature === null ? 0 : currentTemperature;
+    const temperatureText = value => value === null ? '측정 전' : value.toFixed(1) + '°';
+    const currentTemperatureText = temperatureText(currentTemperature);
+    const previousTemperatureText = temperatureText(previousTemperature);
+    const temperatureDelta = currentTemperature !== null && previousTemperature !== null ? currentTemperature - previousTemperature : null;
+    const deltaText = temperatureDelta === null
+      ? '비교 기간 자료 없음'
+      : temperatureDelta === 0
+        ? (metric.deltaLabel || '직전 기간보다') + ' 동일'
+        : (metric.deltaLabel || '직전 기간보다') + ' ' + Math.abs(temperatureDelta).toFixed(1) + '° ' + (temperatureDelta > 0 ? '높음' : '낮음');
+    const deltaClass = temperatureDelta === null || temperatureDelta === 0 ? 'is-neutral' : temperatureDelta > 0 ? 'is-improved' : 'is-caution';
+    const sourceItems = [
+      { label: '매출', connected: summary.measured.includes('매출') },
+      { label: '지출', connected: summary.measured.includes('지출') },
+      { label: '현금잔액', connected: summary.measured.includes('현금잔액') },
+      { label: '예정 입출금', connected: summary.measured.includes('정산 예정 입출금') }
+    ];
+    const sources = sourceItems.map(item =>
+      '<div class="v-finance-source" data-connected="' + item.connected + '"><span><i aria-hidden="true">' + (item.connected ? '✓' : '+') + '</i>' + item.label + '</span><small>' + (item.connected ? '연결됨' : '연결 필요') + '</small></div>'
+    ).join('');
+    const comparison = previousTemperature !== null
+      ? '<div class="v-finance-thermo-compare" aria-label="직전 기간 ' + previousTemperatureText.replace('°', '도') + '에서 현재 ' + currentTemperatureText.replace('°', '도') + '로 변화"><span><small>직전 기간</small><strong>' + previousTemperatureText + '</strong></span><i aria-hidden="true">→</i><span class="current"><small>현재</small><strong>' + currentTemperatureText + '</strong></span></div>'
+      : '<p class="v-finance-thermo-empty">연결 데이터를 확인한 뒤 참고 온도를 표시합니다.</p>';
+    const actionTarget = hasMetric ? 'analysis' : 'profile';
+    const actionLabel = hasMetric ? '근거와 연결 항목 보기' : '내 가게 정보 확인하기';
+    return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 금융신호 한눈에 보기</p><h2 id="financeThermoTitle">나의 금융 체온계</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
+      '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">매출·지출 기반 참고 온도</p></div>' +
+      '<div class="v-finance-thermo-summary"><span>현재 내 금융 지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + deltaText + '</span></div></div>' +
+      '<div class="v-finance-thermo-sources" aria-label="금융 체온계 데이터 연결 상태">' + sources + '</div><button class="v-finance-thermo-action" type="button" data-view="' + actionTarget + '"><span>' + actionLabel + '</span><i aria-hidden="true">→</i></button>' +
+      '<p class="v-finance-thermo-notice"><span>(참고용 지표)</span><span>신용평가·대출심사 결과와는 무관합니다.</span></p></article>';
+  }
   function dashboardLead() {
-    const expenseRatio = analysis.expenseRatio;
-    const expenseRatioText = expenseRatio == null ? '—' : expenseRatio.toFixed(1) + '%';
-    const expenseRatioWidth = expenseRatio == null ? 0 : Math.max(0, Math.min(100, expenseRatio));
-    return '<section class="v-dashboard-lead" aria-label="오늘의 브리핑과 골목금융 체온계">' +
+    return '<section class="v-dashboard-lead" aria-label="오늘의 브리핑과 나의 금융 체온계">' +
       '<div class="v-feature-banner" id="dashboardBanner" data-banner-theme="news" aria-roledescription="carousel" aria-label="오늘의 브리핑 자동 배너">' +
-      '<div class="v-feature-banner-copy"><div class="v-feature-banner-top"><span class="v-feature-banner-kicker" id="bannerKicker"></span><span class="v-feature-period-wrap"><select class="v-feature-period-select" id="dashboardPeriodSelect" aria-label="분석 기간">' + periodOptions(state.periodMode) + '</select></span></div>' +
-      '<form class="v-feature-custom-period" id="dashboardCustomPeriod"' + (state.periodMode === 'custom' ? '' : ' hidden') + '><label>시작일<input id="dashboardPeriodStart" type="date" value="' + state.period.start + '" min="2026-07-01" max="2026-09-02" required></label><label>종료일<input id="dashboardPeriodEnd" type="date" value="' + state.period.end + '" min="2026-07-01" max="2026-09-02" required></label><button type="submit">적용</button></form>' +
+      '<div class="v-feature-banner-copy"><div class="v-feature-banner-top"><span class="v-feature-banner-kicker" id="bannerKicker"></span></div>' +
       '<h1 id="bannerTitle" tabindex="-1"></h1><p id="bannerText"></p><button class="v-feature-banner-action" id="bannerAction" data-action="banner-detail" type="button"></button></div>' +
       '<div class="v-feature-banner-image" aria-hidden="true"><span></span><img id="bannerImage" src="./assets/dashboard-banners/briefing-market.png" width="640" height="640" alt=""></div>' +
       '<div class="v-feature-banner-footer"><div class="v-feature-banner-pages"><span id="bannerCount"></span><button class="v-feature-banner-dot active" id="bannerDot0" data-banner-index="0" type="button" aria-label="첫 번째 배너" aria-pressed="true"></button><button class="v-feature-banner-dot" id="bannerDot1" data-banner-index="1" type="button" aria-label="두 번째 배너" aria-pressed="false"></button><button class="v-feature-banner-dot" id="bannerDot2" data-banner-index="2" type="button" aria-label="세 번째 배너" aria-pressed="false"></button></div>' +
       '<div class="v-feature-banner-controls"><button data-action="banner-prev" aria-label="이전 배너" type="button">‹</button><button data-action="banner-pause" id="bannerPause" type="button" aria-label="배너 자동 전환 일시정지">Ⅱ</button><button data-action="banner-next" aria-label="다음 배너" type="button">›</button></div></div></div>' +
-      '<article class="v-finance-thermo-card" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>금융상태 한눈에 보기</p><h2 id="financeThermoTitle">골목금융 체온계</h2></div><span>핵심 금융 지표</span></div>' +
-      '<div class="v-finance-thermo-visual"><div class="v-finance-thermo-ring" aria-hidden="true"><div class="v-finance-thermo-symbol"><i></i></div></div><div class="v-finance-thermo-state"><strong>—°</strong><span>점수 산출 기준<br>확인 중입니다.</span></div></div>' +
-      '<div class="v-finance-ratio"><div class="v-finance-ratio-head"><span>현재 확인 가능한 지표</span><strong>' + expenseRatioText + '</strong></div><div class="v-finance-ratio-track" role="progressbar" aria-label="매출 대비 지출 비율" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + expenseRatioWidth.toFixed(1) + '" aria-valuetext="' + expenseRatioText + '"><span style="width:' + expenseRatioWidth + '%"></span></div><p>매출 대비 지출 비율 · 체온계 점수나 신용평가가 아닙니다.</p></div></article></section>';
+      financeThermometerCard() + '</section>';
   }
   function recoveryDashboardCard() {
     const r = recoveryData.opportunity;
-    return '<section class="card v-recovery-signal" aria-label="최근 CCTV와 POS 회복 신호">' +
-      '<div><div class="v-row"><span class="v-tag amber">CCTV·POS 생성 분석</span><span class="v-metadata">분석일 ' + dateText(recoveryData.analysisDate) + '</span></div>' +
-      '<h2>' + r.label + ', 통행은 많지만<br>입장 전환을 먼저 점검해 보세요.</h2>' +
-      '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>, 매장 유입률은 <strong>' + ratioText(r.entryRate) + '</strong>입니다. 확정 원인이 아닌 요인 후보를 행동으로 연결합니다.</p>' +
+    const primaryAction = recoveryData.actions[0];
+    return '<section class="card v-recovery-signal v-recovery-signal--final" aria-label="최근 CCTV와 POS 회복 신호">' +
+      '<div class="v-recovery-signal-copy"><div class="v-recovery-signal-head"><span class="v-tag amber">CCTV·POS 생성 분석</span><span class="v-metadata">분석일 ' + dateText(recoveryData.analysisDate) + '</span></div>' +
+      '<span class="v-recovery-signal-kicker">오늘의 전환 신호</span><h2><strong>' + r.label + '</strong> 통행은 많지만<br>입장 전환은 낮습니다</h2>' +
+      '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>으로 매장 유입률은 <strong>' + ratioText(r.entryRate) + '</strong>입니다.<span class="v-recovery-signal-followup">확정 원인이 아닌 점검 후보를 다음 행동으로 연결합니다</span></p>' +
+      '<div class="v-recovery-priority"><span>먼저 확인할 항목</span><strong>' + primaryAction.title + '</strong><p>' + primaryAction.detail + '</p></div>' +
       '<button class="v-button primary" type="button" data-view="recovery">전환 흐름과 회복전략 보기 →</button></div>' +
-      '<div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i>→</i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i>→</i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
-      '<div class="v-signal-context" aria-label="회복 신호 해석 기준"><div><span>점검 시간</span><strong>' + r.label + '</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div><div><span>판단 수준</span><strong>요인 후보</strong></div></div></div>' +
+      '<div class="v-recovery-signal-panel"><div class="v-recovery-signal-panel-head"><span>전환 흐름</span><strong>통행에서 결제까지</strong></div><div class="v-recovery-conversion-highlight"><span>핵심 점검 구간</span><strong>통행 → 입장</strong><b>매장 유입률 ' + ratioText(r.entryRate) + '</b></div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.entryRate) + '</small></i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.estimatedPurchaseRate) + '</small></i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
+      '<div class="v-signal-context" aria-label="회복 신호 보조 지표"><div><span>매장 앞 체류</span><strong>' + number(r.dwellers) + '명</strong></div><div><span>체류율</span><strong>' + ratioText(r.dwellRate) + '</strong></div><div><span>결제 객단가</span><strong>' + money(r.averageTicket) + '</strong></div><div><span>판단 수준</span><strong>요인 후보</strong></div></div><p class="v-recovery-signal-note">매장 앞 익명 집계와 매장 내 결제 형식의 생성값 · 확정 원인 아님</p></div>' +
       '</section>';
   }
   function recoveryFunnel() {
@@ -266,24 +356,25 @@
   }
   function dashboard() {
     return dashboardLead() + '<section class="metric-grid v-dashboard-metrics" aria-label="선택 기간 핵심 지표">' +
-      metric('내 가게 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, true) +
+      metric('내 가게 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, false) +
       metric('총지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
       metric('상권 카드소비 변화', pct(analysis.cardRate), undefined, state.period.comparison + ' · 생성 자료') +
       metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
-      '</section><div class="v-grid2">' +
-      '<article class="card insight-card"><span class="v-tag">내 가게와 상권을 함께 보는 인사이트</span><h2>사람의 흐름과<br>소비의 흐름은 다릅니다.</h2><p class="v-insight-copy">' + causeMarkup() + '</p><button class="ghost-button" type="button" data-view="recovery">회복전략 확인 →</button></article>' +
-      card(head('유동인구와 카드소비', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart()) + '</div>' + recoveryDashboardCard() +
-      '<div class="v-grid2 v-dashboard-support">' + card(guidanceCard()) + card(head('가게 주변의 오늘', badge('연결 준비', 'neutral')) + '<div class="v-weather"><div><h3>대구 중구 날씨</h3><p class="v-subtitle">실시간 날씨 미연결</p></div><strong>—</strong></div><div class="v-space">' + calendar() + '</div>') + '</div>';
+      '</section><div class="v-decision-layout v-dashboard-decision">' +
+      card(head('시간대별 유동인구와 카드소비', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart(), 'v-evidence-panel v-dashboard-flow-card') +
+      dashboardInsight() + '</div>' + recoveryDashboardCard() +
+      '<div class="v-grid2 v-dashboard-support">' + card(guidanceCard(), 'v-dashboard-guidance v-decision-action') + dashboardContextCard() + '</div>';
   }
   function market() {
     const max = Math.max(1, ...analysis.byWeekday.map(r => r.sales || 0));
     return note('상권 유동인구와 매장 방문자 수는 다릅니다. 이 시안은 생성 POS 판매 집계와 생성 상권 지표를 비교합니다.') +
-      '<div class="v-grid2">' + card(head('시간대별 소비 흐름', badge(analysis.focus.label + ' 점검')) + comparisonChart()) +
+      '<div class="v-grid2 v-analysis-overview">' + card(head('시간대별 소비 흐름', badge(analysis.focus.label + ' 점검')) + comparisonChart()) +
       card(head('요일별 일평균 매출', badge('영업 기록 기준', 'neutral')) + analysis.byWeekday.map(r =>
         '<div class="v-row v-between"><span>' + r.label + '요일 <small class="v-metadata">' + r.count + '일</small></span><strong>' + (r.sales == null ? '자료 없음' : money(r.sales)) + '</strong></div><div class="v-progress"><span style="width:' + ((r.sales || 0) / max * 100) + '%"></span></div>').join('') +
         '<p class="v-metadata">합계가 아닌 관측 일수로 나눈 일평균입니다.</p>') + '</div>' +
-      '<div class="v-grid2">' + card(guidanceCard()) + card(head('구분해서 해석해 주세요') +
-        '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 수량</strong><p>생성 POS에서 취소 수량을 차감한 ' + number(analysis.soldUnits) + '개입니다. 주문 건수나 방문 인원으로 바꾸어 표시하지 않습니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>매장 방문자 수</strong><p>별도 방문 자료는 아직 연결하지 않았습니다.</p></div></div><div class="v-list-item"><span class="v-number">03</span><div><strong>고객층·경기일 비교</strong><p>연령·직장인·행사 근거가 없어 특정 고객층이나 효과를 단정하지 않습니다.</p></div></div></div>') + '</div>';
+      '<div class="v-decision-layout v-analysis-guidance">' + card(head('해석 전 확인할 기준') +
+        '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 수량</strong><p>생성 POS에서 취소 수량을 차감한 ' + number(analysis.soldUnits) + '개입니다. 주문 건수나 방문 인원으로 바꾸어 표시하지 않습니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>매장 방문자 수</strong><p>별도 방문 자료는 아직 연결하지 않았습니다.</p></div></div><div class="v-list-item"><span class="v-number">03</span><div><strong>고객층·경기일 비교</strong><p>연령·직장인·행사 근거가 없어 특정 고객층이나 효과를 단정하지 않습니다.</p></div></div></div>', 'v-evidence-panel') +
+        card(guidanceCard(), 'v-decision-action') + '</div>';
   }
   function finance() {
     const purchase = analysis.byCategory.find(r => r.id === 'purchase');
@@ -292,15 +383,15 @@
       metric('선택 기간 지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
       '<article class="card metric-card"><div class="metric-label">매출·지출 차이</div><div class="metric-value">' + compact(analysis.delta) + '<small> 원</small></div><p class="v-metadata v-space">영업이익·현금잔액과 구분</p></article>' +
       '<article class="card metric-card"><div class="metric-label">매입비</div><div class="metric-value">' + compact(purchase.amount) + '<small> 원</small></div><p class="v-metadata v-space">품목별 매입금액 합계</p></article></section>' +
-      '<div class="v-finance-summary" aria-label="선택 기간 재무 요약"><div><span>매출 대비 지출</span><strong>' + ratioText(analysis.expenseRatio) + '</strong><small>체온계에서 사용하는 동일 지표</small></div><div><span>가장 큰 지출 항목</span><strong>' + largestExpense.name + '</strong><small>' + money(largestExpense.amount) + '</small></div><div><span>해석 기준</span><strong>매출·지출 차이</strong><small>영업이익·현금잔액과 구분</small></div></div>' +
-      '<div class="v-grid2">' + card(head('일별 매출·지출') + salesChart()) +
-      card(head('어디에 지출하고 있나요?') + analysis.byCategory.map(r =>
-        '<div class="v-row v-between"><span>' + r.name + '</span><strong>' + money(r.amount) + '</strong></div><div class="v-progress"><span style="width:' + r.amount / Math.max(analysis.expense, 1) * 100 + '%"></span></div>').join('')) + '</div>' +
-      '<div class="v-space">' + note(costText()) + '</div><div class="v-grid2">' +
+      '<div class="v-finance-summary" aria-label="선택 기간 재무 요약"><div><span>매출 대비 지출</span><strong>' + ratioText(analysis.expenseRatio) + '</strong><small>참고 온도 산출식: 100 - 지출비율</small></div><div><span>가장 큰 지출 항목</span><strong>' + largestExpense.name + '</strong><small>' + money(largestExpense.amount) + '</small></div><div><span>해석 기준</span><strong>매출·지출 차이</strong><small>영업이익·현금잔액과 구분</small></div></div>' +
+      '<div class="v-decision-layout v-finance-decision">' + card(head('일별 매출·지출') + salesChart(), 'v-evidence-panel') +
+      card(head('지출 구조 진단', badge('선택 기간', 'neutral')) + '<p class="v-subtitle">지출 비중이 큰 항목부터 운영 점검 순서를 정합니다.</p>' + analysis.byCategory.map(r =>
+        '<div class="v-row v-between"><span>' + r.name + '</span><strong>' + money(r.amount) + '</strong></div><div class="v-progress"><span style="width:' + r.amount / Math.max(analysis.expense, 1) * 100 + '%"></span></div>').join(''), 'v-decision-action') + '</div>' +
+      '<div class="v-space">' + note(costText()) + '</div><div class="v-decision-layout v-purchase-decision">' +
       card(head('매입금액 TOP 3', badge('선택 기간')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>품목</th><th class="right">매입량</th><th class="right">매입금액</th></tr></thead><tbody>' +
         analysis.topPurchases.slice(0, 3).map(r => '<tr><td>' + r.name + '</td><td class="right">' + r.quantity.toFixed(1) + ' ' + r.unit + '</td><td class="right">' + money(r.amount) + '</td></tr>').join('') +
         '</tbody></table></div><p class="v-metadata v-space">생성 매입 자료 · 매입량은 실제 사용량과 다를 수 있습니다.</p>') +
-      card(head('발주 전에 확인할 것') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 메뉴와 재료를 연결하세요</strong><p>메뉴별 레시피·단위 대응 자료가 필요합니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>남은 재고·폐기를 확인하세요</strong><p>자료가 없어 과다 매입 수량이나 다음 달 발주량은 계산하지 않습니다.</p></div></div></div><div class="v-check-strip"><span>현재 확인 가능</span><strong>매입금액 순위</strong><span>추가 연결 필요</span><strong>재고·폐기·레시피</strong></div>') + '</div>' +
+      card(head('발주 전에 확인할 것') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 메뉴와 재료를 연결하세요</strong><p>메뉴별 레시피·단위 대응 자료가 필요합니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>남은 재고·폐기를 확인하세요</strong><p>자료가 없어 과다 매입 수량이나 다음 달 발주량은 계산하지 않습니다.</p></div></div></div><div class="v-check-strip"><span>현재 확인 가능</span><strong>매입금액 순위</strong><span>추가 연결 필요</span><strong>재고·폐기·레시피</strong></div>', 'v-decision-action') + '</div>' +
       '<div class="v-grid2">' + card(head('자금 흐름', badge('연결 전', 'neutral')) + '<p class="v-subtitle">보유 현금으로 오해하지 않도록 연결되지 않은 항목을 구분합니다.</p><div class="v-connection-grid"><div><span>현금잔액</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div><div><span>예상 입출금</span><strong>미연결</strong></div></div>' + note('현재는 매출·지출 차이만 확인할 수 있으며 실제 자금 흐름 판단에는 위 자료가 필요합니다.', 'neutral')) +
       card(head('POS 집계 확인', badge('DB 대신 로컬 생성 자료', 'neutral')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>최근 일자</th><th>시간</th><th>품목</th><th class="right">순매출</th></tr></thead><tbody>' +
         analysis.pos.filter(r => r.netAmount > 0).slice(-5).map(r => '<tr><td>' + r.date.slice(5) + '</td><td>' + r.hour + '시</td><td>' + D.menu.find(m => m.id === r.itemId).name + '</td><td class="right">' + money(r.netAmount) + '</td></tr>').join('') +
@@ -360,16 +451,20 @@
         '</div><p class="v-metadata">적합도 % 미산정 · 산식 미정</p>' + button('예시 조건 보기', 'data-policy="' + p.id + '"') + '</article>').join('') + '</div>';
   }
   function policies() {
-    return note('목록·조건 매칭을 확인하기 위한 가상 공고입니다. 실제 신청 가능한 사업이 아니며, 지원금·접수기간·적합도 %를 임의로 표시하지 않습니다.', 'amber') +
-      '<div class="card v-card v-space"><div class="v-tabs" role="tablist" aria-label="정책 목록 종류"><button type="button" role="tab" data-policy-view="recommended" aria-selected="' + (state.policyView === 'recommended') + '" class="' + (state.policyView === 'recommended' ? 'active' : '') + '">오늘의 추천공고</button><button type="button" role="tab" data-policy-view="all" aria-selected="' + (state.policyView === 'all') + '" class="' + (state.policyView === 'all' ? 'active' : '') + '">전체 리스트</button></div>' +
+    const candidates = filteredPolicies();
+    const reviewCount = candidates.filter(policy => matchPolicy(policy).some(result => result.status === '확인 필요')).length;
+    const categoryCount = new Set(candidates.map(policy => policy.category)).size;
+    return '<div class="v-decision-layout v-policy-decision"><div class="card v-card v-evidence-panel"><div class="v-tabs" role="tablist" aria-label="정책 목록 종류"><button type="button" role="tab" data-policy-view="recommended" aria-selected="' + (state.policyView === 'recommended') + '" class="' + (state.policyView === 'recommended' ? 'active' : '') + '">오늘의 추천공고</button><button type="button" role="tab" data-policy-view="all" aria-selected="' + (state.policyView === 'all') + '" class="' + (state.policyView === 'all' ? 'active' : '') + '">전체 리스트</button></div>' +
       '<div class="v-row v-space"><input class="v-search" id="policySearch" type="search" placeholder="공고 제목 검색" aria-label="공고 제목 검색" value="' + esc(state.keyword) + '"><select class="v-select" id="policyCategory" aria-label="지원 분야"><option value="all">전체 분야</option><option value="금융"' + (state.category === '금융' ? ' selected' : '') + '>금융</option><option value="창업"' + (state.category === '창업' ? ' selected' : '') + '>창업</option></select></div>' +
       '<p class="v-metadata v-space">수집 계획: 금융·창업 분야 + 제목에 소상공인/골목/전통시장 포함. 현재는 실제 수집 없이 예시 순서로 표시합니다. 추천은 불일치 예시를 제외한 목록이며, 미확인 조건이 남아 있을 수 있습니다.</p>' +
-      '<div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div></div>' +
+      '<div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div>' +
+      '<div class="v-policy-overview" aria-label="현재 조건 매칭 현황"><div class="v-row v-between"><h3>현재 조건 매칭 현황</h3>' + badge('생성 예시', 'neutral') + '</div><div><span>추천 후보<strong>' + number(candidates.length) + '개</strong></span><span>추가 확인 필요<strong>' + number(reviewCount) + '개</strong></span><span>포함 분야<strong>' + number(categoryCount) + '개</strong></span></div></div></div>' +
+      '<aside class="card v-card v-decision-action"><div class="v-row v-between"><div><h2>지원사업 확인 순서</h2><p class="v-subtitle">추천 목록에서 신청 판단까지 필요한 확인 항목입니다.</p></div>' + badge('신청 전 확인', 'neutral') + '</div><div class="v-plan-list"><div class="v-plan-item"><span>01</span><div><small>내 조건</small><strong>지역·업종 일치 여부</strong><p>사업장 소재지와 업종을 먼저 비교합니다.</p></div></div><div class="v-plan-item"><span>02</span><div><small>추가 확인</small><strong>직원 수·나이 조건</strong><p>미입력 항목은 적합으로 단정하지 않습니다.</p></div></div><div class="v-plan-item"><span>03</span><div><small>신청 전</small><strong>원문 공고 최종 확인</strong><p>접수기간·지원금·제외 조건은 실제 공고에서 확인합니다.</p></div></div></div><button class="v-button primary v-plan-start" type="button" data-view="profile">내 조건 확인하기 →</button><p class="v-metadata">현재 목록은 조건 매칭을 확인하기 위한 가상 공고이며 실제 신청 가능한 사업이 아닙니다.</p></aside></div>' +
       '<div id="policyResults" class="v-space">' + policyResults() + '</div>';
   }
   const reportPrompts = ['매출과 지출을 함께 분석해 주세요.', '시간대별 운영 전략을 정리해 주세요.', '회복전략을 요약해 주세요.'];
   function secretary() {
-    return '<div class="v-grid2" style="margin-top:0"><article class="card v-card"><div class="v-row v-between"><h2>' + esc(state.profile.name) + '님의 ' + productName('비서') + '</h2>' + badge('규칙 기반 시안', 'neutral') +
+    return '<div class="v-decision-layout v-secretary-layout"><article class="card v-card v-evidence-panel"><div class="v-row v-between"><h2>' + esc(state.profile.name) + '님의 ' + productName('비서') + '</h2>' + badge('규칙 기반 시안', 'neutral') +
       '</div><p class="v-subtitle">질문에 맞춰 생성 데이터를 분석하고 PDF 요약본으로 정리합니다.</p><div class="v-row v-space">' +
       reportPrompts.map(q => button(esc(q), 'data-report-question="' + esc(q) + '"')).join('') + '</div><div class="v-report-chat" id="reportMessages" aria-live="polite">' +
       (state.reportMessages.length ? state.reportMessages.map(m => '<div class="ai-message ' + m.type + '">' + esc(m.text) + '</div>').join('') :
@@ -379,9 +474,7 @@
       button(state.pdfBusy ? '요약본 생성 중…' : '최종 요약 PDF 만들기', 'data-action="make-pdf" id="makePdfButton"' + (state.pdfBusy ? ' disabled' : ''), true) +
       '<div id="pdfDownload"' + (state.reportBlobUrl ? '' : ' hidden') + '><p class="v-subtitle">최종 요약본 분석이 완료되었습니다.</p><a class="v-download" id="pdfLink"' +
       (state.reportBlobUrl ? ' href="' + state.reportBlobUrl + '"' : '') + ' download="iM파트너_분석요약.pdf">iM파트너_분석요약.pdf 다운로드</a></div></div></article>' +
-      '<div class="v-stack">' + card(head(productName('챗봇') + '과 이렇게 달라요') + '<div class="v-list"><div><h3>' + productName('챗봇') + '</h3><p class="v-subtitle">어느 탭에서든 짧은 데이터 질문에 답합니다.</p></div><div><h3>' + productName('비서') + '</h3><p class="v-subtitle">분석을 요청하고 최종 요약본을 PDF로 보관합니다.</p></div></div>') +
-      card(head('이번 분석의 기준') + '<p class="v-subtitle">' + esc(state.profile.region) + ' · ' + esc(state.profile.industry) + '<br>' + state.period.start + ' ~ ' + state.period.end + '</p><div class="v-space">' +
-      badge('생성 데이터') + '</div><p class="v-metadata v-space">실제 AI·DB 미연결<br>상담원 연결 채널은 아직 정해지지 않았습니다.</p>') + '</div></div>';
+      '<aside class="card v-card v-decision-action"><div class="v-row v-between"><div><h2>분석에서 문서까지</h2><p class="v-subtitle">질문을 근거와 실행 항목이 담긴 요약본으로 바꿉니다.</p></div>' + badge('3단계', 'neutral') + '</div><div class="v-plan-list"><div class="v-plan-item"><span>01</span><div><small>질문</small><strong>분석 주제 선택</strong><p>' + productName('챗봇') + '은 짧은 답변, ' + productName('비서') + '는 종합 분석에 사용합니다.</p></div></div><div class="v-plan-item"><span>02</span><div><small>근거</small><strong>가게·상권 데이터 확인</strong><p>수치의 기준과 제한 사항을 함께 정리합니다.</p></div></div><div class="v-plan-item"><span>03</span><div><small>보관</small><strong>최종 요약 PDF 생성</strong><p>검토가 끝난 분석을 한 장 문서로 내려받습니다.</p></div></div></div><div class="v-decision-facts"><div><span>분석 대상</span><strong>' + esc(state.profile.region) + ' · ' + esc(state.profile.industry) + '</strong></div><div><span>분석 기간</span><strong>' + state.period.start + ' ~ ' + state.period.end + '</strong></div></div><p class="v-metadata">생성 데이터 기반 규칙 분석 · 실제 AI·DB는 아직 연결되지 않았습니다.</p></aside></div>';
   }
   function field(label, name, type, extra) {
     return '<label class="v-field">' + label + '<input name="' + name + '" type="' + (type || 'text') + '" value="' + esc(state.profile[name]) + '" ' + (extra || '') + '></label>';
@@ -399,6 +492,85 @@
       '</div><p class="v-metadata v-space">사업장 소재지는 거주지와 다릅니다. 입력 직원 수와 공고의 상시근로자 산정 기준은 별도 확인합니다.</p>') +
       '</div><div class="v-row v-space">' + '<button class="v-button primary" type="submit">이 화면에 반영하기</button><span class="v-metadata">서버 저장·가입 없이 미리보기만 변경</span></div></form>';
   }
+  function profileFinanceSummary() {
+    const profileMatchesDemo = ['storeName', 'region', 'industry'].every(key =>
+      String(state.profile[key] || '').trim() === String(D.profile[key] || '').trim()
+    );
+    const ratio = profileMatchesDemo && Number.isFinite(analysis.expenseRatio) ? analysis.expenseRatio : null;
+    const previousRatio = profileMatchesDemo && analysis.comparisonAvailable && analysis.previousSales > 0
+      ? analysis.previousExpense / analysis.previousSales * 100
+      : null;
+    const delta = ratio !== null && Number.isFinite(previousRatio) ? ratio - previousRatio : null;
+    const deltaLabel = state.periodMode === 'month'
+      ? '전월보다'
+      : state.periodMode === 'week' ? '직전 7일보다' : '직전 기간보다';
+    const hasMeasuredData = ratio !== null;
+    const referenceTemperature = financeTemperatureFromExpenseRatio(ratio);
+    const previousReferenceTemperature = financeTemperatureFromExpenseRatio(previousRatio);
+    const referenceTemperatureDelta = referenceTemperature !== null && previousReferenceTemperature !== null
+      ? referenceTemperature - previousReferenceTemperature
+      : null;
+    return {
+      status: hasMeasuredData ? 'partial' : 'unavailable',
+      measuredCount: hasMeasuredData ? 2 : 0,
+      totalCount: 4,
+      measured: hasMeasuredData ? ['매출', '지출'] : [],
+      missing: hasMeasuredData ? ['현금잔액', '정산 예정 입출금'] : ['현재 프로필과 연결된 거래 데이터'],
+      period: state.period.label,
+      sourceLabel: D.profile.storeName + ' 고정 생성자료',
+      destination: 'finance-thermometer',
+      storeProfileId: null,
+      analysisRunId: null,
+      metric: {
+        label: '매출 대비 지출',
+        value: ratio,
+        previousValue: previousRatio,
+        unit: '%',
+        delta,
+        deltaUnit: '%p',
+        deltaLabel,
+        direction: delta === null ? 'unknown' : delta > 0 ? 'worse' : delta < 0 ? 'better' : 'neutral'
+      },
+      referenceTemperature: referenceTemperature === null ? null : {
+        value: referenceTemperature,
+        previousValue: previousReferenceTemperature,
+        unit: '°',
+        delta: referenceTemperatureDelta,
+        deltaUnit: '°',
+        deltaLabel,
+        direction: referenceTemperatureDelta === null
+          ? 'unknown'
+          : referenceTemperatureDelta > 0 ? 'better' : referenceTemperatureDelta < 0 ? 'worse' : 'neutral',
+        basisLabel: '매출·지출 기반 참고 온도',
+        ruleVersion: 'expense-ratio-reference-v1',
+        scoringDefinition: '100 - 매출 대비 지출률',
+        dataStatus: 'reference'
+      },
+      temperature: null
+    };
+  }
+  function syncProfileFinance() {
+    const summary = profileFinanceSummary();
+    const temperature = summary.temperature || summary.referenceTemperature;
+    const temperatureText = temperature ? temperature.value.toFixed(1) + '°' : '측정 전';
+    const spokenTemperature = temperature ? temperature.value.toFixed(1) + '도' : '측정 전';
+    const menuBadge = $('#profileMenuTemperatureBadge');
+    const triggerBadge = $('#profileTemperatureBadge');
+    [menuBadge, triggerBadge].forEach(badge => {
+      if (!badge) return;
+      badge.textContent = temperatureText;
+      badge.dataset.status = summary.status;
+    });
+    if (menuBadge) menuBadge.setAttribute('aria-label', '나의 금융 온도 ' + spokenTemperature);
+    $('#profileMenuButton').setAttribute(
+      'aria-label',
+      state.profile.name + ' 프로필 메뉴, 나의 금융 온도 ' + spokenTemperature
+    );
+    if (!window.IMProfileFinance) return;
+    const mount = $('#profileMenuFinanceMount');
+    if (!mount) return;
+    window.IMProfileFinance.mount(mount, summary, { buttonRole: 'menuitem' });
+  }
   function render() {
     const dashboardView = state.view === 'dashboard';
     $('#mainContent').classList.toggle('dashboard-view', dashboardView);
@@ -415,6 +587,7 @@
     $('#profileMenuInitials').textContent = avatarName(state.profile.name);
     $('#profileMenuStore').textContent = state.profile.storeName;
     $('#profileMenuButton').classList.toggle('active', state.view === 'profile');
+    syncProfileFinance();
     $('#storeContext').textContent = state.profile.storeName + ' · ' + state.profile.industry;
     $('#aiContext').textContent = state.profile.storeName + ' 생성 자료 · ' + state.period.start + '~' + state.period.end;
     document.querySelectorAll('[data-view]').forEach(el => { el.classList.toggle('active', el.dataset.view === state.view); if (el.classList.contains('nav-item')) { if (el.dataset.view === state.view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); } });
@@ -425,8 +598,6 @@
     $('#customPeriod').hidden = true;
     if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
     if ($('#sectionCustomPeriod')) $('#sectionCustomPeriod').hidden = state.periodMode !== 'custom';
-    if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
-    if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
     updateBanner();
   }
   function navigate(view) {
@@ -489,20 +660,20 @@
   const banners = [
     {
       kicker: '오늘의 브리핑 · 소상공인 뉴스·이슈',
-      title: '소상공인 뉴스·이슈,\n영업 준비와 연결해드려요.',
-      text: '확인된 출처와 게시일을 바탕으로 가게 운영에 필요한 변화만 간결하게 안내할 예정입니다.',
+      title: '소상공인 뉴스·이슈\n영업 준비와 연결해드려요',
+      text: '확인된 출처와 게시일을 바탕으로 가게 운영에\n필요한 변화만 간결하게 안내해드려요.',
       action: '브리핑 자세히 보기 →', theme: 'news', image: './assets/dashboard-banners/briefing-market.png'
     },
     {
       kicker: '가게 주변 행사와 날씨',
-      title: '가게 주변 행사와 날씨,\n미리 준비할 수 있도록.',
-      text: '실시간 자료가 연결되면 행사 일정과 날씨 변화를 영업·배달·재료 준비와 함께 안내합니다.',
+      title: '가게 주변 행사와 날씨\n미리 준비할 수 있도록',
+      text: '행사 일정과 날씨 자료가 연결되면 가게 운영에\n필요한 준비만 간결하게 안내해드려요.',
       action: '연결 예정 정보 보기 →', theme: 'weather', image: './assets/dashboard-banners/briefing-weather.png'
     },
     {
       kicker: '업종별 대목 준비',
-      title: '장사가 잘되는 시기,\n일주일 먼저 준비하세요.',
-      text: '확인된 행사·절기 자료를 바탕으로 판매상품과 재고 준비 시점을 안내할 예정입니다.',
+      title: '장사가 잘되는 시기\n일주일 먼저 준비하세요',
+      text: '확인된 행사·절기 자료를 바탕으로 가게 운영에\n필요한 준비 시점만 간결하게 안내해드려요.',
       action: '준비 항목 살펴보기 →', theme: 'season', image: './assets/dashboard-banners/briefing-season.png'
     }
   ];
@@ -541,12 +712,30 @@
     $('#aiMessages').replaceChildren();
     appendChat('분석 조건이 바뀌었습니다. 새 조건을 기준으로 질문해 주세요.', 'bot');
   }
-  function setProfileMenu(open) {
+  function profileMenuItems() {
+    const menu = $('#profileMenu');
+    if (!menu || typeof menu.querySelectorAll !== 'function') return [];
+    return Array.from(menu.querySelectorAll('[role="menuitem"]')).filter(item => !item.hidden && !item.hasAttribute('disabled'));
+  }
+  function focusProfileMenuItem(index) {
+    const items = profileMenuItems();
+    if (!items.length) return;
+    const target = items[(index + items.length) % items.length];
+    target.focus({ preventScroll: true });
+    if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+  }
+  function setProfileMenu(open, focusIndex) {
     const menu = $('#profileMenu');
     const trigger = $('#profileMenuButton');
     if (!menu || !trigger) return;
     menu.hidden = !open;
     trigger.setAttribute('aria-expanded', String(open));
+    if (open && Number.isInteger(focusIndex)) {
+      const schedule = typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : callback => setTimeout(callback, 0);
+      schedule(() => focusProfileMenuItem(focusIndex));
+    }
   }
   async function makePdf() {
     if (state.pdfBusy || !state.reportReady) return;
@@ -575,12 +764,44 @@
       }
     }
   }
+  document.addEventListener('im-profile-finance:open', event => {
+    const detail = event.detail || {};
+    if (detail.target !== 'finance-thermometer' || detail.source !== 'profile-menu') return;
+    navigate('dashboard');
+    const schedule = typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : callback => setTimeout(callback, 0);
+    schedule(() => {
+      const title = $('#financeThermoTitle');
+      if (!title) return;
+      const card = title.closest('.v-finance-thermo-card');
+      if (card && typeof card.scrollIntoView === 'function') card.scrollIntoView({ block: 'center', behavior: 'auto' });
+      title.tabIndex = -1;
+      title.focus({ preventScroll: true });
+    });
+  });
+  document.addEventListener('focusin', event => {
+    const account = event.target.closest ? event.target.closest('.sidebar-account') : null;
+    if (!account && !$('#profileMenu').hidden) setProfileMenu(false);
+  });
   document.addEventListener('click', event => {
     const accountArea = event.target.closest('.sidebar-account');
+    const guidePickerArea = event.target.closest('.v-guide-hour-picker');
     const el = event.target.closest('button, a');
-    if (!el) { if (!accountArea) setProfileMenu(false); return; }
-    if (el.id === 'profileMenuButton') { event.preventDefault?.(); setProfileMenu($('#profileMenu').hidden); return; }
+    if (!el) { if (!accountArea) setProfileMenu(false); if (!guidePickerArea) setGuideHourMenu(false); return; }
+    if (el.id === 'profileMenuButton') {
+      event.preventDefault?.();
+      const opening = $('#profileMenu').hidden;
+      setProfileMenu(opening, opening ? 0 : null);
+      return;
+    }
     if (!accountArea) setProfileMenu(false);
+    if (!guidePickerArea) setGuideHourMenu(false);
+    if (el.dataset.guideHour !== undefined) {
+      event.preventDefault?.();
+      selectGuideHour(el.dataset.guideHour);
+      return;
+    }
     if (el.dataset.view) { event.preventDefault?.(); navigate(el.dataset.view); }
     if (el.dataset.question) ask(el.dataset.question);
     if (el.dataset.reportQuestion) askReport(el.dataset.reportQuestion);
@@ -595,6 +816,7 @@
       $('#policyModal').showModal();
     }
     switch (el.dataset.action) {
+      case 'toggle-guide-hour': setGuideHourMenu($('#guideHourMenu').hidden); break;
       case 'banner-prev': state.bannerIndex = (state.bannerIndex + banners.length - 1) % banners.length; updateBanner(); break;
       case 'banner-next': state.bannerIndex = (state.bannerIndex + 1) % banners.length; updateBanner(); break;
       case 'banner-pause': state.bannerPaused = !state.bannerPaused; updateBanner(); break;
@@ -619,16 +841,13 @@
   document.addEventListener('change', event => {
     const el = event.target;
     if (el.id === 'policyCategory') { state.category = el.value; state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
-    if (el.id === 'guideHour') $('#guidanceContent').innerHTML = guidanceContent(Number(el.value));
     if (el.id === 'mapRadius') { state.radius = Math.max(100, Math.min(1000, Number(el.value) || 500)); el.value = state.radius; $('#mapPreview').innerHTML = mapPreview(); }
-    if (el.id === 'periodSelect' || el.id === 'dashboardPeriodSelect' || el.id === 'sectionPeriodSelect') {
+    if (el.id === 'periodSelect' || el.id === 'sectionPeriodSelect') {
       state.periodMode = el.value;
       $('#periodSelect').value = state.periodMode;
       $('#customPeriod').hidden = true;
       if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
       if ($('#sectionCustomPeriod')) $('#sectionCustomPeriod').hidden = state.periodMode !== 'custom';
-      if ($('#dashboardPeriodSelect')) $('#dashboardPeriodSelect').value = state.periodMode;
-      if ($('#dashboardCustomPeriod')) $('#dashboardCustomPeriod').hidden = state.periodMode !== 'custom';
       if (el.value !== 'custom') { state.period = Object.assign({}, D.periods[el.value]); analysis = D.analyze(state.period); invalidateReport(); render(); }
     }
   });
@@ -636,12 +855,11 @@
     const form = event.target;
     if (form.id === 'aiForm') { event.preventDefault(); ask($('#aiInput').value); }
     if (form.id === 'reportForm') { event.preventDefault(); askReport($('#reportInput').value); }
-    if (form.id === 'customPeriod' || form.id === 'dashboardCustomPeriod' || form.id === 'sectionCustomPeriod') {
+    if (form.id === 'customPeriod' || form.id === 'sectionCustomPeriod') {
       event.preventDefault();
-      const dashboardForm = form.id === 'dashboardCustomPeriod';
       const sectionForm = form.id === 'sectionCustomPeriod';
-      const startSelector = dashboardForm ? '#dashboardPeriodStart' : sectionForm ? '#sectionPeriodStart' : '#periodStart';
-      const endSelector = dashboardForm ? '#dashboardPeriodEnd' : sectionForm ? '#sectionPeriodEnd' : '#periodEnd';
+      const startSelector = sectionForm ? '#sectionPeriodStart' : '#periodStart';
+      const endSelector = sectionForm ? '#sectionPeriodEnd' : '#periodEnd';
       const p = D.customPeriod($(startSelector).value, $(endSelector).value);
       if (!p) { notice('생성 자료가 있는 2026.07.01~09.02 안에서 시작일과 종료일을 확인해 주세요.'); return; }
       state.periodMode = 'custom';
@@ -676,7 +894,69 @@
   });
   $('#aiToggle').addEventListener('click', () => setChat(!state.chatOpen));
   $('#aiClose').addEventListener('click', () => setChat(false));
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') { setProfileMenu(false); if (state.chatOpen) setChat(false); $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible'); $('#menuButton').setAttribute('aria-expanded', 'false'); } });
+  document.addEventListener('keydown', event => {
+    const guideMenu = $('#guideHourMenu');
+    const guideTrigger = $('#guideHourButton');
+    if (event.key === 'Escape' && guideMenu && !guideMenu.hidden) {
+      event.preventDefault();
+      setGuideHourMenu(false);
+      if (guideTrigger) guideTrigger.focus({ preventScroll: true });
+      return;
+    }
+    if (guideTrigger && event.target === guideTrigger && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      event.preventDefault();
+      setGuideHourMenu(true);
+      return;
+    }
+    if (guideMenu && !guideMenu.hidden && typeof guideMenu.contains === 'function' && guideMenu.contains(event.target) && typeof guideMenu.querySelectorAll === 'function') {
+      const options = Array.from(guideMenu.querySelectorAll('[data-guide-hour]'));
+      const currentIndex = options.indexOf(event.target);
+      let nextIndex = currentIndex;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % options.length;
+      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + options.length) % options.length;
+      if (event.key === 'Home') nextIndex = 0;
+      if (event.key === 'End') nextIndex = options.length - 1;
+      if (nextIndex !== currentIndex && options[nextIndex]) {
+        event.preventDefault();
+        options[nextIndex].focus({ preventScroll: true });
+        return;
+      }
+    }
+    const menu = $('#profileMenu');
+    const trigger = $('#profileMenuButton');
+    const menuOpen = Boolean(menu && !menu.hidden);
+    if (event.key === 'Escape') {
+      if (menuOpen) {
+        event.preventDefault();
+        setProfileMenu(false);
+        trigger.focus();
+        return;
+      }
+      if (state.chatOpen) setChat(false);
+      const mobileSidebarWasOpen = window.innerWidth <= 760 && $('#sidebar').classList.contains('open');
+      $('#sidebar').classList.remove('open');
+      $('#navBackdrop').classList.remove('visible');
+      $('#menuButton').setAttribute('aria-expanded', 'false');
+      if (mobileSidebarWasOpen) $('#menuButton').focus();
+      return;
+    }
+    if (!menu || !trigger) return;
+    if (event.target === trigger && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      event.preventDefault();
+      setProfileMenu(true, event.key === 'ArrowDown' ? 0 : -1);
+      return;
+    }
+    if (!menuOpen || typeof menu.contains !== 'function' || !menu.contains(event.target)) return;
+    const items = profileMenuItems();
+    const currentIndex = items.indexOf(event.target);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      focusProfileMenuItem(currentIndex + (event.key === 'ArrowDown' ? 1 : -1));
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      focusProfileMenuItem(event.key === 'Home' ? 0 : -1);
+    }
+  });
   $('#chatResizeHandle').addEventListener('pointerdown', event => {
     const handle = event.currentTarget; handle.setPointerCapture(event.pointerId);
     const startX = event.clientX, startWidth = $('#aiPanel').getBoundingClientRect().width;

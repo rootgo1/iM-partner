@@ -24,90 +24,119 @@ const { chromium } = require("playwright");
   function collectErrors(page, prefix) {
     page.on("pageerror", (error) => errors.push(prefix + " pageerror: " + error.message));
     page.on("console", (message) => {
-      if (message.type() === "error") errors.push(prefix + " console: " + message.text());
+      if (message.type() === "error") {
+        const location = message.location();
+        errors.push(prefix + " console: " + message.text() + (location.url ? " @ " + location.url : ""));
+      }
     });
   }
 
-  try {
-    const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
-    collectErrors(desktop, "desktop");
-    await desktop.goto(loginUrl, { waitUntil: "load" });
-    await desktop.evaluate(() => document.fonts.ready);
-
-    const desktopLayout = await desktop.evaluate(() => ({
-      bodyWidth: document.body.scrollWidth,
-      viewportWidth: window.innerWidth,
-      shellColumns: getComputedStyle(document.querySelector(".guest-shell")).gridTemplateColumns,
-      accessWidth: document.querySelector("#accessCard").getBoundingClientRect().width,
-      font: getComputedStyle(document.body).fontFamily,
-      logoReady: document.querySelector(".brand-mark img").complete && document.querySelector(".brand-mark img").naturalWidth > 0,
-      artworkReady: document.querySelector(".preview-art img").complete && document.querySelector(".preview-art img").naturalWidth > 0
-    }));
-    assert.ok(desktopLayout.bodyWidth <= desktopLayout.viewportWidth, "데스크톱 가로 넘침이 없어야 합니다.");
-    assert.equal(desktopLayout.shellColumns.split(" ").length, 2);
-    assert.ok(desktopLayout.accessWidth >= 390 && desktopLayout.accessWidth < 560);
-    assert.match(desktopLayout.font, /iM Noto Sans KR/);
-    assert.equal(desktopLayout.logoReady, true);
-    assert.equal(desktopLayout.artworkReady, true);
-
-    const contrast = await desktop.evaluate(() => {
-      function luminance(rgb) {
-        const channels = rgb.match(/[\d.]+/g).slice(0, 3).map(Number).map((value) => {
-          value /= 255;
-          return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-      }
-      const element = document.querySelector("#loginButton");
-      const style = getComputedStyle(element);
-      const lighter = Math.max(luminance(style.color), luminance(style.backgroundColor));
-      const darker = Math.min(luminance(style.color), luminance(style.backgroundColor));
-      return (lighter + 0.05) / (darker + 0.05);
+  async function desktopMetrics(page) {
+    return page.evaluate(() => {
+      const rect = (selector) => {
+        const box = document.querySelector(selector).getBoundingClientRect();
+        return { top: box.top, right: box.right, bottom: box.bottom, left: box.left, width: box.width, height: box.height };
+      };
+      return {
+        documentHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
+        bodyWidth: document.body.scrollWidth,
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+        shellColumns: getComputedStyle(document.querySelector(".guest-shell")).gridTemplateColumns,
+        font: getComputedStyle(document.body).fontFamily,
+        logoReady: document.querySelector(".brand-mark img").complete && document.querySelector(".brand-mark img").naturalWidth > 0,
+        shell: rect(".guest-shell"),
+        value: rect(".value-panel"),
+        access: rect("#accessCard"),
+        lastFeature: rect(".feature-list li:last-child"),
+        lastNotice: rect(".safe-notice")
+      };
     });
-    assert.ok(contrast >= 4.5, "입력 후 데모 시작 버튼 명암비가 4.5:1 이상이어야 합니다.");
-    await desktop.screenshot({ path: path.join(output, "guest-desktop-1440x1000.png"), fullPage: true });
+  }
 
-    await desktop.getByRole("button", { name: "회복 플랜" }).click();
-    assert.match(await desktop.locator("#targetNotice").textContent(), /골목상권 회복 플랜/);
-    assert.match(await desktop.locator("#demoEntryLink").getAttribute("href"), /#recovery$/);
+  function assertDesktopFits(metrics, label) {
+    assert.ok(metrics.bodyWidth <= metrics.viewportWidth, label + "에서 가로 넘침이 없어야 합니다.");
+    assert.ok(metrics.documentHeight <= metrics.viewportHeight, label + "에서 세로 스크롤이 없어야 합니다.");
+    assert.equal(metrics.shellColumns.split(" ").length, 2, label + "에서 2열이어야 합니다.");
+    assert.ok(metrics.value.bottom <= metrics.viewportHeight + 1, label + "에서 왼쪽 패널이 잘리지 않아야 합니다.");
+    assert.ok(metrics.access.bottom <= metrics.viewportHeight + 1, label + "에서 시작하기 카드가 잘리지 않아야 합니다.");
+    assert.ok(metrics.lastFeature.bottom <= metrics.value.bottom + 1, label + "에서 마지막 서비스 항목이 패널 안에 있어야 합니다.");
+    assert.ok(metrics.lastNotice.bottom <= metrics.access.bottom + 1, label + "에서 안전 안내가 카드 안에 있어야 합니다.");
+  }
 
-    await desktop.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
-    assert.equal(await desktop.locator("#userId").getAttribute("aria-invalid"), "true");
-    assert.match(await desktop.locator("#loginStatus").textContent(), /임의 아이디를 입력/);
+  try {
+    const desktopSizes = [
+      { width: 1366, height: 768, name: "guest-notebook-1366x768.png", label: "1366×768" },
+      { width: 1440, height: 900, name: "guest-desktop-1440x900.png", label: "1440×900" },
+      { width: 2048, height: 1151, name: "guest-desktop-2048x1151.png", label: "2048×1151" }
+    ];
 
-    await desktop.locator("#userId").fill("preview-user");
-    await desktop.locator("#userPassword").fill("preview-password");
-    await desktop.getByRole("button", { name: "보기" }).click();
-    assert.equal(await desktop.locator("#userPassword").getAttribute("type"), "text");
-    await desktop.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
-    await desktop.waitForURL(/main-screen\.html#recovery$/);
-    assert.match(desktop.url(), /main-screen\.html#recovery$/);
+    for (const size of desktopSizes) {
+      const page = await browser.newPage({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1 });
+      collectErrors(page, size.label);
+      await page.goto(loginUrl, { waitUntil: "load" });
+      await page.evaluate(() => document.fonts.ready);
+      const metrics = await desktopMetrics(page);
+      assertDesktopFits(metrics, size.label);
+      assert.match(metrics.font, /iM Noto Sans KR/);
+      assert.equal(metrics.logoReady, true);
+      assert.ok(metrics.access.width >= 390 && metrics.access.width < 570);
+      await page.screenshot({ path: path.join(output, size.name) });
 
-    const notebook = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
-    collectErrors(notebook, "notebook");
-    await notebook.goto(loginUrl, { waitUntil: "load" });
-    await notebook.evaluate(() => document.fonts.ready);
-    const notebookLayout = await notebook.evaluate(() => ({
-      bodyWidth: document.body.scrollWidth,
-      viewportWidth: window.innerWidth,
-      loginButtonBottom: document.querySelector("#loginButton").getBoundingClientRect().bottom,
-      viewportHeight: window.innerHeight
-    }));
-    assert.ok(notebookLayout.bodyWidth <= notebookLayout.viewportWidth, "일반 노트북에서 가로 넘침이 없어야 합니다.");
-    assert.ok(notebookLayout.loginButtonBottom <= notebookLayout.viewportHeight - 12, "일반 노트북 첫 화면에 입력 후 데모 시작 버튼이 모두 보여야 합니다.");
-    await notebook.screenshot({ path: path.join(output, "guest-notebook-1366x768.png") });
+      if (size.width === 1440) {
+        assert.equal(await page.locator("#guestTitle").innerText(), "내 가게의 흐름을\n오늘의 행동으로");
+        assert.equal(await page.locator(".lead").innerText(), "매출·지출부터 상권의 시간대별 기회까지 한곳에서 살펴보고\n지금 실행할 회복 행동을 확인해 보세요.");
+
+        const contrast = await page.evaluate(() => {
+          function luminance(rgb) {
+            const channels = rgb.match(/[\d.]+/g).slice(0, 3).map(Number).map((value) => {
+              value /= 255;
+              return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+          }
+          const style = getComputedStyle(document.querySelector("#loginButton"));
+          const lighter = Math.max(luminance(style.color), luminance(style.backgroundColor));
+          const darker = Math.min(luminance(style.color), luminance(style.backgroundColor));
+          return (lighter + 0.05) / (darker + 0.05);
+        });
+        assert.ok(contrast >= 4.5, "입력 후 데모 시작 버튼 명암비가 4.5:1 이상이어야 합니다.");
+
+        await page.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
+        assert.equal(await page.locator("#userId").getAttribute("aria-invalid"), "true");
+        assert.match(await page.locator("#loginStatus").textContent(), /임의 아이디를 입력/);
+        assertDesktopFits(await desktopMetrics(page), "1440×900 오류 표시 상태");
+
+        await page.locator("#userId").fill("preview-user");
+        await page.locator("#userPassword").fill("preview-password");
+        await page.getByRole("button", { name: "보기" }).click();
+        assert.equal(await page.locator("#userPassword").getAttribute("type"), "text");
+        await page.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
+        await page.waitForURL(/main-screen\.html#dashboard$/);
+      }
+
+      await page.close();
+    }
 
     const rootPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
     collectErrors(rootPage, "root");
     await rootPage.goto(rootUrl, { waitUntil: "load" });
     const appFrame = rootPage.frameLocator(".app-frame");
+    await appFrame.getByRole("link", { name: "로그인 없이 데모 시작" }).waitFor();
+    const frameMetrics = await rootPage.frames()[1].evaluate(() => ({
+      documentHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
+      viewportHeight: window.innerHeight
+    }));
+    assert.ok(frameMetrics.documentHeight <= frameMetrics.viewportHeight, "루트 화면의 비로그인 iframe에도 세로 스크롤이 없어야 합니다.");
     await appFrame.getByRole("link", { name: "로그인 없이 데모 시작" }).click();
-    await appFrame.locator("#logoutLink").waitFor();
+    await appFrame.locator("#profileMenuButton").click();
+    await appFrame.locator("#logoutLink").waitFor({ state: "visible" });
     assert.match(rootPage.frames()[1].url(), /main-screen\.html#dashboard$/);
     await appFrame.locator("#logoutLink").click();
     await appFrame.locator("#accessCard").waitFor();
     assert.match(rootPage.frames()[1].url(), /login-preview\/index\.html\?signed_out=1$/);
     assert.match(await appFrame.locator("#loginStatus").textContent(), /비로그인 화면으로 돌아왔습니다/);
+    await rootPage.close();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
     collectErrors(mobile, "mobile");
@@ -116,17 +145,16 @@ const { chromium } = require("playwright");
     const mobileLayout = await mobile.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
       viewportWidth: window.innerWidth,
-      navHidden: getComputedStyle(document.querySelector(".guest-nav")).display === "none",
       columns: getComputedStyle(document.querySelector(".guest-shell")).gridTemplateColumns,
       loginHeight: document.querySelector("#loginButton").getBoundingClientRect().height,
       guestHeight: document.querySelector("#demoEntryLink").getBoundingClientRect().height
     }));
     assert.ok(mobileLayout.bodyWidth <= mobileLayout.viewportWidth, "모바일 가로 넘침이 없어야 합니다.");
-    assert.equal(mobileLayout.navHidden, true);
     assert.equal(mobileLayout.columns.split(" ").length, 1);
     assert.ok(mobileLayout.loginHeight >= 48);
     assert.ok(mobileLayout.guestHeight >= 68);
     await mobile.screenshot({ path: path.join(output, "guest-mobile-390x844.png"), fullPage: true });
+    await mobile.close();
 
     const noScriptContext = await browser.newContext({ javaScriptEnabled: false });
     const noScriptPage = await noScriptContext.newPage();
@@ -143,7 +171,7 @@ const { chromium } = require("playwright");
     await noScriptContext.close();
 
     assert.deepEqual(errors, []);
-    console.log("PASS desktop/notebook/mobile layout, target selection, guest/login entry, logout return, and no-script safety");
+    console.log("PASS desktop one-screen layout, mobile layout, copy, guest/login entry, logout return, and no-script safety");
     console.log("OUTPUT " + output);
   } finally {
     await browser.close();

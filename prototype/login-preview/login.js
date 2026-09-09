@@ -7,7 +7,6 @@
   const loginButton = document.getElementById("loginButton");
   const loginStatus = document.getElementById("loginStatus");
   const accessCard = document.getElementById("accessCard");
-  const targetNotice = document.getElementById("targetNotice");
   const demoLinks = [document.getElementById("headerDemoLink"), document.getElementById("demoEntryLink")];
   const toast = document.getElementById("toast");
 
@@ -59,7 +58,6 @@
     demoLinks.forEach(function (link) {
       link.href = destination(view);
     });
-    targetNotice.innerHTML = '<span aria-hidden="true">↳</span> 시작하면 ' + viewNames[view] + " 화면으로 이동합니다.";
     document.querySelectorAll("[data-login-required]").forEach(function (button) {
       button.classList.toggle("is-active", button.dataset.targetView === view);
     });

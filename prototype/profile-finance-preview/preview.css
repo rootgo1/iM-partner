@@ -1,0 +1,460 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  color: #24464b;
+  background: #edf4f1;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--ipf-font);
+  background:
+    radial-gradient(circle at 80% 10%, rgba(181, 226, 135, .2), transparent 24rem),
+    #edf4f1;
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 3px solid #1b7b70;
+  outline-offset: 3px;
+}
+
+.ipf-preview-page {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 42px 0 56px;
+}
+
+.ipf-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.ipf-preview-kicker {
+  display: block;
+  margin-bottom: 9px;
+  color: #438578;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.ipf-preview-heading h1 {
+  margin: 0;
+  color: #153b34;
+  font-size: clamp(26px, 4vw, 40px);
+  line-height: 1.25;
+}
+
+.ipf-preview-heading p {
+  margin: 12px 0 0;
+  color: #6b827c;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.ipf-preview-safe {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border-radius: 999px;
+  color: #366d61;
+  background: #dceee8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ipf-preview-layout {
+  margin-top: 28px;
+  overflow: hidden;
+  border: 1px solid #d5e5e0;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 22px 58px rgba(36, 76, 65, .12);
+}
+
+.ipf-preview-controls {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e0ebe7;
+  background: #fff;
+}
+
+.ipf-preview-controls > span {
+  color: #6b827c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ipf-preview-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ipf-preview-controls button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #dce8e4;
+  border-radius: 10px;
+  color: #58716b;
+  background: #fff;
+  cursor: pointer;
+}
+
+.ipf-preview-controls button[aria-pressed="true"] {
+  border-color: #a8d1c6;
+  color: #1f665a;
+  background: #e7f3ef;
+  font-weight: 700;
+}
+
+.ipf-preview-stage {
+  min-height: 610px;
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 64px;
+  align-items: center;
+  padding: 42px 56px;
+}
+
+.ipf-preview-sidebar {
+  position: relative;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 14px 14px;
+  border: 1px solid #dfeae7;
+  border-radius: 18px;
+  background: #fbfdfc;
+  box-shadow: 0 16px 44px rgba(40, 78, 68, .13);
+}
+
+.ipf-preview-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 6px 18px;
+  color: #153f3a;
+}
+
+.ipf-preview-brand > span {
+  width: 25px;
+  height: 16px;
+  border-radius: 2px 14px 2px 14px;
+  background: linear-gradient(135deg, #00baa1 0 50%, #bfe967 50%);
+  transform: rotate(-8deg);
+}
+
+.ipf-preview-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.ipf-preview-nav span {
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: #708680;
+  font-size: 13px;
+}
+
+.ipf-preview-nav .is-active {
+  color: #1f675d;
+  background: #e8f3ef;
+  font-weight: 700;
+}
+
+.ipf-preview-account {
+  position: relative;
+  margin-top: auto;
+}
+
+.ipf-preview-popover {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: calc(100% + 10px);
+  left: 0;
+  padding: 10px;
+  border: 1px solid #d6e5e1;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(32, 78, 70, .2);
+}
+
+.ipf-preview-popover[hidden] {
+  display: none;
+}
+
+.ipf-preview-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px 10px;
+  border-bottom: 1px solid #e3ece9;
+}
+
+.ipf-preview-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #3d8e82, #78b8a5);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ipf-preview-identity > span:last-child,
+.ipf-preview-trigger > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  flex: 1 1 auto;
+  line-height: 1.4;
+}
+
+.ipf-preview-name-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ipf-preview-identity strong,
+.ipf-preview-trigger strong {
+  overflow: hidden;
+  color: #24464b;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ipf-preview-identity small,
+.ipf-preview-trigger small {
+  overflow: hidden;
+  margin-top: 2px;
+  color: #7a8d89;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ipf-preview-actions {
+  padding-top: 3px;
+}
+
+.ipf-preview-actions button {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  color: #3f5b60;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ipf-preview-actions button:hover {
+  color: #1f675f;
+  background: #edf6f3;
+}
+
+.ipf-preview-person-icon,
+.ipf-preview-exit-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.ipf-preview-person-icon::before {
+  position: absolute;
+  top: 1px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  content: "";
+}
+
+.ipf-preview-person-icon::after {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  left: 1px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  content: "";
+}
+
+.ipf-preview-exit-icon::before {
+  position: absolute;
+  inset: 2px 5px 2px 1px;
+  border: 2px solid currentColor;
+  border-right: 0;
+  content: "";
+}
+
+.ipf-preview-exit-icon::after {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  width: 10px;
+  border-top: 2px solid currentColor;
+  content: "→";
+  font-size: 0;
+}
+
+.ipf-preview-trigger {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #d7e7e2;
+  border-radius: 14px;
+  color: #24464b;
+  background: #eef6f3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ipf-preview-chevron {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-top: 2px solid #6e8983;
+  border-right: 2px solid #6e8983;
+  transform: rotate(-45deg);
+  transition: transform 150ms ease;
+}
+
+.ipf-preview-trigger[aria-expanded="false"] .ipf-preview-chevron {
+  transform: rotate(135deg);
+}
+
+.ipf-preview-explanation {
+  max-width: 520px;
+}
+
+.ipf-preview-explanation h2 {
+  margin: 0;
+  color: #153b34;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.4;
+}
+
+.ipf-preview-explanation ol {
+  display: grid;
+  gap: 14px;
+  margin: 24px 0 0;
+  padding-left: 22px;
+  color: #617872;
+  line-height: 1.65;
+}
+
+.ipf-preview-explanation li::marker {
+  color: #3f8f82;
+  font-weight: 800;
+}
+
+.ipf-preview-explanation strong {
+  color: #294f47;
+}
+
+.ipf-preview-event {
+  margin-top: 26px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  color: #426b62;
+  background: #e7f2ee;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ipf-preview-event.is-received {
+  color: #265e52;
+  background: #d9efe7;
+}
+
+@media (max-width: 760px) {
+  .ipf-preview-page {
+    width: min(100% - 24px, 520px);
+    padding: 24px 0 36px;
+  }
+
+  .ipf-preview-heading {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .ipf-preview-layout {
+    margin-top: 20px;
+    border-radius: 18px;
+  }
+
+  .ipf-preview-controls {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ipf-preview-controls > div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ipf-preview-controls button {
+    padding-right: 7px;
+    padding-left: 7px;
+    font-size: 12px;
+  }
+
+  .ipf-preview-stage {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 20px;
+  }
+
+  .ipf-preview-sidebar {
+    min-height: 520px;
+  }
+
+  .ipf-preview-explanation {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipf-preview-chevron {
+    transition: none;
+  }
+}

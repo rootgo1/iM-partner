@@ -151,14 +151,22 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width - 238) < 1);
   assert.equal(await page.locator('.metric-card').count(), 4);
   assert.equal(await page.locator('#viewRoot > .v-screen-section').count(), 4);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').first().locator('.v-dashboard-lead').count(), 1);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').first().locator('.metric-card').count(), 4);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').first().locator('.metric-card.primary').count(), 0);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(1).locator('.metric-card').count(), 0);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(1).locator('.v-dashboard-decision').count(), 1);
   assert.equal(await page.locator('#pageHeading').isHidden(), true);
   assert.equal(await page.locator('#dataNotice').isHidden(), true);
   const sectionLayout = await page.evaluate(() => {
     const root = document.querySelector('#viewRoot');
     const first = root.querySelector('.v-screen-section');
+    const sections = [...root.querySelectorAll(':scope > .v-screen-section')];
     return {
       rootHeight: root.clientHeight,
       sectionHeight: first.getBoundingClientRect().height,
+      sectionBackgrounds: [...new Set(sections.map(section => getComputedStyle(section).backgroundColor))],
+      sectionShadows: [...new Set(sections.map(section => getComputedStyle(section).boxShadow))],
       snap: getComputedStyle(root).scrollSnapType,
       enhanced: root.classList.contains('is-lenis-enhanced'),
       lenisVersion: window.lenis?.version,
@@ -167,20 +175,16 @@ const { chromium } = require('playwright');
     };
   });
   assert.ok(Math.abs(sectionLayout.rootHeight - sectionLayout.sectionHeight) <= 1, 'each desktop section must occupy one content viewport');
+  assert.equal(sectionLayout.sectionBackgrounds.length, 1, 'all sections must share one canvas color without alternating gray bands');
+  assert.deepEqual(sectionLayout.sectionShadows, ['none'], 'sections must not use straight inset shadow dividers');
   assert.equal(sectionLayout.snap, 'none');
   assert.equal(sectionLayout.enhanced, true);
   assert.equal(sectionLayout.lenisVersion, '1.3.26');
   assert.equal(sectionLayout.lenisSnap, false);
   assert.equal(sectionLayout.scrollMode, 'lenis-single-settle');
-  assert.equal(await page.locator('#dashboardPeriodSelect').inputValue(), 'month');
+  assert.equal(await page.locator('#dashboardPeriodSelect').count(), 0);
   assert.equal(await page.locator('h1:visible').count(), 1);
-  await page.locator('#dashboardPeriodSelect').selectOption('week');
-  await page.waitForFunction(() => document.querySelector('#periodSelect')?.value === 'week');
-  assert.equal(await page.locator('#dashboardPeriodSelect').inputValue(), 'week');
-  await page.locator('#dashboardPeriodSelect').selectOption('custom');
-  assert.equal(await page.locator('#dashboardCustomPeriod').isVisible(), true);
-  await page.locator('#dashboardPeriodSelect').selectOption('month');
-  await page.waitForFunction(() => document.querySelector('#periodSelect')?.value === 'month');
+  assert.equal(await page.locator('#dashboardCustomPeriod').count(), 0);
   const expenseMetric = page.locator('.metric-card').filter({ hasText: '총지출' });
   assert.match(await expenseMetric.innerText(), /▲ 7\.2% 증가/);
   assert.equal(await expenseMetric.locator('.trend-caution').count(), 1);
@@ -323,6 +327,7 @@ const { chromium } = require('playwright');
   assert.match(await page.locator('#viewRoot').innerText(), /월세/);
   assert.match(await page.locator('#viewRoot').innerText(), /매입금액 TOP 3/);
   assert.match(await page.locator('#viewRoot').innerText(), /시간대별 소비 흐름/);
+  assert.ok(await page.locator('#viewRoot .v-decision-layout').count() >= 3);
   assert.equal(await page.locator('#mainNavigation .nav-item').count(), 5);
   assert.equal(await page.locator('.topbar .profile, .topbar .logout-link').count(), 0);
   assert.equal(await page.locator('.topbar .data-chip').count(), 0);
@@ -361,12 +366,15 @@ const { chromium } = require('playwright');
   await page.locator('#aiClose').click();
 
   await page.getByRole('button', { name: 'iM비서', exact: true }).first().click();
+  assert.equal(await page.locator('.v-secretary-layout > .v-decision-action').count(), 1);
   await page.getByRole('button', { name: '시간대별 운영 전략을 정리해 주세요.' }).click();
   await page.getByRole('button', { name: '최종 요약 PDF 만들기' }).click();
   await page.locator('#pdfLink').waitFor({ state: 'visible' });
   assert.match(await page.locator('#pdfLink').getAttribute('href'), /^blob:/);
 
   await page.getByRole('button', { name: '지원사업', exact: true }).click();
+  assert.equal(await page.locator('.v-policy-decision > .v-decision-action').count(), 1);
+  assert.equal(await page.locator('.v-policy-overview').count(), 1);
   await page.getByRole('button', { name: '예시 조건 보기' }).first().click();
   assert.equal(await page.locator('#policyModal').getAttribute('open'), '');
   await page.getByRole('button', { name: '공고 예시 닫기' }).click();
