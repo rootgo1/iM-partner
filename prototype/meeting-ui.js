@@ -50,14 +50,16 @@
   const sourceFoot = '<p class="v-footer">생성 데이터 기반 시연 · 실제 POS·카드사·통신사 원자료가 아닙니다. 이 화면에는 DB·외부 API·실제 AI가 연결되어 있지 않습니다.</p>';
   function icon(name) {
     const paths = {
-      dashboard: '<path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.5v10.2c0 .7.6 1.3 1.3 1.3h10.4c.7 0 1.3-.6 1.3-1.3V9.5M9.5 21v-6.5h5V21"/>',
-      analysis: '<path d="M4 5v14.5c0 .3.2.5.5.5H20"/><path d="m7 15 3.2-4.2 3.1 2.4L18.5 7"/><circle cx="18.5" cy="7" r="1.5"/>',
-      recovery: '<circle cx="5" cy="18.5" r="2"/><circle cx="18.5" cy="5" r="2"/><path d="M7 18.5h3.5a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3h2"/>',
-      policies: '<path d="M6 3.5h8l4 4v12A1.5 1.5 0 0 1 16.5 21h-10A1.5 1.5 0 0 1 5 19.5V5a1.5 1.5 0 0 1 1-1.5z"/><path d="M14 3.5V8h4.5M8.5 14.5l2 2 4-4"/>',
-      secretary: '<path d="M12 3.5 14.2 9l5.3 2.2-5.3 2.2L12 19l-2.2-5.6-5.3-2.2L9.8 9 12 3.5z"/><path d="M5.5 3v3M4 4.5h3M19 17.5v3M17.5 19h3"/>',
+      dashboard: '<path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9"/>',
+      analysis: '<path d="M4 4v16h16M8 15v-4M12 15V7M16 15V5"/>',
+      recovery: '<path d="m4 17 6-6 4 4 6-10M14 5h6v6"/>',
+      policies: '<path d="M14 3H6v18h12V7l-4-4v4h4M8 14l3 3 4-5"/>',
+      secretary: '<path d="m11 5 2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6ZM19 2v4M17 4h4"/>',
+      check: '<path d="m5 12 4 4 10-10"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
       profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>'
     };
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
   }
   $('#mainNavigation').innerHTML = navigationViews.map(id =>
     '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '" aria-label="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + (id === 'secretary' ? productName('비서') : views[id]) + '</span></button>'
@@ -321,7 +323,7 @@
       { label: '예정 입출금', connected: summary.measured.includes('정산 예정 입출금') }
     ];
     const sources = sourceItems.map(item =>
-      '<div class="v-finance-source" data-connected="' + item.connected + '"><span><i aria-hidden="true">' + (item.connected ? '✓' : '+') + '</i>' + item.label + '</span><small>' + (item.connected ? '연결됨' : '연결 필요') + '</small></div>'
+      '<div class="v-finance-source" data-connected="' + item.connected + '"><span><i aria-hidden="true">' + icon(item.connected ? 'check' : 'plus') + '</i>' + item.label + '</span><small>' + (item.connected ? '연결됨' : '연결 필요') + '</small></div>'
     ).join('');
     const comparison = previousTemperature !== null
       ? '<div class="v-finance-thermo-compare" aria-label="직전 기간 ' + previousTemperatureText.replace('°', '도') + '에서 현재 ' + currentTemperatureText.replace('°', '도') + '로 변화"><span><small>직전 기간</small><strong>' + previousTemperatureText + '</strong></span><i aria-hidden="true">→</i><span class="current"><small>현재</small><strong>' + currentTemperatureText + '</strong></span></div>'

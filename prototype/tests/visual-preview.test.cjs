@@ -71,17 +71,17 @@ const { chromium } = require('playwright');
       iconHeight: icon.getBoundingClientRect().height,
       svgWidth: svg.getBoundingClientRect().width,
       strokeWidth: svg.getAttribute('stroke-width'),
-      activeDotOpacity: Number(activeDot.opacity),
-      inactiveDotOpacity: Number(inactiveDot.opacity),
+      activeDotContent: activeDot.content,
+      inactiveDotContent: inactiveDot.content,
       labelAlignmentDelta: Math.abs(activeLabel.left - inactiveLabel.left)
     };
   });
   assert.equal(navigationIconSystem.iconWidth, 32);
   assert.equal(navigationIconSystem.iconHeight, 32);
-  assert.equal(navigationIconSystem.svgWidth, 23);
-  assert.equal(navigationIconSystem.strokeWidth, '1.75');
-  assert.ok(navigationIconSystem.activeDotOpacity >= .95, 'active navigation icon needs a clear lime accent');
-  assert.ok(navigationIconSystem.inactiveDotOpacity <= .25, 'inactive navigation dots should stay subtle');
+  assert.equal(navigationIconSystem.svgWidth, 24);
+  assert.equal(navigationIconSystem.strokeWidth, '2');
+  assert.equal(navigationIconSystem.activeDotContent, 'none', 'flat icons have no decorative dots');
+  assert.equal(navigationIconSystem.inactiveDotContent, 'none');
   assert.ok(navigationIconSystem.labelAlignmentDelta <= .5, 'active indicator must not shift navigation labels');
   const expandedBrand = await page.evaluate(() => {
     const logo = document.querySelector('.brand-mark').getBoundingClientRect();
