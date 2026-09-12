@@ -2,6 +2,12 @@
 
 기존 정적 HTML, 함수 기반 렌더링, 공통 데이터 계산 및 Lenis 스크롤 구조를 유지했습니다.
 
+## 로그인 화면 데모 진입 복원 — 최신 반영
+
+- 사용자 요청에 따라 우측 상단 초록색 헤더에 ‘데모시작’ 버튼을 추가했습니다. 로그인 입력 없이 `main-screen.html#dashboard`로 이동합니다. 이전의 데모 링크 제거 결정은 이 항목으로 대체합니다.
+- 루트 페이지의 iframe 안에서도 이동하며, 로그아웃하면 로그인 화면으로 돌아옵니다. 일반 로그인 입력 동작은 유지합니다.
+- 수정 파일: `login-preview/index.html`, `login-preview/login.css`, `login-preview/login-preview.test.cjs`, `login-preview/visual-login-preview.test.cjs`, `login-preview/README.md`, `tests/meeting-revisions.browser.test.cjs`, 루트 `README.md`, 이 문서.
+
 ## 메뉴·연결 상태 아이콘 플랫 스타일
 
 - 메뉴의 장식용 점과 겹쳐진 배경을 제거하고 24px·2px 선 굵기의 단색 SVG로 통일했습니다. 홈·차트·회복 화살표·지원 문서·비서 아이콘을 간결하게 정리했습니다.

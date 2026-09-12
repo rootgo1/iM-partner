@@ -85,6 +85,9 @@ const { chromium } = require("playwright");
       assert.ok(metrics.access.width >= 390 && metrics.access.width < 570);
       assert.equal(await page.locator(".value-panel img, .guest-state, .safe-notice, #credentialGuide, .form-title-row").count(), 0);
       assert.equal(await page.locator("#accessTitle").innerText(), "아이디 로그인");
+      const demoBox = await page.locator("#headerDemoLink").boundingBox();
+      const brandBox = await page.locator(".brand").boundingBox();
+      assert.ok(demoBox.x > brandBox.x + brandBox.width && demoBox.height >= 44);
       await page.screenshot({ path: path.join(output, size.name) });
 
       if (size.width === 1440) {
@@ -128,7 +131,7 @@ const { chromium } = require("playwright");
     const appFrame = rootPage.frameLocator(".app-frame");
     await appFrame.locator("#loginButton").waitFor();
     assert.equal(await appFrame.locator("#demoEntryLink").count(), 0);
-    await rootPage.frames()[1].goto(pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href + '#dashboard');
+    await appFrame.getByRole("link", { name: "데모시작", exact: true }).click();
     await appFrame.locator("#profileMenuButton").click();
     await appFrame.locator("#logoutLink").waitFor({ state: "visible" });
     assert.match(rootPage.frames()[1].url(), /main-screen\.html#dashboard$/);
@@ -155,6 +158,13 @@ const { chromium } = require("playwright");
     assert.ok(mobileLayout.loginHeight >= 48);
     assert.ok(Math.abs(mobileLayout.loginWidth - mobileLayout.passwordWidth) <= 1, "모바일 비밀번호 입력창과 버튼의 너비가 같아야 합니다.");
     await mobile.screenshot({ path: path.join(output, "guest-mobile-390x844.png"), fullPage: true });
+    await mobile.setViewportSize({ width: 320, height: 844 });
+    assert.ok(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    const demo = await mobile.locator("#headerDemoLink").boundingBox();
+    assert.ok(demo.x + demo.width <= 320 && demo.y + demo.height <= 68);
+    await mobile.getByRole("link", { name: "데모시작", exact: true }).click();
+    await mobile.locator("#dashboardBanner").waitFor();
+    assert.match(mobile.url(), /main-screen\.html#dashboard$/);
     await mobile.close();
 
     const noScriptContext = await browser.newContext({ javaScriptEnabled: false });
@@ -169,6 +179,8 @@ const { chromium } = require("playwright");
     assert.ok(!noScriptPage.url().includes("real-account-must-not-leak"));
     assert.ok(!noScriptPage.url().includes("real-password-must-not-leak"));
     assert.equal(await noScriptPage.locator("#demoEntryLink").count(), 0);
+    await noScriptPage.getByRole("link", { name: "데모시작", exact: true }).click();
+    assert.match(noScriptPage.url(), /main-screen\.html#dashboard$/);
     await noScriptContext.close();
 
     assert.deepEqual(errors, []);

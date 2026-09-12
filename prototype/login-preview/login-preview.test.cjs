@@ -48,6 +48,7 @@ check("document metadata and ids are valid", () => {
 });
 
 check("guest entry matches the existing product flow", () => {
+  assert.match(html, /id="headerDemoLink" href="\.\.\/main-screen\.html#dashboard">데모시작<\/a>/);
   assert.ok(!html.includes("로그인 없이 데모 시작"));
   assert.ok(!html.includes("생성 데이터 기반 시연"));
   assert.ok(!/service-preview|login-dashboard/.test(html));

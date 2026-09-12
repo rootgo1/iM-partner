@@ -74,7 +74,7 @@ fs.mkdirSync(output, {recursive:true});
   console.log('PASS desktop: section order, wheel over banner/chart, nested boundary, chart toggles and keyboard, cash and chat resizing');
   await page.setViewportSize({width:1440,height:900});
   await page.goto(url('login-preview/index.html'));
-  assert.equal(await page.locator('#headerDemoLink, #demoEntryLink').count(),0);
+  assert.equal(await page.locator('#headerDemoLink').getAttribute('href'),'../main-screen.html#dashboard');
   assert.equal(await page.locator('.value-panel img').count(),0);
   await page.locator('#loginButton').click(); assert.equal(await page.locator('#userId').getAttribute('aria-invalid'),'true');
   await page.locator('#userId').fill('test-user'); await page.locator('#userPassword').fill('not-a-real-password');
@@ -98,7 +98,7 @@ fs.mkdirSync(output, {recursive:true});
     }
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS login: no demo entry/fake authentication, image and validation; responsive 390/760/1024; no runtime errors');
+  console.log('PASS login: explicit demo entry, credential validation; responsive 390/760/1024; no runtime errors');
   const clockPage = await browser.newPage({viewport:{width:1440,height:900}});
   await clockPage.clock.install({time:new Date('2026-09-12T23:59:55+09:00')});
   await clockPage.goto(url('main-screen.html'));
