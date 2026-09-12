@@ -1,0 +1,133 @@
+/* Scoped additions using the existing iM card, typography, control and section system. */
+.sd-panel { display: grid; gap: 18px; min-width: 0; }
+.sd-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.sd-kicker { color: #198775; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.sd-section-heading h2 { color: #173f3a; font-size: clamp(22px, 2vw, 30px); line-height: 1.45; margin: 5px 0 0; }
+.sd-panel .v-subtitle { margin: 6px 0 0; line-height: 1.65; }
+.sd-panel h3 { font-size: 18px; line-height: 1.55; margin: 0; }
+.sd-panel h4 { font-size: 16px; margin: 0; }
+.sd-panel .v-button, .sd-modal .v-button { min-height: 44px; }
+.sd-card { min-width: 0; margin: 0; }
+.sd-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px 18px; background: #fff; border: 1px solid #dce8e5; border-radius: 14px; }
+.sd-field { display: grid; gap: 6px; color: #536d67; font-size: 12px; font-weight: 500; }
+.sd-field .v-select { min-height: 44px; font-size: 14px; width: 100%; }
+.sd-filters .sd-field { flex: 1 1 145px; }
+.sd-period-line { display: flex; flex-wrap: wrap; gap: 6px 24px; color: #687c76; font-size: 12px; line-height: 1.7; }
+.sd-period-line b { font-weight: 500; color: #355f55; }
+.sd-insight { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 24px; background: linear-gradient(110deg, #e4f3ed, #f2f7e8); border: 1px solid #cee4d8; border-radius: 18px; }
+.sd-insight h3 { font-size: clamp(19px, 1.6vw, 24px); margin-top: 10px; }
+.sd-insight p { max-width: 760px; margin: 9px 0 0; color: #49675e; line-height: 1.75; font-size: 14px; }
+.sd-insight .v-button { flex-shrink: 0; }
+.sd-metrics.metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; gap: 14px; }
+.sd-metrics .metric-card { padding: 20px; min-width: 0; }
+.sd-metrics .metric-value { font-size: clamp(21px, 1.8vw, 30px); white-space: normal; overflow-wrap: anywhere; margin-top: 12px; }
+.sd-metrics .metric-value small { font-size: 15px; }
+.sd-metrics .v-metadata { font-size: 11px; margin-top: 7px; line-height: 1.6; }
+.sd-metrics .metric-foot { margin-top: 8px; font-size: 13px; }
+.sd-positive { color: #167565; }
+.sd-negative { color: #b05243; }
+.sd-metrics .primary .sd-negative, .sd-metrics .primary .sd-positive { color: #fff; }
+.v-screen-section--analysis-1 .sd-metrics .metric-card:not(.primary) { background: #fff; border-color: #dce8e5; }
+.v-screen-section--analysis-1 .sd-metrics .metric-card:not(.primary) .metric-label { color: #57756b; }
+.v-screen-section--analysis-1 .sd-metrics .metric-card:not(.primary) .metric-value { color: #244e43; }
+.v-screen-section--analysis-1 .sd-metrics .metric-card:not(.primary) .v-metadata { color: #6b8076; }
+.sd-section-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.sd-section-links .v-button { border-color: #dce8e5; background: #ffffffb3; font-size: 12px; }
+.sd-panel .sd-cash-status { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.sd-panel .sd-cash-status > div { padding: 9px 12px; min-height: 0; }
+.sd-panel .sd-cash-status strong { font-size: 12px; margin-top: 3px; }
+.sd-panel .sd-cash-status span { font-size: 10px; }
+.sd-definitions { color: #526d65; font-size: 12px; line-height: 1.85; }
+.sd-definitions summary { cursor: pointer; padding: 8px 0; min-height: 36px; font-weight: 500; }
+.sd-definitions p { margin: 7px 0; }
+.sd-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.sd-scope { color: #607c72; font-size: 12px; margin: -5px 0 0; line-height: 1.7; }
+.sd-legend { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: #6b7e78; font-size: 11px; margin: 16px 0 6px; }
+.sd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sd-legend i { width: 16px; height: 3px; display: inline-block; background: #198775; }
+.sd-legend i.old { background: repeating-linear-gradient(90deg, #9daeb8 0 5px, transparent 5px 8px); }
+.sd-trend { display: block; width: 100%; height: auto; margin: 12px 0; overflow: visible; }
+.sd-trend text { font-family: inherit; font-size: 11px; fill: #70857c; }
+.sd-trend g { cursor: pointer; }
+.sd-trend g:focus-visible { outline: none; }
+.sd-trend g:focus-visible circle:last-child { r: 6; stroke: #173f3a; stroke-width: 2; }
+.sd-effects { display: grid; gap: 24px; margin: 28px 0; font-size: 13px; }
+.sd-effects > div:last-child { padding-top: 16px; border-top: 1px solid #e1ebe7; }
+.sd-effect-track { background: #f1f5f3; height: 10px; border-radius: 4px; margin-top: 10px; }
+.sd-effect-track span { display: block; height: 100%; background: #9daeb8; border-radius: inherit; }
+.sd-effect-track .sd-negative { background: #d69686; }
+.sd-effect-track .sd-positive { background: #58a391; }
+.sd-explanation { color: #65796f; border-top: 1px solid #e6eeea; padding-top: 14px; margin: 18px 0 0; font-size: 12px; line-height: 1.85; }
+.sd-product-table { margin-top: 20px; min-width: 700px; }
+.sd-panel .v-table td, .sd-modal .v-table td { font-size: 12px; padding: 13px 10px; }
+.sd-panel .v-table th, .sd-modal .v-table th { font-size: 11px; padding: 12px 10px; }
+.sd-product-table .v-button { border: 0; background: #f0f7f3; color: #246c5b; text-align: left; }
+.sd-share { width: 88px; height: 4px; border-radius: 3px; background: #edf3f0; margin: 8px 0 5px auto; }
+.sd-share span { display: block; height: 100%; background: #53a18d; border-radius: inherit; }
+.sd-timing { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+.sd-weekdays { display: grid; gap: 6px; margin-top: 14px; }
+.sd-weekday { display: grid; width: 100%; grid-template-columns: 53px minmax(35px, 1fr) auto; align-items: center; gap: 12px; background: transparent; border: 0; color: #38584d; padding: 10px 0; text-align: left; cursor: pointer; font-size: 12px; }
+.sd-weekday:hover { background: #f4f8f5; }
+.sd-weekday > span:last-child { text-align: right; }
+.sd-weekday small { display: block; color: #798b83; font-size: 10px; margin-top: 4px; }
+.sd-bar-pair { display: grid; gap: 4px; }
+.sd-bar-pair i { display: block; background: #4d9e88; height: 7px; border-radius: 2px; }
+.sd-bar-pair i.old { background: #b4c1c5; }
+.sd-heatmap { width: 100%; min-width: 410px; border-collapse: separate; border-spacing: 4px; margin: 20px 0 12px; }
+.sd-heatmap th { color: #658075; font-size: 10px; font-weight: 400; white-space: nowrap; }
+.sd-heatmap tbody th { padding-right: 7px; }
+.sd-heatmap button { position: relative; display: block; width: 100%; height: 34px; border: 1px solid #266e5620; border-radius: 5px; background: rgb(31 137 107 / var(--heat)); color: #60796c; cursor: pointer; }
+.sd-heatmap button:disabled { background: #f3f5f4; opacity: 1; cursor: default; border-color: #e5ebe7; }
+.sd-heatmap button:hover:not(:disabled) { outline: 2px solid #195e49; }
+.sd-heat-legend { display: flex; justify-content: end; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 10px; color: #6b8076; }
+.sd-heat-legend i { display: block; width: 70px; height: 8px; background: linear-gradient(90deg, #edf6f0, #248b6d); border-radius: 3px; }
+.sd-heat-legend small { flex-basis: 100%; text-align: right; margin-top: 3px; }
+.sd-finance-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 16px; background: #f3f7f4; border-radius: 10px; margin: 18px 0; }
+.sd-finance-summary strong, .sd-finance-summary small { display: block; }
+.sd-finance-summary small { color: #688172; font-size: 11px; }
+.sd-finance-summary strong { margin-top: 7px; color: #285d4d; font-size: 18px; }
+.sd-cost { display: grid; gap: 7px; margin: 16px 0; font-size: 12px; }
+.sd-cost small { font-size: 10px; color: #71867a; }
+.sd-actions { display: grid; gap: 14px; margin-top: 20px; }
+.sd-action { background: #f4f8f4; padding: 18px; border: 1px solid #e1eadf; border-radius: 12px; }
+.sd-action-title { display: flex; align-items: center; gap: 10px; }
+.sd-action p { font-size: 12px; line-height: 1.8; color: #4e6d5d; margin: 10px 0; }
+.sd-action > small { font-size: 11px; color: #6c806e; display: block; margin-bottom: 12px; }
+.sd-action .v-button { font-size: 11px; }
+.sd-check { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #47694e; min-height: 44px; cursor: pointer; }
+.sd-check input { width: 17px; height: 17px; accent-color: #198775; }
+.sd-card > .sd-scope { margin-top: 12px; }
+.sd-record-table { min-width: 600px; margin-top: 12px; }
+.sd-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 0; color: #6d8277; font-size: 12px; }
+.sd-pagination > div { display: flex; gap: 8px; }
+.sd-empty { padding: 32px 16px; color: #718477; text-align: center; line-height: 1.85; font-size: 13px; }
+.sd-modal { width: min(900px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 48px); overflow: auto; }
+.sd-modal h2 { margin: 18px 0; }
+.sd-detail-totals { display: flex; flex-wrap: wrap; gap: 20px; padding: 18px; margin: 14px 0; background: #f1f7f3; border-radius: 10px; font-size: 14px; }
+.sd-detail-totals b { display: block; margin-top: 6px; }
+.sd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@container (max-width: 1000px) {
+  .sd-grid, .sd-timing { grid-template-columns: 1fr; }
+  .sd-metrics.metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sd-insight { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .sd-panel { gap: 16px; }
+  .sd-section-heading { align-items: start; flex-wrap: wrap; }
+  .sd-section-heading > .v-tag { font-size: 10px; }
+  .sd-filters { padding: 14px; gap: 10px; }
+  .sd-filters .sd-field { flex-basis: calc(50% - 10px); min-width: 0; }
+  .sd-field .v-select { padding-left: 8px; padding-right: 18px; font-size: 12px; }
+  .sd-insight { padding: 20px; }
+  .sd-metrics.metric-grid { gap: 10px; }
+  .sd-panel .sd-cash-status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sd-metrics .metric-card { padding: 14px; }
+  .sd-metrics .metric-value { font-size: 21px; }
+  .sd-metrics .metric-label { font-size: 11px; }
+  .sd-metrics .metric-foot { font-size: 11px; }
+  .sd-card { padding: 18px; }
+  .sd-panel .v-row.v-between { flex-wrap: wrap; gap: 10px; }
+  .sd-modal { padding: 18px; }
+  .sd-finance-summary { padding: 12px; }
+  .sd-finance-summary strong { font-size: 15px; }
+}

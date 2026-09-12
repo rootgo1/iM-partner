@@ -182,9 +182,9 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
   assert.equal(nodes.get('profileInitials').textContent, '소현');
   assert.equal(nodes.get('profileMenuInitials').textContent, '소현');
-  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '51.9°');
-  assert.equal(nodes.get('profileTemperatureBadge').textContent, '51.9°');
-  assert.match(nodes.get('profileMenuButton').attrs['aria-label'], /나의 금융 온도 51\.9도/);
+  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '51.2°');
+  assert.equal(nodes.get('profileTemperatureBadge').textContent, '51.2°');
+  assert.match(nodes.get('profileMenuButton').attrs['aria-label'], /나의 금융 온도 51\.2도/);
   assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
   assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
   assert.match(nodes.get('mainNavigation').innerHTML, />회복전략</);
@@ -199,7 +199,7 @@ check('Initial render and the consolidated navigation targets', () => {
   click({ view: 'analysis' });
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-finance-summary"'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-connection-grid"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('시간대별 소비 흐름'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('요일/시간대별 유동인구와 매출량'));
   click({ view: 'market' });
   assert.equal(location.hash, '#analysis');
   click({ view: 'policies' });
@@ -211,17 +211,17 @@ check('Finance thermometer uses the declared partial formula without calling it 
   click({ view: 'dashboard' });
   const markup = nodes.get('viewRoot').innerHTML;
   assert.match(markup, /class="v-finance-thermometer"/);
-  assert.match(markup, /style="--v-thermo-level:51\.9%"/);
+  assert.match(markup, /style="--v-thermo-level:51\.2%"/);
   assert.match(markup, /나의 금융 체온계/);
   assert.match(markup, /연결 데이터 2\/4/);
   assert.match(markup, /데이터 연결도/);
-  assert.match(markup, /매출·지출 기반 참고 온도/);
-  assert.match(markup, /나의 금융 온도<br><strong>51\.9°/);
-  assert.match(markup, /직전 기간 60\.7도에서 현재 51\.9도로 변화/);
-  assert.match(markup, /전월보다 8\.8° 낮음/);
+  assert.match(markup, /일별 지수 이동평균/);
+  assert.match(markup, /나의 금융 온도<br><strong>51\.2°/);
+  assert.match(markup, /직전 기간 59\.9도에서 현재 51\.2도로 변화/);
+  assert.match(markup, /직전기간보다 8\.7° 낮음/);
   assert.match(markup, /현금잔액/);
   assert.match(markup, /예정 입출금/);
-  assert.match(markup, /\(참고용 지표\)<\/span><span>신용평가·대출심사 결과와는 무관합니다\./);
+  assert.match(markup, /\(참고용 지표\) 신용평가·대출심사 결과와는 무관합니다\./);
   assert.ok(!markup.includes('영업이익률이나 현금잔액을 뜻하지 않습니다'));
   assert.ok(!markup.includes('—°'));
   assert.ok(!markup.includes('role="progressbar"'));
@@ -265,7 +265,7 @@ check('Report prompts, sidebar, chat controls, calendar and policy modal', () =>
 check('Recovery funnel, definitions, action state and chatbot share one source', () => {
   click({ view: 'recovery' });
   assert.ok(nodes.get('viewRoot').innerHTML.includes('통행자는 <b>310명</b>'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('매장 유입률이 <b>6.8%</b>'));
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('입장 전환율이 <b>6.8%</b>'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('유효 결제'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('데이터 집계 대기'));
   click({ action: 'show-recovery-definitions' }); assert.equal(nodes.get('recoveryMetricModal').open, true);

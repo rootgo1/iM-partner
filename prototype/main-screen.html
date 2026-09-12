@@ -1217,6 +1217,7 @@
   </style>
   <link rel="stylesheet" href="./vendor/lenis/lenis.css">
   <link rel="stylesheet" href="./meeting-preview.css">
+  <link rel="stylesheet" href="./sales-diagnosis.css">
   <link rel="stylesheet" href="./profile-finance-preview/profile-finance.css">
 </head>
 <body>
@@ -1293,13 +1294,12 @@
       </div>
     </main>
     <aside class="ai-panel" id="aiPanel" aria-label="데이터 질문 iM챗봇" aria-hidden="true" inert>
-      <div id="chatResizeHandle" class="v-resize-handle" aria-hidden="true"></div>
+      <div id="chatResizeHandle" class="v-resize-handle" role="separator" tabindex="0" aria-label="iM챗봇 너비 조절: 드래그 또는 좌우 방향키" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="560" aria-valuenow="380"></div>
       <div class="ai-panel-inner">
         <header class="ai-header">
           <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong class="im-product-name"><span>iM</span><span class="im-product-korean">챗봇</span></strong><p>간단한 데이터 질문을 도와드려요.</p></div></div>
           <button class="ai-close" id="aiClose" type="button" aria-label="iM챗봇 접기">×</button>
         </header>
-        <label class="v-resize">창 너비<input id="chatWidth" type="range" min="320" max="560" value="380" step="10" aria-label="iM챗봇 창 너비"></label>
         <div class="ai-context" id="aiContext"></div>
         <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="iM챗봇 대화">
           <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복전략에 관해 물어보세요.</div>
@@ -1327,15 +1327,17 @@
     <div class="v-row v-between"><span class="v-tag">CCTV·POS 지표</span><button type="button" class="v-button small" data-action="close-recovery-definitions" aria-label="회복전략 지표 기준 닫기">닫기</button></div>
     <h2 id="recoveryMetricModalTitle">지표 계산 기준</h2>
     <div class="v-definition-list">
-      <div><strong>매장 유입률</strong><span>입장객 수 ÷ 매장 앞 통행자 수 × 100</span></div>
-      <div><strong>추정 구매전환율</strong><span>비교 가능한 유효 결제 건수 ÷ 입장객 수 × 100. 결제 건수는 구매자 수와 다를 수 있어 추정치로 표시합니다.</span></div>
-      <div><strong>객단가</strong><span>매장 내 순매출 ÷ 비교 가능한 유효 결제 건수</span></div>
+      <div><strong>입장 전환율</strong><span>입장객 수 ÷ 매장 앞 통행인구 × 100</span></div>
+      <div><strong>결제 전환율(추정)</strong><span>비교 가능한 매장 내 유효 결제 건수 ÷ 입장객 수 × 100. 결제 건수는 구매자 수와 다를 수 있어 추정치로 표시합니다.</span></div>
+      <div><strong>전월 동일 요일 비교</strong><span>전월의 같은 요일·시간대 관측값을 합산해 전환율을 계산합니다. 현재 전환율에서 비교 전환율을 뺀 차이는 %p로 표시합니다.</span></div>
       <div><strong>요인 후보</strong><span>수치 패턴으로 먼저 점검할 항목이며 매출 변화의 확정 원인을 뜻하지 않습니다.</span></div>
     </div>
     <p class="v-metadata v-space">현재 값은 기능 검토용 생성 시나리오입니다. 실제 연동 전 CCTV 집계·중복 제거·POS 판매 채널·시간대 정합성 기준을 확정해야 합니다.</p>
   </dialog>
   <div class="demo-notice" id="demoNotice" role="status" aria-live="polite"></div>
   <script src="./meeting-data.js"></script>
+  <script src="./sales-diagnosis-data.js"></script>
+  <script src="./sales-diagnosis.js"></script>
   <script src="./report-pdf.js"></script>
   <script src="./vendor/lenis/lenis.min.js"></script>
   <script src="./smooth-scroll.js"></script>

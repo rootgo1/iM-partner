@@ -41,10 +41,12 @@
     view: 'dashboard', periodMode: 'month', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
     policyView: 'recommended', keyword: '', category: 'all', offset: 0,
     reportMessages: [], reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
-    bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
+    chartMode: 'hour', chartSeries: null, bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
   };
   let analysis = D.analyze(state.period);
   const recoveryData = D.analyzeRecovery();
+  let financeIndex = D.financialIndex();
+  let clockKey = "";
   const sourceFoot = '<p class="v-footer">생성 데이터 기반 시연 · 실제 POS·카드사·통신사 원자료가 아닙니다. 이 화면에는 DB·외부 API·실제 AI가 연결되어 있지 않습니다.</p>';
   function icon(name) {
     const paths = {
@@ -75,22 +77,40 @@
       '</div><div class="metric-foot">' + metricTrend(delta, direction) + '<span>' + foot + '</span></div></article>';
   }
   function comparisonChart() {
-    const rows = analysis.slots;
-    const x = i => 46 + i * 98, y = value => 210 - value * 1.7;
-    const path = key => rows.map((r, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(r[key]).toFixed(2)).join(' ');
-    const focus = rows.indexOf(analysis.focus);
-    const focusRow = rows[focus];
-    const focusGap = Math.abs(focusRow.trafficIndex - focusRow.cardIndex);
-    const indexText = value => value.toFixed(1).replace(/\.0$/, '');
-    let svg = '<svg class="v-chart" viewBox="0 0 590 260" role="img" aria-label="시간대별 유동인구와 카드소비 상대 지수, 각 지표 최댓값 100 기준"><rect x="' + (x(focus) - 27) + '" y="24" width="54" height="186" rx="10" fill="#fff4e2"/><text class="v-chart-focus-label" x="' + x(focus) + '" y="18" text-anchor="middle">' + esc(focusRow.label) + ' 집중</text>';
-    [0, 25, 50, 75, 100].forEach(v => { svg += '<line x1="45" x2="548" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e9efeb"/><text x="8" y="' + (y(v) + 5) + '">' + v + '</text>'; });
-    svg += '<path d="' + path('trafficIndex') + '" fill="none" stroke="#399b87" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="' + path('cardIndex') + '" fill="none" stroke="#e7a04f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
-    rows.forEach((r, i) => {
-      const selected = i === focus;
-      svg += '<circle cx="' + x(i) + '" cy="' + y(r.trafficIndex) + '" r="' + (selected ? 5.5 : 4) + '" fill="#399b87"' + (selected ? ' stroke="#fff" stroke-width="2.5"' : '') + '/><circle cx="' + x(i) + '" cy="' + y(r.cardIndex) + '" r="' + (selected ? 5.5 : 4) + '" fill="#e7a04f"' + (selected ? ' stroke="#fff" stroke-width="2.5"' : '') + '/><text x="' + x(i) + '" y="241" text-anchor="middle">' + r.label + '</text>';
-      if (selected) svg += '<text class="v-chart-point-value traffic" x="' + x(i) + '" y="' + Math.max(31, y(r.trafficIndex) - 11) + '" text-anchor="middle">' + indexText(r.trafficIndex) + '</text><text class="v-chart-point-value card" x="' + x(i) + '" y="' + (y(r.cardIndex) - 11) + '" text-anchor="middle">' + indexText(r.cardIndex) + '</text>';
+    const rows = state.chartMode === 'weekday' ? analysis.weekdaySlots : analysis.slots;
+    const series = [
+      { key: 'traffic', label: '상권 유동인구', color: '#278a77', dash: '', unit: '명' },
+      { key: 'card', label: '카드소비', color: '#bb741e', dash: '9 5', unit: '원' },
+      { key: 'sales', label: '우리 가게 매출', color: '#426bcc', dash: '', unit: '원' },
+      { key: 'storefront', label: '우리 가게 앞 유동인구', color: '#9560b4', dash: '3 5', unit: '명' }
+    ];
+    const x = i => 55 + i * 490 / Math.max(1, rows.length - 1), y = value => 210 - value * 1.65;
+    let svg = '<svg class="v-chart" viewBox="0 0 600 255" role="group" aria-label="네 지표의 상대 지수 비교. 범례 또는 선을 선택하면 강조됩니다.">';
+    [0, 50, 100].forEach(value => { svg += '<line x1="55" x2="550" y1="' + y(value) + '" y2="' + y(value) + '" stroke="#e6eee9"/><text x="12" y="' + (y(value) + 5) + '">' + value + '</text>'; });
+    series.forEach(item => {
+      const max = Math.max(1, ...rows.map(row => row[item.key] || 0));
+      let connected = false;
+      const path = rows.map((row, i) => {
+        if (row[item.key] == null) { connected = false; return ''; }
+        const command = connected ? 'L' : 'M'; connected = true;
+        return command + x(i).toFixed(1) + ' ' + y(row[item.key] / max * 100).toFixed(1);
+      }).join(' ');
+      svg += '<g data-chart-line="' + item.key + '" data-series="' + item.key + '" role="button" tabindex="0" aria-label="' + item.label + ' 강조" aria-pressed="false"><path d="' + path + '" fill="none" stroke="transparent" stroke-width="16" pointer-events="stroke"/><path d="' + path + '" fill="none" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '" stroke-linecap="round"/>';
+      rows.forEach((row, i) => {
+        if (row[item.key] != null) svg += '<circle cx="' + x(i) + '" cy="' + y(row[item.key] / max * 100) + '" r="4" fill="' + item.color + '"><title>' + row.label + ' · ' + item.label + ' ' + number(row[item.key]) + item.unit + '</title></circle>';
+      });
+      svg += '</g>';
     });
-    return '<div class="v-chart-toolbar"><div class="v-legend"><span><i class="v-dot"></i>유동인구</span><span><i class="v-dot orange"></i>카드소비</span></div><span class="v-chart-focus"><small>간극 최대</small><strong>' + esc(focusRow.label) + ' · ' + indexText(focusGap) + '</strong></span></div>' + svg + '</svg><p class="v-metadata">생성 상권 자료 · 시간대별 최댓값을 100으로 환산한 상대 지수<br>개인의 구매전환율이나 매출 변화의 확정 원인이 아닙니다.</p>';
+    rows.forEach((row, i) => { svg += '<text x="' + x(i) + '" y="241" text-anchor="middle">' + row.label + '</text>'; });
+    return '<div class="v-comparison-chart"><div class="v-chart-mode" aria-label="그래프 집계 단위">' + ['hour', 'weekday'].map(mode => '<button type="button" data-chart-mode="' + mode + '" aria-pressed="' + (state.chartMode === mode) + '">' + (mode === 'hour' ? '시간대별' : '요일별') + '</button>').join('') + '</div><div class="v-legend v-series-legend">' + series.map(item => '<button type="button" data-series="' + item.key + '" aria-pressed="false"><svg width="24" height="10" aria-hidden="true"><line x1="0" x2="24" y1="5" y2="5" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '"/></svg>' + item.label + '</button>').join('') + '</div>' + svg + '</svg><p class="v-metadata">' + esc(state.period.start + ' ~ ' + state.period.end) + ' · 생성 자료<br>각 지표의 최댓값 = 100 · ' + (state.chartMode === 'weekday' ? '관측일 수로 나눈 요일별 일평균' : '선택 기간의 시간대별 합계') + ' · 점 위에서 실제 수치 확인<br>카드소비는 별도 상권 표본이며, 홈의 서비스 이용 가게 소비 합계와 범위가 다릅니다.</p></div>';
+  }
+  function highlightChartSeries(key) {
+    state.chartSeries = state.chartSeries === key ? null : key;
+    document.querySelectorAll('[data-series]').forEach(node => {
+      const selected = state.chartSeries === node.dataset.series;
+      node.setAttribute('aria-pressed', String(selected));
+      node.style.opacity = state.chartSeries && !selected ? '.22' : '1';
+    });
   }
   function salesChart() {
     const rows = analysis.daily, max = Math.max(1, ...rows.flatMap(r => [r.sales, r.expense]));
@@ -107,16 +127,14 @@
     return '내 가게 매출 ' + pct(analysis.salesRate) + ', 상권 카드소비 ' + pct(analysis.cardRate) + ', 유동인구 ' + pct(analysis.trafficRate) + '입니다. ' + analysis.focus.label + ' 상대 지수 차이를 운영 점검의 요인 후보로 살펴보세요.';
   }
   function dashboardInsight() {
-    const focus = analysis.focus;
-    const indexText = value => value.toFixed(1).replace(/\.0$/, '');
-    const gap = Math.abs(focus.trafficIndex - focus.cardIndex);
-    const interpretation = focus.trafficIndex >= focus.cardIndex
-      ? '유동은 많지만 카드소비 연결은 상대적으로 낮습니다'
-      : '카드소비 대비 유동인구 흐름이 상대적으로 낮습니다';
-    return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">오늘의 매출 진단</span><span>핵심 신호</span></div>' +
-      '<h2>사람의 흐름과<br>소비의 흐름은 다릅니다</h2><p class="v-dashboard-insight-lead"><strong>' + esc(focus.label) + '</strong>는 두 지표의 차이가 가장 큰 시간대입니다</p>' +
-      '<div class="v-dashboard-insight-values" aria-label="' + esc(focus.label) + ' 상대 지수 비교"><div><span>유동인구 지수</span><strong>' + indexText(focus.trafficIndex) + '</strong></div><i aria-hidden="true">↔</i><div><span>카드소비 지수</span><strong>' + indexText(focus.cardIndex) + '</strong></div></div>' +
-      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + interpretation + '</strong><p>' + esc(analysis.action) + '</p><small>지수 차이 ' + indexText(gap) + ' · 구매전환율이나 확정 원인 아님</small></div>' +
+    const clock = D.seoulClock();
+    const slot = analysis.slots.find(row => clock.hour >= row.hour && clock.hour < row.hour + 2);
+    const stamp = clock.date + ' ' + String(clock.hour).padStart(2, '0') + ':' + String(clock.minute).padStart(2, '0');
+    const guidance = D.guidance(clock.hour);
+    return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">현재 매출진단</span><span>' + stamp + '</span></div>' +
+      '<h2>' + (slot ? slot.label + ' 운영 점검' : '영업시간 밖입니다') + '</h2><p class="v-dashboard-insight-lead">' + (slot ? '현재 시각이 포함된 시간대를 선택 기간의 기록으로 살펴봅니다.' : '분석 가능한 시간대는 08~20시입니다.') + '</p>' +
+      (slot ? '<div class="v-dashboard-insight-values"><div><span>해당 시간대 매출 합계</span><strong>' + compact(slot.sales) + '만 원</strong></div><div><span>가게 앞 통행 합계</span><strong>' + number(slot.storefront) + '명</strong></div></div>' : '') +
+      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (slot ? guidance.title : '다음 영업을 준비하세요') + '</strong><p>' + (slot ? guidance.text : '재고·정산 예정금액을 확인하고 다음 영업시간의 인력과 재료를 준비하세요.') + '</p><small>' + esc(state.period.start + '~' + state.period.end) + ' 생성 기록 · 실시간 매출 아님 · 운영 안내는 최근 7일 기록 참고</small></div>' +
       '<button class="v-button primary v-dashboard-insight-action" type="button" data-view="recovery">회복전략 확인하기 →</button></article>';
   }
   function costText() {
@@ -225,6 +243,7 @@
   function screenGroups(view, children) {
     const groupByIndexes = indexes => indexes.map(group => group.map(index => children[index]).filter(Boolean));
     if (view === 'dashboard') return groupByIndexes([[0, 1], [2], [3], [4, 5]]);
+    if (view === 'analysis' && window.IM_SALES_DIAGNOSIS) return groupByIndexes([[0], [1], [2], [3], [4], [5, 6]]);
     if (view === 'analysis') return groupByIndexes([[3, 4], [0, 1], [5, 6], [7], [2], [8, 9]]);
     if (view === 'recovery') return recoveryScreenGroups(children);
     if (view === 'policies') return groupByIndexes([[0], [1]]);
@@ -287,10 +306,10 @@
     const actionTarget = hasMetric ? 'analysis' : 'profile';
     const actionLabel = hasMetric ? '근거와 연결 항목 보기' : '내 가게 정보 확인하기';
     return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 금융신호 한눈에 보기</p><h2 id="financeThermoTitle">나의 금융 체온계</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
-      '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">매출·지출 기반 참고 온도</p></div>' +
-      '<div class="v-finance-thermo-summary"><span>현재 내 금융 지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + deltaText + '</span></div></div>' +
+      '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월(30일)<br>일별 지수 이동평균</p></div>' +
+      '<div class="v-finance-thermo-summary"><span>현재(당일) 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
       '<div class="v-finance-thermo-sources" aria-label="금융 체온계 데이터 연결 상태">' + sources + '</div><button class="v-finance-thermo-action" type="button" data-view="' + actionTarget + '"><span>' + actionLabel + '</span><i aria-hidden="true">→</i></button>' +
-      '<p class="v-finance-thermo-notice"><span>(참고용 지표)</span><span>신용평가·대출심사 결과와는 무관합니다.</span></p></article>';
+      '<p class="v-finance-thermo-updated">' + esc(financeIndex.today) + ' 갱신 · 자료 기준 ' + esc(financeIndex.asOf || '없음') + (financeIndex.stale ? ' · 당일 자료 대기' : '') + '</p><p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
   }
   function dashboardLead() {
     return '<section class="v-dashboard-lead" aria-label="오늘의 브리핑과 나의 금융 체온계">' +
@@ -302,30 +321,38 @@
       '<div class="v-feature-banner-controls"><button data-action="banner-prev" aria-label="이전 배너" type="button">‹</button><button data-action="banner-pause" id="bannerPause" type="button" aria-label="배너 자동 전환 일시정지">Ⅱ</button><button data-action="banner-next" aria-label="다음 배너" type="button">›</button></div></div></div>' +
       financeThermometerCard() + '</section>';
   }
+  function conversionChange(value) {
+    return value == null ? '비교 자료 없음' : (value > 0 ? '▲ ' : value < 0 ? '▼ ' : '') + Math.abs(value).toFixed(1) + '%p';
+  }
+  function recoveryComparison(row) {
+    return '전월 동일 요일·동일 시간대 ' + row.comparisonDates.length + '일 합산 기준 · ' + row.comparisonDates.join(', ') +
+      ' · 입장 ' + ratioText(row.previousEntryRate) + ' → ' + ratioText(row.entryRate) +
+      ' · 결제(추정) ' + ratioText(row.previousPurchaseRate) + ' → ' + ratioText(row.estimatedPurchaseRate) +
+      ' · 생성 집계 · 결제 건수는 구매자 수와 다를 수 있습니다.';
+  }
   function recoveryDashboardCard() {
     const r = recoveryData.opportunity;
     const primaryAction = recoveryData.actions[0];
     return '<section class="card v-recovery-signal v-recovery-signal--final" aria-label="최근 CCTV와 POS 회복 신호">' +
       '<div class="v-recovery-signal-copy"><div class="v-recovery-signal-head"><span class="v-tag amber">CCTV·POS 생성 분석</span><span class="v-metadata">분석일 ' + dateText(recoveryData.analysisDate) + '</span></div>' +
       '<span class="v-recovery-signal-kicker">오늘의 전환 신호</span><h2><strong>' + r.label + '</strong> 통행은 많지만<br>입장 전환은 낮습니다</h2>' +
-      '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>으로 매장 유입률은 <strong>' + ratioText(r.entryRate) + '</strong>입니다.<span class="v-recovery-signal-followup">확정 원인이 아닌 점검 후보를 다음 행동으로 연결합니다</span></p>' +
+      '<p>통행자 <strong>' + number(r.passersby) + '명</strong> 중 입장객은 <strong>' + number(r.entrants) + '명</strong>으로 입장 전환율은 <strong>' + ratioText(r.entryRate) + '</strong>입니다.<span class="v-recovery-signal-followup">확정 원인이 아닌 점검 후보를 다음 행동으로 연결합니다</span></p>' +
       '<div class="v-recovery-priority"><span>먼저 확인할 항목</span><strong>' + primaryAction.title + '</strong><p>' + primaryAction.detail + '</p></div>' +
       '<button class="v-button primary" type="button" data-view="recovery">전환 흐름과 회복전략 보기 →</button></div>' +
-      '<div class="v-recovery-signal-panel"><div class="v-recovery-signal-panel-head"><span>전환 흐름</span><strong>통행에서 결제까지</strong></div><div class="v-recovery-conversion-highlight"><span>핵심 점검 구간</span><strong>통행 → 입장</strong><b>매장 유입률 ' + ratioText(r.entryRate) + '</b></div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.entryRate) + '</small></i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.estimatedPurchaseRate) + '</small></i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
-      '<div class="v-signal-context" aria-label="회복 신호 보조 지표"><div><span>매장 앞 체류</span><strong>' + number(r.dwellers) + '명</strong></div><div><span>체류율</span><strong>' + ratioText(r.dwellRate) + '</strong></div><div><span>결제 객단가</span><strong>' + money(r.averageTicket) + '</strong></div><div><span>판단 수준</span><strong>요인 후보</strong></div></div><p class="v-recovery-signal-note">매장 앞 익명 집계와 매장 내 결제 형식의 생성값 · 확정 원인 아님</p></div>' +
+      '<div class="v-recovery-signal-panel"><div class="v-recovery-signal-panel-head"><span>전환 흐름</span><strong>통행에서 결제까지</strong></div><div class="v-recovery-conversion-highlight"><span>핵심 점검 구간</span><strong>통행 → 입장</strong><b>입장 전환율 ' + ratioText(r.entryRate) + '</b></div><div class="v-signal-flow" aria-label="통행에서 결제까지의 핵심 수치"><div><span>통행</span><strong>' + number(r.passersby) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.entryRate) + '</small></i><div class="focus"><span>입장</span><strong>' + number(r.entrants) + '명</strong></div><i class="v-signal-connector"><b aria-hidden="true">→</b><small>' + ratioText(r.estimatedPurchaseRate) + '</small></i><div><span>결제</span><strong>' + number(r.validPayments) + '건</strong></div></div>' +
+      '<div class="v-signal-context" aria-label="회복 신호 보조 지표"><div><span>매장 앞 통행인구</span><strong>' + number(r.passersby) + '명</strong></div><div><span>입장 전환율</span><strong>' + ratioText(r.entryRate) + '</strong></div><div><span>결제 전환율(추정)</span><strong>' + ratioText(r.estimatedPurchaseRate) + '</strong></div><div><span>전월 동일 요일 대비</span><strong>' + conversionChange(r.entryRateDelta) + '</strong></div></div><p class="v-recovery-signal-note">' + recoveryComparison(r) + '</p></div>' +
       '</section>';
   }
   function recoveryFunnel() {
     const r = recoveryData.opportunity;
     const steps = [
-      { label: '매장 앞 통행', value: number(r.passersby) + '명', meta: '기준 100%', icon: '길' },
-      { label: '매장 앞 체류', value: number(r.dwellers) + '명', meta: '체류율 ' + ratioText(r.dwellRate), icon: '눈' },
-      { label: '매장 입장', value: number(r.entrants) + '명', meta: '유입률 ' + ratioText(r.entryRate), icon: '문', focus: true },
+      { label: '매장 앞 통행인구', value: number(r.passersby) + '명', meta: '기준 100%', icon: '길' },
+      { label: '매장 입장', value: number(r.entrants) + '명', meta: '입장 전환율 ' + ratioText(r.entryRate), icon: '문', focus: true },
       { label: '유효 결제', value: number(r.validPayments) + '건', meta: '추정 전환 ' + ratioText(r.estimatedPurchaseRate), icon: '결' },
       { label: '순매출', value: money(r.netSales), meta: '매장 결제 생성값', icon: '원' }
     ];
     return '<div class="v-funnel">' + steps.map(step => '<article class="v-funnel-step' + (step.focus ? ' focus' : '') + '"><span class="v-funnel-icon" aria-hidden="true">' + step.icon + '</span><span class="v-funnel-label">' + step.label + '</span><strong>' + step.value + '</strong><span class="v-funnel-meta">' + step.meta + '</span></article>').join('') + '</div>' +
-      '<div class="v-funnel-metrics"><div><span>객단가</span><strong>' + money(r.averageTicket) + '</strong></div><div><span>가장 큰 점검 구간</span><strong>통행 → 입장</strong></div><div><span>비교 범위</span><strong>매장 내 결제 시나리오</strong></div></div>';
+      '<div class="v-funnel-metrics"><div><span>결제 전환율(추정)</span><strong>' + ratioText(r.estimatedPurchaseRate) + '</strong></div><div><span>입장 전환율 변화</span><strong>' + conversionChange(r.entryRateDelta) + '</strong></div><div><span>결제 전환율 변화</span><strong>' + conversionChange(r.purchaseRateDelta) + '</strong></div></div><p class="v-metadata">' + recoveryComparison(r) + '</p>';
   }
   function recoveryChart() {
     const rows = recoveryData.slots;
@@ -336,7 +363,7 @@
     const yTraffic = value => bottom - value / maxTraffic * (bottom - top);
     const yRate = value => bottom - value / maxRate * (bottom - top);
     const opportunityIndex = rows.findIndex(r => r.id === recoveryData.opportunity.id);
-    let svg = '<svg class="v-recovery-chart" viewBox="0 0 620 275" role="img" aria-label="시간대별 통행자 수 막대와 매장 유입률 선 그래프">';
+    let svg = '<svg class="v-recovery-chart" viewBox="0 0 620 275" role="img" aria-label="시간대별 통행자 수 막대와 입장 전환율 선 그래프">';
     svg += '<rect x="' + (x(opportunityIndex) - 35) + '" y="18" width="70" height="210" rx="12" fill="#fff4e3"/>';
     [0, .5, 1].forEach(step => {
       const y = bottom - step * (bottom - top);
@@ -351,24 +378,23 @@
     svg += '<path d="' + rows.map((row, i) => (i ? 'L' : 'M') + x(i) + ' ' + yRate(row.entryRate).toFixed(1)).join(' ') + '" fill="none" stroke="#226f67" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
     rows.forEach((row, i) => { svg += '<circle cx="' + x(i) + '" cy="' + yRate(row.entryRate).toFixed(1) + '" r="5" fill="#fff" stroke="#226f67" stroke-width="3"/>'; });
     svg += '</svg>';
-    return '<div class="v-row v-between"><div class="v-legend"><span><i class="v-dot"></i>통행자 수 · 왼쪽 축</span><span><i class="v-line-dot"></i>매장 유입률 · 오른쪽 축</span></div><span class="v-tag amber">' + recoveryData.opportunity.label + ' 시나리오</span></div>' + svg +
+    return '<div class="v-row v-between"><div class="v-legend"><span><i class="v-dot"></i>통행자 수 · 왼쪽 축</span><span><i class="v-line-dot"></i>입장 전환율 · 오른쪽 축</span></div><span class="v-tag amber">' + recoveryData.opportunity.label + ' 시나리오</span></div>' + svg +
       '<p class="v-metadata">CCTV 형식 익명 집계 생성값 · 시간대 선택은 기능 검토용 시나리오이며 자동 추천 산식은 아직 확정되지 않았습니다.</p>';
   }
   function dashboard() {
     return dashboardLead() + '<section class="metric-grid v-dashboard-metrics" aria-label="선택 기간 핵심 지표">' +
       metric('내 가게 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, false) +
       metric('총지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
-      metric('상권 카드소비 변화', pct(analysis.cardRate), undefined, state.period.comparison + ' · 생성 자료') +
+      metric('상권 소비 변화', pct(analysis.merchantRate), undefined, state.period.comparison + ' · 상권 내 서비스 이용 ' + analysis.merchantCount + '개 가게 · 생성 자료') +
       metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
-      '</section><div class="v-decision-layout v-dashboard-decision">' +
-      card(head('시간대별 유동인구와 카드소비', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart(), 'v-evidence-panel v-dashboard-flow-card') +
-      dashboardInsight() + '</div>' + recoveryDashboardCard() +
-      '<div class="v-grid2 v-dashboard-support">' + card(guidanceCard(), 'v-dashboard-guidance v-decision-action') + dashboardContextCard() + '</div>';
+      '</section><div class="v-grid2 v-dashboard-support">' + card(guidanceCard(), 'v-dashboard-guidance v-decision-action') + dashboardContextCard() + '</div><div class="v-decision-layout v-dashboard-decision">' +
+      card(head('요일/시간대별 유동인구와 매출량', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart(), 'v-evidence-panel v-dashboard-flow-card') +
+      dashboardInsight() + '</div>' + recoveryDashboardCard();
   }
   function market() {
     const max = Math.max(1, ...analysis.byWeekday.map(r => r.sales || 0));
     return note('상권 유동인구와 매장 방문자 수는 다릅니다. 이 시안은 생성 POS 판매 집계와 생성 상권 지표를 비교합니다.') +
-      '<div class="v-grid2 v-analysis-overview">' + card(head('시간대별 소비 흐름', badge(analysis.focus.label + ' 점검')) + comparisonChart()) +
+      '<div class="v-grid2 v-analysis-overview">' + card(head('요일/시간대별 유동인구와 매출량', badge('선택 기간')) + comparisonChart()) +
       card(head('요일별 일평균 매출', badge('영업 기록 기준', 'neutral')) + analysis.byWeekday.map(r =>
         '<div class="v-row v-between"><span>' + r.label + '요일 <small class="v-metadata">' + r.count + '일</small></span><strong>' + (r.sales == null ? '자료 없음' : money(r.sales)) + '</strong></div><div class="v-progress"><span style="width:' + ((r.sales || 0) / max * 100) + '%"></span></div>').join('') +
         '<p class="v-metadata">합계가 아닌 관측 일수로 나눈 일평균입니다.</p>') + '</div>' +
@@ -382,8 +408,8 @@
     return '<section class="metric-grid">' + metric('선택 기간 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, true) +
       metric('선택 기간 지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
       '<article class="card metric-card"><div class="metric-label">매출·지출 차이</div><div class="metric-value">' + compact(analysis.delta) + '<small> 원</small></div><p class="v-metadata v-space">영업이익·현금잔액과 구분</p></article>' +
-      '<article class="card metric-card"><div class="metric-label">매입비</div><div class="metric-value">' + compact(purchase.amount) + '<small> 원</small></div><p class="v-metadata v-space">품목별 매입금액 합계</p></article></section>' +
-      '<div class="v-finance-summary" aria-label="선택 기간 재무 요약"><div><span>매출 대비 지출</span><strong>' + ratioText(analysis.expenseRatio) + '</strong><small>참고 온도 산출식: 100 - 지출비율</small></div><div><span>가장 큰 지출 항목</span><strong>' + largestExpense.name + '</strong><small>' + money(largestExpense.amount) + '</small></div><div><span>해석 기준</span><strong>매출·지출 차이</strong><small>영업이익·현금잔액과 구분</small></div></div>' +
+      '<article class="card metric-card"><div class="metric-label">현금보유량</div><div class="metric-value">미연결</div><p class="v-metadata v-space">사업용 계좌 잔액·보유 현금 연결 필요</p></article><article class="card metric-card"><div class="metric-label">매입비</div><div class="metric-value">' + compact(purchase.amount) + '<small> 원</small></div><p class="v-metadata v-space">품목별 매입금액 합계</p></article></section>' +
+      '<div class="v-finance-summary" aria-label="선택 기간 재무 요약"><div><span>매출 대비 지출</span><strong>' + ratioText(analysis.expenseRatio) + '</strong><small>선택 기간 지출 ÷ 매출 × 100</small></div><div><span>가장 큰 지출 항목</span><strong>' + largestExpense.name + '</strong><small>' + money(largestExpense.amount) + '</small></div><div><span>해석 기준</span><strong>매출·지출 차이</strong><small>영업이익·현금잔액과 구분</small></div></div>' +
       '<div class="v-decision-layout v-finance-decision">' + card(head('일별 매출·지출') + salesChart(), 'v-evidence-panel') +
       card(head('지출 구조 진단', badge('선택 기간', 'neutral')) + '<p class="v-subtitle">지출 비중이 큰 항목부터 운영 점검 순서를 정합니다.</p>' + analysis.byCategory.map(r =>
         '<div class="v-row v-between"><span>' + r.name + '</span><strong>' + money(r.amount) + '</strong></div><div class="v-progress"><span style="width:' + r.amount / Math.max(analysis.expense, 1) * 100 + '%"></span></div>').join(''), 'v-decision-action') + '</div>' +
@@ -392,12 +418,13 @@
         analysis.topPurchases.slice(0, 3).map(r => '<tr><td>' + r.name + '</td><td class="right">' + r.quantity.toFixed(1) + ' ' + r.unit + '</td><td class="right">' + money(r.amount) + '</td></tr>').join('') +
         '</tbody></table></div><p class="v-metadata v-space">생성 매입 자료 · 매입량은 실제 사용량과 다를 수 있습니다.</p>') +
       card(head('발주 전에 확인할 것') + '<div class="v-list"><div class="v-list-item"><span class="v-number">01</span><div><strong>판매 메뉴와 재료를 연결하세요</strong><p>메뉴별 레시피·단위 대응 자료가 필요합니다.</p></div></div><div class="v-list-item"><span class="v-number">02</span><div><strong>남은 재고·폐기를 확인하세요</strong><p>자료가 없어 과다 매입 수량이나 다음 달 발주량은 계산하지 않습니다.</p></div></div></div><div class="v-check-strip"><span>현재 확인 가능</span><strong>매입금액 순위</strong><span>추가 연결 필요</span><strong>재고·폐기·레시피</strong></div>', 'v-decision-action') + '</div>' +
-      '<div class="v-grid2">' + card(head('자금 흐름', badge('연결 전', 'neutral')) + '<p class="v-subtitle">보유 현금으로 오해하지 않도록 연결되지 않은 항목을 구분합니다.</p><div class="v-connection-grid"><div><span>현금잔액</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div><div><span>예상 입출금</span><strong>미연결</strong></div></div>' + note('현재는 매출·지출 차이만 확인할 수 있으며 실제 자금 흐름 판단에는 위 자료가 필요합니다.', 'neutral')) +
+      '<div class="v-grid2">' + card(head('자금 흐름', badge('연결 전', 'neutral')) + '<p class="v-subtitle">보유 현금으로 오해하지 않도록 연결되지 않은 항목을 구분합니다.</p><div class="v-connection-grid"><div><span>현금보유량</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div><div><span>예상 입출금</span><strong>미연결</strong></div><div><span>미정산 매출</span><strong>미연결</strong></div><div><span>예정 지출</span><strong>미연결</strong></div></div>' + note('현재는 매출·지출 차이만 확인할 수 있으며 실제 자금 흐름 판단에는 위 자료가 필요합니다.', 'neutral')) +
       card(head('POS 집계 확인', badge('DB 대신 로컬 생성 자료', 'neutral')) + '<div class="v-table-wrap"><table class="v-table"><thead><tr><th>최근 일자</th><th>시간</th><th>품목</th><th class="right">순매출</th></tr></thead><tbody>' +
         analysis.pos.filter(r => r.netAmount > 0).slice(-5).map(r => '<tr><td>' + r.date.slice(5) + '</td><td>' + r.hour + '시</td><td>' + D.menu.find(m => m.id === r.itemId).name + '</td><td class="right">' + money(r.netAmount) + '</td></tr>').join('') +
       '</tbody></table></div><p class="v-metadata v-space">취소 ' + number(analysis.cancellations) + '개 차감 · 실 DB/POS 기기 미연결</p>') + '</div>';
   }
   function combinedAnalysis() {
+    if (window.IM_SALES_DIAGNOSIS) return window.IM_SALES_DIAGNOSIS.render(state.period);
     return market() + finance();
   }
   function mapPreview() {
@@ -411,14 +438,14 @@
     return '<section class="v-recovery-hero" aria-labelledby="recoveryOpportunityTitle"><div class="v-recovery-hero-main">' +
       '<div class="v-row"><span class="v-tag">CCTV·POS 결합 분석</span><span class="v-recovery-date">최근 완료 분석 · ' + dateText(recoveryData.analysisDate) + '</span></div>' +
       '<p class="v-recovery-kicker">가장 먼저 점검할 시간대</p><h2 id="recoveryOpportunityTitle">매출 기회 후보<br><strong>' + r.label + '</strong></h2>' +
-      '<p>매장 앞 통행자는 <b>' + number(r.passersby) + '명</b>으로 많았지만 입장객은 <b>' + number(r.entrants) + '명</b>으로, 매장 유입률이 <b>' + ratioText(r.entryRate) + '</b>였습니다.</p></div>' +
-      '<div class="v-recovery-hero-stats" aria-label="회복전략 핵심 지표"><div><span>통행량</span><strong>' + number(r.passersby) + '명</strong><small>매장 앞 익명 집계</small></div><div><span>입장객</span><strong>' + number(r.entrants) + '명</strong><small>통행 대비 입장</small></div><div class="warn"><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong><small>입장객 ÷ 통행자</small></div><div><span>판단 상태</span><strong>요인 후보</strong><small>확정 원인 아님</small></div></div></section>' +
+      '<p>매장 앞 통행자는 <b>' + number(r.passersby) + '명</b>으로 많았지만 입장객은 <b>' + number(r.entrants) + '명</b>으로, 입장 전환율이 <b>' + ratioText(r.entryRate) + '</b>였습니다.</p></div>' +
+      '<div class="v-recovery-hero-stats" aria-label="회복전략 핵심 지표"><div><span>통행량</span><strong>' + number(r.passersby) + '명</strong><small>매장 앞 익명 집계</small></div><div><span>입장객</span><strong>' + number(r.entrants) + '명</strong><small>통행 대비 입장</small></div><div class="warn"><span>입장 전환율</span><strong>' + ratioText(r.entryRate) + '</strong><small>입장객 ÷ 통행자</small></div><div><span>판단 상태</span><strong>요인 후보</strong><small>확정 원인 아님</small></div></div></section>' +
       '<div class="v-recovery-source"><span class="v-tag amber">생성 데이터 기반 시연</span><span>CCTV 형식 익명 집계와 매장 내 POS 결제 형식의 생성값입니다. 실제 영상·장비·POS·외부 AI는 연결되지 않았습니다.</span></div>' +
       '<div class="v-recovery-layout"><div class="v-stack">' +
       card(head(r.label + ' 매출 전환 흐름', '<button class="text-button" type="button" data-action="show-recovery-definitions">지표 기준 보기 →</button>') + '<p class="v-subtitle">매장 앞 통행에서 결제까지 이탈이 큰 구간을 확인합니다.</p>' + recoveryFunnel()) +
       card(head('시간대별 통행·입장 비교', badge('통행량 + 유입률', 'neutral')) + '<p class="v-subtitle">서로 다른 단위를 같은 축으로 오해하지 않도록 통행량과 유입률을 각각 표시합니다.</p>' + recoveryChart()) + '</div>' +
       '<aside class="v-stack">' +
-      '<article class="card v-card v-diagnosis"><span class="v-tag">규칙 기반 진단 시안 · 요인 후보</span><h2>' + recoveryData.diagnosis.title + '</h2><p>' + recoveryData.diagnosis.explanation + '</p><div class="v-evidence"><div><span>' + r.label + ' 통행량</span><strong>' + number(r.passersby) + '명</strong></div><div><span>같은 시간 입장객</span><strong>' + number(r.entrants) + '명</strong></div><div><span>매장 유입률</span><strong>' + ratioText(r.entryRate) + '</strong></div></div><p class="v-metadata">판단 임계값과 규칙 버전은 미정이며, 이 화면은 승인된 생성 시나리오를 표시합니다.</p></article>' +
+      '<article class="card v-card v-diagnosis"><span class="v-tag">규칙 기반 진단 시안 · 요인 후보</span><h2>' + recoveryData.diagnosis.title + '</h2><p>' + recoveryData.diagnosis.explanation + '</p><div class="v-evidence"><div><span>' + r.label + ' 통행량</span><strong>' + number(r.passersby) + '명</strong></div><div><span>같은 시간 입장객</span><strong>' + number(r.entrants) + '명</strong></div><div><span>입장 전환율</span><strong>' + ratioText(r.entryRate) + '</strong></div></div><p class="v-metadata">판단 임계값과 규칙 버전은 미정이며, 이 화면은 승인된 생성 시나리오를 표시합니다.</p></article>' +
       '<article class="card v-card v-action-plan"><div class="v-row v-between"><div><h2>회복전략 제안</h2><p class="v-subtitle">분석을 오늘 실행할 행동으로 바꿉니다.</p></div>' + badge('규칙 기반 시안', 'neutral') + '</div><div class="v-plan-list">' + recoveryData.actions.map((item, i) => '<div class="v-plan-item"><span>0' + (i + 1) + '</span><div><small>' + item.time + '</small><strong>' + item.title + '</strong><p>' + item.detail + '</p></div></div>').join('') + '</div><button class="v-button primary v-plan-start" type="button" data-action="start-recovery"' + (state.recoveryStarted ? ' disabled' : '') + '>' + (state.recoveryStarted ? '실행 기록 시안 진행 중' : '실행 기록 시안 시작하기') + '</button><p class="v-metadata">현재 브라우저 안에서만 상태가 바뀌며 DB에 저장되지 않습니다.</p></article>' +
       '</aside></div>' +
       '<section class="card v-card v-recovery-compare"><div class="v-row v-between"><div><h2>실행 전·후 비교</h2><p class="v-subtitle">같은 매장·요일·시간대의 유입률, 결제 건수, 순매출을 함께 비교합니다.</p></div>' + badge('7일 비교', 'amber') + '</div><div class="v-compare-flow"><article class="current"><span>분석일 · 실행 전</span><strong>유입률 ' + ratioText(r.entryRate) + '</strong><p>유효 결제 ' + number(r.validPayments) + '건 · 순매출 ' + money(r.netSales) + '</p></article><i aria-hidden="true">→</i><article class="' + (state.recoveryStarted ? 'active' : '') + '"><span>이번 주 · 실행</span><strong>' + recoveryData.comparison.actionLabel + '</strong><p>' + actionState + '</p></article><i aria-hidden="true">→</i><article class="future"><span>' + dateText(recoveryData.comparison.followUpDate) + ' · 결과</span><strong>데이터 집계 대기</strong><p>자료가 준비되기 전에는 성공·효과 수치를 표시하지 않습니다.</p></article></div><div class="v-compare-metrics" aria-label="전후 비교 대상"><div><span>유입률</span><strong>' + ratioText(r.entryRate) + ' → 집계 대기</strong></div><div><span>유효 결제</span><strong>' + number(r.validPayments) + '건 → 집계 대기</strong></div><div><span>순매출</span><strong>' + money(r.netSales) + ' → 집계 대기</strong></div></div></section>' +
@@ -496,14 +523,10 @@
     const profileMatchesDemo = ['storeName', 'region', 'industry'].every(key =>
       String(state.profile[key] || '').trim() === String(D.profile[key] || '').trim()
     );
-    const ratio = profileMatchesDemo && Number.isFinite(analysis.expenseRatio) ? analysis.expenseRatio : null;
-    const previousRatio = profileMatchesDemo && analysis.comparisonAvailable && analysis.previousSales > 0
-      ? analysis.previousExpense / analysis.previousSales * 100
-      : null;
+    const ratio = profileMatchesDemo && Number.isFinite(financeIndex.value) ? 100 - financeIndex.value : null;
+    const previousRatio = profileMatchesDemo && Number.isFinite(financeIndex.previousValue) ? 100 - financeIndex.previousValue : null;
     const delta = ratio !== null && Number.isFinite(previousRatio) ? ratio - previousRatio : null;
-    const deltaLabel = state.periodMode === 'month'
-      ? '전월보다'
-      : state.periodMode === 'week' ? '직전 7일보다' : '직전 기간보다';
+    const deltaLabel = '직전기간보다';
     const hasMeasuredData = ratio !== null;
     const referenceTemperature = financeTemperatureFromExpenseRatio(ratio);
     const previousReferenceTemperature = financeTemperatureFromExpenseRatio(previousRatio);
@@ -516,13 +539,13 @@
       totalCount: 4,
       measured: hasMeasuredData ? ['매출', '지출'] : [],
       missing: hasMeasuredData ? ['현금잔액', '정산 예정 입출금'] : ['현재 프로필과 연결된 거래 데이터'],
-      period: state.period.label,
+      period: '최근 1개월(30일) 이동평균 · 자료 기준 ' + (financeIndex.asOf || '없음'),
       sourceLabel: D.profile.storeName + ' 고정 생성자료',
       destination: 'finance-thermometer',
       storeProfileId: null,
       analysisRunId: null,
       metric: {
-        label: '매출 대비 지출',
+        label: '일별 지출률의 30일 평균',
         value: ratio,
         previousValue: previousRatio,
         unit: '%',
@@ -541,9 +564,9 @@
         direction: referenceTemperatureDelta === null
           ? 'unknown'
           : referenceTemperatureDelta > 0 ? 'better' : referenceTemperatureDelta < 0 ? 'worse' : 'neutral',
-        basisLabel: '매출·지출 기반 참고 온도',
-        ruleVersion: 'expense-ratio-reference-v1',
-        scoringDefinition: '100 - 매출 대비 지출률',
+        basisLabel: '일별 금융지수의 최근 30일 평균',
+        ruleVersion: 'daily-index-30d-average-v2',
+        scoringDefinition: '일별 max(0, min(100, 100 - 지출/매출 × 100))의 30일 산술평균',
         dataStatus: 'reference'
       },
       temperature: null
@@ -572,6 +595,7 @@
     window.IMProfileFinance.mount(mount, summary, { buttonRole: 'menuitem' });
   }
   function render() {
+    state.chartSeries = null;
     const dashboardView = state.view === 'dashboard';
     $('#mainContent').classList.toggle('dashboard-view', dashboardView);
     $('#pageHeading').hidden = true;
@@ -630,10 +654,10 @@
     if (/(날씨|뉴스|행사|축제|캘린더|달력)/.test(question)) return { known: true, text: '현재 날씨·뉴스·행사 일정은 연결 전입니다. 홈과 회복전략에서 예정 영역을 확인할 수 있습니다.\n실제 일정이나 추천 상품을 임의로 안내하지 않습니다.' };
     if (/(정책|지원|공고)/.test(question)) return { known: true, text: '근거: 현재는 실제 공고 대신 화면 구성용 예시만 있습니다.\n확인: 지역·업종·직원 수·나이 조건을 구분합니다. 적합도 % 산식은 미정입니다.\n행동: 지원사업 메뉴에서 예시 조건을 확인하세요. 실제 신청 자격은 확정할 수 없습니다.' };
     if (/(고객|직장|연령|나이)/.test(question)) return { known: true, text: '근거: 연령대·직장인 비중 자료는 연결되지 않았습니다.\n해석: 특정 고객층을 추천할 근거가 부족합니다.\n행동: 방문·소비 고객층 자료를 확보한 뒤 메뉴와 홍보 대상을 정하세요.' };
-    if (/(CCTV|통행|체류|입장|유입|구매전환|객단가|전환율)/i.test(question)) return { known: true, text: '근거: ' + recoveryData.analysisDate + ' ' + r.label + ' 생성 집계에서 통행자 ' + number(r.passersby) + '명, 입장객 ' + number(r.entrants) + '명, 유효 결제 ' + number(r.validPayments) + '건입니다.\n해석: 매장 유입률은 ' + ratioText(r.entryRate) + ', 추정 구매전환율은 ' + ratioText(r.estimatedPurchaseRate) + '로 통행→입장 구간을 먼저 살펴볼 요인 후보입니다.\n행동: 17시 30분부터 대표 메뉴와 가격을 노출하고 7일 후 같은 조건을 비교하세요. 실제 CCTV·POS가 아닌 생성 시나리오입니다.' };
-    if (/(현금|자금|잔액|대출|금융|체온)/.test(question)) return { known: true, text: '근거: 매출 ' + money(analysis.sales) + ', 지출 ' + money(analysis.expense) + '입니다.\n해석: 이 차이는 현재 현금이나 영업이익이 아닙니다. 체온계 점수·금융 효과 산식은 미정입니다.\n행동: 보유 현금, 정산일, 예정 출금을 확인하세요. 대출 심사·신청은 제공하지 않습니다.' };
+    if (/(CCTV|통행|체류|입장|유입|구매전환|객단가|전환율)/i.test(question)) return { known: true, text: '근거: ' + recoveryData.analysisDate + ' ' + r.label + ' 생성 집계에서 통행자 ' + number(r.passersby) + '명, 입장객 ' + number(r.entrants) + '명, 유효 결제 ' + number(r.validPayments) + '건입니다.\n해석: 입장 전환율은 ' + ratioText(r.entryRate) + ', 추정 구매전환율은 ' + ratioText(r.estimatedPurchaseRate) + '로 통행→입장 구간을 먼저 살펴볼 요인 후보입니다.\n행동: 17시 30분부터 대표 메뉴와 가격을 노출하고 7일 후 같은 조건을 비교하세요. 실제 CCTV·POS가 아닌 생성 시나리오입니다.' };
+    if (/(현금|자금|잔액|대출|금융|체온)/.test(question)) return { known: true, text: '근거: 매출 ' + money(analysis.sales) + ', 지출 ' + money(analysis.expense) + '입니다.\n해석: 이 차이는 현재 현금이나 영업이익이 아닙니다. 금융지수는 일별 매출·지출 참고 지수의 최근 30일 평균이며 종합 신용점수가 아닙니다. 현금보유량·미정산 매출·예정 지출은 미연결입니다.\n행동: 보유 현금, 정산일, 예정 출금을 확인하세요. 대출 심사·신청은 제공하지 않습니다.' };
     if (/(지출|매입|비용|재고|발주|남는|돈)/.test(question)) return { known: true, text: '근거: ' + costText() + '\n행동: 매입금액 상위 품목의 재고·폐기를 먼저 확인하세요. 재고와 메뉴 대응이 없어 발주 수량은 계산하지 않습니다.' };
-    if (/(시간|언제|요일|준비)/.test(question)) return { known: true, text: '근거: 최근 완료된 CCTV·POS 생성 시나리오에서 ' + r.label + ' 통행자는 ' + number(r.passersby) + '명, 매장 유입률은 ' + ratioText(r.entryRate) + '입니다.\n해석: 이 시간대는 자동 산식이 아닌 기능 검토용 매출 기회 후보입니다.\n행동: 17시 30분부터 대표 메뉴 노출과 혜택 안내를 준비하고 같은 요일·시간대를 7일 뒤 비교하세요.' };
+    if (/(시간|언제|요일|준비)/.test(question)) return { known: true, text: '근거: 최근 완료된 CCTV·POS 생성 시나리오에서 ' + r.label + ' 통행자는 ' + number(r.passersby) + '명, 입장 전환율은 ' + ratioText(r.entryRate) + '입니다.\n해석: 이 시간대는 자동 산식이 아닌 기능 검토용 매출 기회 후보입니다.\n행동: 17시 30분부터 대표 메뉴 노출과 혜택 안내를 준비하고 같은 요일·시간대를 7일 뒤 비교하세요.' };
     if (/(행동|실행|플랜|회복|방법)/.test(question)) return { known: true, text: '근거: ' + r.label + ' 통행자 ' + number(r.passersby) + '명 중 입장객은 ' + number(r.entrants) + '명으로 유입률은 ' + ratioText(r.entryRate) + '입니다.\n해석: 통행→입장 구간의 외부 주목도를 먼저 점검할 요인 후보입니다.\n행동: 17시 30분 대표 메뉴 입간판과 18~20시 2인 세트 안내를 실행한 뒤 7일 후 유입률·결제·순매출을 비교하세요. 할인율과 효과 수치는 정해진 값이 없습니다.' };
     if (/(매출|왜|떨어|변화|소비|유동|상권)/.test(question)) return { known: true, text: '근거: ' + causeText() + '\n해석: 실제 관측이 아닌 생성 자료이며, 매출 변화의 확정 원인은 아닙니다.\n행동: ' + analysis.action };
     return { known: false, text: '현재 데이터로는 답변하기 어렵습니다. 매출·지출, 시간대, 회복전략, 지원사업 조건에 관해 간단히 질문해 주세요.\n상담원과 연결 채널은 아직 미정이어서 지금 연결해 드릴 수 없습니다.' };
@@ -785,6 +809,14 @@
     if (!account && !$('#profileMenu').hidden) setProfileMenu(false);
   });
   document.addEventListener('click', event => {
+    const series = event.target.closest('[data-series]');
+    if (series && series.dataset.series) { highlightChartSeries(series.dataset.series); return; }
+    const mode = event.target.closest('[data-chart-mode]');
+    if (mode && mode.dataset.chartMode) {
+      state.chartMode = mode.dataset.chartMode; state.chartSeries = null;
+      document.querySelectorAll('.v-comparison-chart').forEach(chart => { chart.outerHTML = comparisonChart(); });
+      return;
+    }
     const accountArea = event.target.closest('.sidebar-account');
     const guidePickerArea = event.target.closest('.v-guide-hour-picker');
     const el = event.target.closest('button, a');
@@ -836,7 +868,6 @@
   });
   document.addEventListener('input', event => {
     if (event.target.id === 'policySearch') { state.keyword = event.target.value.trim(); state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
-    if (event.target.id === 'chatWidth') document.documentElement.style.setProperty('--chat-width', event.target.value + 'px');
   });
   document.addEventListener('change', event => {
     const el = event.target;
@@ -957,17 +988,50 @@
       focusProfileMenuItem(event.key === 'Home' ? 0 : -1);
     }
   });
+  function setChatWidth(value) {
+    const width = Math.round(Math.max(320, Math.min(560, value)));
+    document.documentElement.style.setProperty('--chat-width', width + 'px');
+    $('#chatResizeHandle').setAttribute('aria-valuenow', String(width));
+  }
+  $('#chatResizeHandle').addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const width = Number(event.currentTarget.getAttribute('aria-valuenow'));
+    setChatWidth(event.key === 'Home' ? 320 : event.key === 'End' ? 560 : width + (event.key === 'ArrowLeft' ? 10 : -10));
+  });
+  document.addEventListener('keydown', event => {
+    const line = event.target.closest('[data-chart-line]');
+    if (line && ['Enter', ' '].includes(event.key)) { event.preventDefault(); highlightChartSeries(line.dataset.series); }
+  });
   $('#chatResizeHandle').addEventListener('pointerdown', event => {
     const handle = event.currentTarget; handle.setPointerCapture(event.pointerId);
     const startX = event.clientX, startWidth = $('#aiPanel').getBoundingClientRect().width;
-    const move = e => { const width = Math.round(Math.max(320, Math.min(560, startWidth + startX - e.clientX))); $('#chatWidth').value = width; document.documentElement.style.setProperty('--chat-width', width + 'px'); };
+    const move = e => { const width = Math.round(Math.max(320, Math.min(560, startWidth + startX - e.clientX))); setChatWidth(width); };
     const stop = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', stop); handle.removeEventListener('pointercancel', stop); };
     handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', stop); handle.addEventListener('pointercancel', stop);
   });
   setInterval(() => { if (!state.bannerPaused && !document.hidden && state.view === 'dashboard' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) { state.bannerIndex = (state.bannerIndex + 1) % banners.length; updateBanner(); } }, 8000);
+  function refreshCurrentIndicators() {
+    if (document.hidden) return;
+    const clock = D.seoulClock();
+    const key = clock.date + ':' + clock.hour + ':' + clock.minute;
+    if (key === clockKey) return;
+    clockKey = key;
+    if (financeIndex.today !== clock.date) {
+      financeIndex = D.financialIndex();
+      const card = document.querySelector('.v-finance-thermo-card');
+      if (card) card.outerHTML = financeThermometerCard();
+      syncProfileFinance();
+    }
+    const insight = document.querySelector('.v-dashboard-insight');
+    if (insight) insight.outerHTML = dashboardInsight();
+  }
+  setInterval(refreshCurrentIndicators, 15000);
+  document.addEventListener('visibilitychange', refreshCurrentIndicators);
   window.addEventListener('hashchange', () => { const view = normalizeView(location.hash.slice(1)); if (views[view]) navigate(view); });
   const initialView = normalizeView(location.hash.slice(1));
   state.view = views[initialView] ? initialView : 'dashboard';
   if (location.hash && location.hash !== '#' + state.view) history.replaceState(null, '', '#' + state.view);
+  if (window.IM_SALES_DIAGNOSIS) window.IM_SALES_DIAGNOSIS.bind(render);
   render();
 })();

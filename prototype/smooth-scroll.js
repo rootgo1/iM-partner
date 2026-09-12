@@ -63,19 +63,20 @@
 
   function markNestedScrollAreas() {
     if (!root) return;
-    root.querySelectorAll('.v-screen-inner, .v-report-chat').forEach(element => {
-      if (element.scrollHeight > element.clientHeight + 2) element.setAttribute('data-lenis-prevent-vertical', '');
-    });
+    root.querySelectorAll('[data-lenis-prevent-vertical]').forEach(element => element.removeAttribute('data-lenis-prevent-vertical'));
     root.querySelectorAll('.v-table-wrap').forEach(element => element.setAttribute('data-lenis-prevent-horizontal', ''));
   }
 
-  function isNestedScrollInput(event) {
+  function isNestedScrollInput(event, deltaY) {
     if (!event || typeof event.composedPath !== 'function') return false;
-    return event.composedPath().some(node => node instanceof HTMLElement && node !== root && (
-      node.hasAttribute('data-lenis-prevent') ||
-      node.hasAttribute('data-lenis-prevent-vertical') ||
-      node.matches('input, textarea, select, option, dialog, [role="slider"]')
-    ));
+    const path = event.composedPath();
+    return path.slice(0, path.indexOf(root)).some(node => {
+      if (!(node instanceof HTMLElement)) return false;
+      if (node.hasAttribute('data-lenis-prevent') || node.matches('select, option, dialog, [role="slider"]')) return true;
+      if (!/^(auto|scroll|overlay)$/.test(getComputedStyle(node).overflowY)) return false;
+      const limit = node.scrollHeight - node.clientHeight;
+      return limit > 2 && (deltaY > 0 ? node.scrollTop < limit - 1 : node.scrollTop > 1);
+    });
   }
 
   function chooseSectionIndex(targetScroll) {
@@ -131,7 +132,7 @@
   }
 
   function handleVirtualScroll({ deltaY, event }) {
-    if (!lenis || !root || !deltaY || isNestedScrollInput(event)) return;
+    if (!lenis || !root || !deltaY) return;
 
     if (isSettling) {
       const incomingDirection = Math.sign(deltaY);
@@ -189,7 +190,7 @@
       wheelMultiplier: 1,
       overscroll: false,
       respectReducedMotion: true,
-      prevent: node => node instanceof HTMLElement && node.matches('input, textarea, select, option, dialog, [role="slider"]')
+      virtualScroll: ({ event, deltaY }) => !event.ctrlKey && !event.type.includes('touch') && !isNestedScrollInput(event, deltaY)
     });
     removeVirtualScrollListener = lenis.on('virtual-scroll', handleVirtualScroll);
 

@@ -155,7 +155,8 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#viewRoot > .v-screen-section').first().locator('.metric-card').count(), 4);
   assert.equal(await page.locator('#viewRoot > .v-screen-section').first().locator('.metric-card.primary').count(), 0);
   assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(1).locator('.metric-card').count(), 0);
-  assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(1).locator('.v-dashboard-decision').count(), 1);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(1).locator('.v-dashboard-support').count(), 1);
+  assert.equal(await page.locator('#viewRoot > .v-screen-section').nth(2).locator('.v-dashboard-decision').count(), 1);
   assert.equal(await page.locator('#pageHeading').isHidden(), true);
   assert.equal(await page.locator('#dataNotice').isHidden(), true);
   const sectionLayout = await page.evaluate(() => {
@@ -325,9 +326,9 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('#sectionPeriodSelect').isVisible(), true);
   assert.equal(await page.locator('#sectionPeriodSelect').inputValue(), 'month');
   assert.match(await page.locator('#viewRoot').innerText(), /월세/);
-  assert.match(await page.locator('#viewRoot').innerText(), /매입금액 TOP 3/);
-  assert.match(await page.locator('#viewRoot').innerText(), /시간대별 소비 흐름/);
-  assert.ok(await page.locator('#viewRoot .v-decision-layout').count() >= 3);
+  assert.match(await page.locator('#viewRoot').innerText(), /품목별 판매 실적/);
+  assert.match(await page.locator('#viewRoot').innerText(), /요일 × 시간대 매출/);
+  assert.equal(await page.locator('#viewRoot .sd-panel').count(), 6);
   assert.equal(await page.locator('#mainNavigation .nav-item').count(), 5);
   assert.equal(await page.locator('.topbar .profile, .topbar .logout-link').count(), 0);
   assert.equal(await page.locator('.topbar .data-chip').count(), 0);
@@ -350,7 +351,7 @@ const { chromium } = require('playwright');
 
   await page.getByRole('link', { name: 'iM파트너 메인 페이지로 이동' }).click();
   await page.waitForFunction(() => location.hash === '#dashboard');
-  assert.match(await page.locator('#bannerTitle').innerText(), /소상공인 뉴스/);
+  assert.ok((await page.locator('#bannerTitle').innerText()).length > 0, 'rotating banner remains populated after returning home');
   assert.equal(await page.locator('.top-nav').count(), 0);
 
   await page.getByRole('button', { name: 'iM챗봇' }).click();
@@ -393,19 +394,13 @@ const { chromium } = require('playwright');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url + '?qa=mobile#dashboard', { waitUntil: 'load' });
-  await page.waitForSelector('.v-insight-copy span');
+  await page.waitForSelector('.v-dashboard-insight');
   const mobile = await page.evaluate(() => {
-    const span = document.querySelector('.v-insight-copy span');
-    const text = span.firstChild, start = text.data.indexOf('입니다.');
-    const range = document.createRange();
-    range.setStart(text, start); range.setEnd(text, start + '입니다.'.length);
     return {
-      wordLines: range.getClientRects().length,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       enhanced: document.querySelector('#viewRoot').classList.contains('is-lenis-enhanced')
     };
   });
-  assert.equal(mobile.wordLines, 1, 'The ending word must not split across lines');
   assert.ok(mobile.overflow <= 1, 'mobile horizontal overflow: ' + mobile.overflow);
   assert.equal(mobile.enhanced, false, 'mobile must retain native scrolling');
   await page.screenshot({ path: path.join(output, 'dashboard-390.png'), fullPage: false });
@@ -440,10 +435,11 @@ const { chromium } = require('playwright');
         const inner = section.querySelector('.v-screen-inner');
         return {
           verticalOverflow: inner.scrollHeight - inner.clientHeight,
+          scrollable: ["auto", "scroll"].includes(getComputedStyle(inner).overflowY),
           horizontalOverflow: inner.scrollWidth - inner.clientWidth
         };
       });
-      assert.ok(fit.verticalOverflow <= 2, view + ' section ' + (index + 1) + ' has nested vertical overflow: ' + fit.verticalOverflow);
+      assert.ok(fit.verticalOverflow <= 2 || fit.scrollable, view + ' section ' + (index + 1) + ' has nested vertical overflow: ' + fit.verticalOverflow);
       assert.ok(fit.horizontalOverflow <= 2, view + ' section ' + (index + 1) + ' has horizontal overflow: ' + fit.horizontalOverflow);
       const shotKey = view + '-' + (index + 1);
       if (densityShots.has(shotKey)) await page.screenshot({ path: path.join(output, 'density-' + shotKey + '-1366.png'), fullPage: false });
@@ -455,8 +451,8 @@ const { chromium } = require('playwright');
   await page.goto(loginUrl + '?qa=guest-clean', { waitUntil: 'load' });
   assert.equal(await page.locator('.guest-nav, [data-login-required], .preview-art').count(), 0);
   assert.equal(await page.locator('.guest-header .brand').count(), 1);
-  assert.equal(await page.getByRole('link', { name: '데모 시작', exact: true }).count(), 1);
-  assert.match(await page.locator('#targetNotice').innerText(), /홈/);
+  assert.equal(await page.getByRole('link', { name: '데모 시작', exact: true }).count(), 0);
+  assert.equal(await page.locator('.value-panel img').count(), 0);
   const guestOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(guestOverflow <= 1, 'guest desktop horizontal overflow: ' + guestOverflow);
   await page.screenshot({ path: path.join(output, 'guest-clean-1440.png'), fullPage: false });

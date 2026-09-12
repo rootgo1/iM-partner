@@ -1,0 +1,106 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require('playwright');
+const D = require('../meeting-data.js');
+const A = require('../sales-diagnosis-data.js');
+(async () => {
+  const executablePath = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync);
+  const browser = await chromium.launch({ headless: true, executablePath });
+  try {
+    const output = path.resolve(__dirname, '../../tmp/sales-diagnosis-qa');
+    fs.mkdirSync(output, { recursive: true });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: process.env.IM_TEST_MOTION === 'normal' ? 'no-preference' : 'reduce' });
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const url = pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href + '#analysis';
+    await page.goto(url);
+    await page.evaluate(() => document.fonts.ready);
+    assert.equal(await page.locator('#viewRoot > .v-screen-section').count(), 6);
+    assert.equal(await page.locator('.sd-metrics .metric-card').count(), 4);
+    assert.match(await page.locator('.sd-metrics').innerText(), new RegExp(D.analyze(D.periods.month).sales.toLocaleString('ko-KR')));
+    await page.screenshot({ path: path.join(output, 'sales-summary-desktop.png') });
+    await page.selectOption('#sd-item', 'noodle');
+    await page.selectOption('#sd-hour', 'lunch');
+    const filtered = A.analyze(D, D.periods.month, { item: 'noodle', hour: 'lunch' });
+    assert.match(await page.locator('.sd-metrics').innerText(), new RegExp(filtered.current.sales.toLocaleString('ko-KR')));
+    assert.equal(await page.locator('.sd-product-table tbody tr').count(), 1);
+    await page.selectOption('#sd-comparison', 'weekday');
+    assert.match(await page.locator('.sd-period-line').innerText(), /2026-06-27/);
+    assert.match(await page.locator('.sd-insight').innerText(), /비교 기간을 조정/);
+    await page.locator('[data-sd-reset]').click();
+    await page.locator('[data-sd-jump="2"]').first().click();
+    await page.selectOption('#sd-sort', 'delta');
+    const lowest = A.analyze(D, D.periods.month).products.slice().sort((a, b) => a.delta - b.delta)[0];
+    assert.match(await page.locator('.sd-product-table tbody tr').first().innerText(), new RegExp(lowest.label));
+    await page.selectOption('#sd-sort', 'sales');
+    await page.locator('.sd-product-table [data-sd-detail]').first().click();
+    assert.equal(await page.locator('#sd-dialog').isVisible(), true);
+    assert.match(await page.locator('#sd-dialog-title').innerText(), /한 끼 정식/);
+    assert.equal(await page.locator('#sd-detail-records tbody tr').count(), 8);
+    await page.locator('#sd-dialog [data-sd-page="1"]').click();
+    assert.match(await page.locator('#sd-detail-records .sd-pagination').innerText(), /2 \/ /);
+    await page.screenshot({ path: path.join(output, 'sales-detail-desktop.png') });
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#sd-dialog').isVisible(), false);
+    await page.locator('[data-sd-jump="0"]').first().click();
+    await page.locator('[data-sd-jump="3"]').click();
+    await page.locator('.sd-heatmap button:not(:disabled)').first().click();
+    assert.match(await page.locator('#sd-dialog-title').innerText(), /월요일 8~9시/);
+    await page.locator('[data-sd-close]').click();
+    await page.locator('[data-sd-jump="0"]').first().click();
+    await page.locator('[data-sd-jump="4"]').click();
+    const check = page.locator('[data-sd-check]').first();
+    await check.check();
+    await page.locator('#mainNavigation [data-view="dashboard"]').click();
+    await page.locator('#mainNavigation [data-view="analysis"]').click();
+    await page.locator('[data-sd-jump="4"]').click();
+    assert.equal(await page.locator('[data-sd-check]').first().isChecked(), true);
+    await page.locator('[data-sd-jump="0"]').first().click();
+    await page.locator('[data-sd-jump="5"]').click();
+    await page.locator('#sd-records-body [data-sd-page="1"]').click();
+    assert.match(await page.locator('#sd-records-body .sd-pagination').innerText(), /2 \/ /);
+    const [download] = await Promise.all([page.waitForEvent('download'), page.locator('[data-sd-export]').click()]);
+    const csv = fs.readFileSync(await download.path(), 'utf8');
+    assert.ok(csv.startsWith('\uFEFF'));
+    assert.equal(csv.split('\r\n').length - 1, D.analyze(D.periods.month).pos.length);
+    assert.match(csv, /생성 데이터/);
+    await page.locator('[data-sd-jump="0"]').first().click();
+    await page.selectOption('#sectionPeriodSelect', 'week');
+    assert.match(await page.locator('.sd-period-line').innerText(), /2026-08-27 ~ 2026-09-02/);
+    await page.selectOption('#sectionPeriodSelect', 'custom');
+    await page.fill('#sectionPeriodStart', '2026-08-30');
+    await page.fill('#sectionPeriodEnd', '2026-08-30');
+    await page.locator('#sectionCustomPeriod button').click();
+    await page.selectOption('#sd-dayType', 'weekday');
+    assert.match(await page.locator('.sd-insight').innerText(), /해당하는 날짜가 없습니다/);
+    assert.match(await page.locator('#sd-records-body').innerText(), /판매 집계가 없습니다/);
+    assert.ok(!/NaN|Infinity/.test(await page.locator('#viewRoot').innerText()));
+    await page.locator('[data-sd-reset]').click();
+    await page.selectOption('#sectionPeriodSelect', 'month');
+    for (const [width, height] of [[1920, 1080], [1366, 768], [768, 1024], [390, 844], [360, 800]]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(url);
+      await page.evaluate(() => document.fonts.ready);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(overflow <= 1, width + ' document overflow: ' + overflow);
+      for (let i = 0; i < 6; i++) {
+        const section = page.locator('#viewRoot > .v-screen-section').nth(i);
+        await section.evaluate(el => el.scrollIntoView({ behavior: 'instant' }));
+        const fit = await section.evaluate(el => { const inner = el.querySelector('.v-screen-inner'); return { x: inner.scrollWidth - inner.clientWidth, y: inner.scrollHeight - inner.clientHeight, overflow: getComputedStyle(inner).overflowY }; });
+        assert.ok(fit.x <= 2, width + ' section ' + i + ' horizontal overflow ' + fit.x);
+        assert.ok(fit.y <= 2 || ['auto', 'scroll'].includes(fit.overflow), width + ' inaccessible vertical content');
+        if (width === 1366) await page.screenshot({ path: path.join(output, 'sales-section-' + (i + 1) + '-1366.png') });
+      }
+      if (width === 390) {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.screenshot({ path: path.join(output, 'sales-summary-mobile.png') });
+        await page.screenshot({ path: path.join(output, 'sales-mobile-full.png'), fullPage: true });
+      }
+    }
+    assert.deepEqual(errors, []);
+    console.log('PASS browser: filters, comparison, drilldowns, heatmap, keyboard close, checklist, navigation, pagination, CSV, periods, empty states and five responsive viewports');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

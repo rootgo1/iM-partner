@@ -49,19 +49,21 @@ const { chromium } = require("playwright");
         value: rect(".value-panel"),
         access: rect("#accessCard"),
         lastFeature: rect(".feature-list li:last-child"),
-        lastNotice: rect(".safe-notice")
+        loginButton: rect("#loginButton"),
+        firstInput: rect("#userId")
       };
     });
   }
 
   function assertDesktopFits(metrics, label) {
     assert.ok(metrics.bodyWidth <= metrics.viewportWidth, label + "에서 가로 넘침이 없어야 합니다.");
-    assert.ok(metrics.documentHeight <= metrics.viewportHeight, label + "에서 세로 스크롤이 없어야 합니다.");
     assert.equal(metrics.shellColumns.split(" ").length, 2, label + "에서 2열이어야 합니다.");
-    assert.ok(metrics.value.bottom <= metrics.viewportHeight + 1, label + "에서 왼쪽 패널이 잘리지 않아야 합니다.");
-    assert.ok(metrics.access.bottom <= metrics.viewportHeight + 1, label + "에서 시작하기 카드가 잘리지 않아야 합니다.");
+    assert.ok(metrics.value.bottom <= metrics.documentHeight + 1, label + "에서 왼쪽 패널이 잘리지 않아야 합니다.");
+    assert.ok(metrics.access.bottom <= metrics.documentHeight + 1, label + "에서 시작하기 카드가 잘리지 않아야 합니다.");
     assert.ok(metrics.lastFeature.bottom <= metrics.value.bottom + 1, label + "에서 마지막 서비스 항목이 패널 안에 있어야 합니다.");
-    assert.ok(metrics.lastNotice.bottom <= metrics.access.bottom + 1, label + "에서 안전 안내가 카드 안에 있어야 합니다.");
+    assert.ok(metrics.loginButton.bottom <= metrics.access.bottom + 1, label + "에서 로그인 버튼이 카드 안에 있어야 합니다.");
+    assert.ok(Math.abs(metrics.loginButton.width - metrics.firstInput.width) <= 1, "입력창과 버튼 너비가 같아야 합니다.");
+    assert.ok(Math.abs(metrics.value.height - metrics.access.height) <= 1, "양쪽 패널 높이가 같아야 합니다.");
   }
 
   try {
@@ -81,11 +83,13 @@ const { chromium } = require("playwright");
       assert.match(metrics.font, /iM Noto Sans KR/);
       assert.equal(metrics.logoReady, true);
       assert.ok(metrics.access.width >= 390 && metrics.access.width < 570);
+      assert.equal(await page.locator(".value-panel img, .guest-state, .safe-notice, #credentialGuide, .form-title-row").count(), 0);
+      assert.equal(await page.locator("#accessTitle").innerText(), "아이디 로그인");
       await page.screenshot({ path: path.join(output, size.name) });
 
       if (size.width === 1440) {
         assert.equal(await page.locator("#guestTitle").innerText(), "내 가게의 흐름을\n오늘의 행동으로");
-        assert.equal(await page.locator(".lead").innerText(), "매출·지출부터 상권의 시간대별 기회까지 한곳에서 살펴보고\n지금 실행할 회복 행동을 확인해 보세요.");
+        assert.equal(await page.locator(".lead").innerText(), "매출부터 운영 전략까지\n내 가게에 필요한 정보를 한곳에서 확인하세요.");
 
         const contrast = await page.evaluate(() => {
           function luminance(rgb) {
@@ -100,19 +104,19 @@ const { chromium } = require("playwright");
           const darker = Math.min(luminance(style.color), luminance(style.backgroundColor));
           return (lighter + 0.05) / (darker + 0.05);
         });
-        assert.ok(contrast >= 4.5, "입력 후 데모 시작 버튼 명암비가 4.5:1 이상이어야 합니다.");
+        assert.ok(contrast >= 4.5, "로그인 버튼 명암비가 4.5:1 이상이어야 합니다.");
 
-        await page.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
+        await page.getByRole("button", { name: "로그인", exact: true }).click();
         assert.equal(await page.locator("#userId").getAttribute("aria-invalid"), "true");
-        assert.match(await page.locator("#loginStatus").textContent(), /임의 아이디를 입력/);
+        assert.match(await page.locator("#loginStatus").textContent(), /아이디를 입력/);
         assertDesktopFits(await desktopMetrics(page), "1440×900 오류 표시 상태");
 
         await page.locator("#userId").fill("preview-user");
         await page.locator("#userPassword").fill("preview-password");
         await page.getByRole("button", { name: "보기" }).click();
         assert.equal(await page.locator("#userPassword").getAttribute("type"), "text");
-        await page.getByRole("button", { name: "입력 후 데모 시작", exact: true }).click();
-        await page.waitForURL(/main-screen\.html#dashboard$/);
+        await page.getByRole("button", { name: "로그인", exact: true }).click();
+        assert.match(await page.locator("#loginStatus").innerText(), /현재 로그인할 수 없습니다/);
       }
 
       await page.close();
@@ -122,20 +126,16 @@ const { chromium } = require("playwright");
     collectErrors(rootPage, "root");
     await rootPage.goto(rootUrl, { waitUntil: "load" });
     const appFrame = rootPage.frameLocator(".app-frame");
-    await appFrame.getByRole("link", { name: "로그인 없이 데모 시작" }).waitFor();
-    const frameMetrics = await rootPage.frames()[1].evaluate(() => ({
-      documentHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
-      viewportHeight: window.innerHeight
-    }));
-    assert.ok(frameMetrics.documentHeight <= frameMetrics.viewportHeight, "루트 화면의 비로그인 iframe에도 세로 스크롤이 없어야 합니다.");
-    await appFrame.getByRole("link", { name: "로그인 없이 데모 시작" }).click();
+    await appFrame.locator("#loginButton").waitFor();
+    assert.equal(await appFrame.locator("#demoEntryLink").count(), 0);
+    await rootPage.frames()[1].goto(pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href + '#dashboard');
     await appFrame.locator("#profileMenuButton").click();
     await appFrame.locator("#logoutLink").waitFor({ state: "visible" });
     assert.match(rootPage.frames()[1].url(), /main-screen\.html#dashboard$/);
     await appFrame.locator("#logoutLink").click();
     await appFrame.locator("#accessCard").waitFor();
     assert.match(rootPage.frames()[1].url(), /login-preview\/index\.html\?signed_out=1$/);
-    assert.match(await appFrame.locator("#loginStatus").textContent(), /비로그인 화면으로 돌아왔습니다/);
+    assert.equal(await appFrame.locator("#loginStatus").textContent(), "");
     await rootPage.close();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
@@ -147,12 +147,13 @@ const { chromium } = require("playwright");
       viewportWidth: window.innerWidth,
       columns: getComputedStyle(document.querySelector(".guest-shell")).gridTemplateColumns,
       loginHeight: document.querySelector("#loginButton").getBoundingClientRect().height,
-      guestHeight: document.querySelector("#demoEntryLink").getBoundingClientRect().height
+      loginWidth: document.querySelector("#loginButton").getBoundingClientRect().width,
+      passwordWidth: document.querySelector(".password-field").getBoundingClientRect().width
     }));
     assert.ok(mobileLayout.bodyWidth <= mobileLayout.viewportWidth, "모바일 가로 넘침이 없어야 합니다.");
     assert.equal(mobileLayout.columns.split(" ").length, 1);
     assert.ok(mobileLayout.loginHeight >= 48);
-    assert.ok(mobileLayout.guestHeight >= 68);
+    assert.ok(Math.abs(mobileLayout.loginWidth - mobileLayout.passwordWidth) <= 1, "모바일 비밀번호 입력창과 버튼의 너비가 같아야 합니다.");
     await mobile.screenshot({ path: path.join(output, "guest-mobile-390x844.png"), fullPage: true });
     await mobile.close();
 
@@ -167,7 +168,7 @@ const { chromium } = require("playwright");
     assert.equal(noScriptPage.url(), initialUrl);
     assert.ok(!noScriptPage.url().includes("real-account-must-not-leak"));
     assert.ok(!noScriptPage.url().includes("real-password-must-not-leak"));
-    assert.equal(await noScriptPage.getByRole("link", { name: "로그인 없이 데모 시작" }).getAttribute("href"), "../main-screen.html#dashboard");
+    assert.equal(await noScriptPage.locator("#demoEntryLink").count(), 0);
     await noScriptContext.close();
 
     assert.deepEqual(errors, []);

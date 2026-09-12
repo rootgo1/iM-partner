@@ -22,7 +22,7 @@
     ['rent', '월세'], ['maintenance', '관리비'], ['purchase', '매입비'],
     ['labor', '인건비'], ['other', '기타 지출']
   ];
-  const records = [], expenses = [], purchases = [], area = [];
+  const records = [], expenses = [], purchases = [], area = [], merchantSales = [], storefront = [];
   const demand = [2, 3, 5, 10, 16, 13, 4, 3, 8, 16, 20, 12];
   const flow = [20, 29, 45, 77, 120, 111, 46, 38, 67, 80, 92, 55];
   const spend = [12, 20, 38, 62, 49, 44, 22, 20, 57, 91, 110, 77];
@@ -48,6 +48,13 @@
         cardAmount: Math.round(spend[index] * 1000 * modulation * (current ? 0.924 : 1)),
         sourceType: 'synthetic_demo'
       });
+      // Separate sources: participating stores' POS totals and this store's CCTV counts.
+      ['store-01', 'store-02', 'store-03', 'store-04'].forEach((storeId, storeIndex) => {
+        merchantSales.push({ date, hour, storeId, district: '서문시장', serviceConnected: true,
+          amount: storeIndex === 0 ? sum(records.slice(-menu.length), row => row.netAmount) : Math.round(demand[index] * (7800 + storeIndex * 1300) * modulation * factor),
+          sourceType: 'synthetic_demo' });
+      });
+      storefront.push({ date, hour, passersby: Math.round((flow[index] * .34 + demand[index] * 1.8) * modulation * factor), sourceType: 'synthetic_demo' });
     });
     materials.forEach((item, i) => {
       const quantity = +(item.amount + ((d + i) % 3) * 0.3).toFixed(1);
@@ -72,12 +79,32 @@
     return { start, end, previousStart: shift(start, -count), previousEnd: shift(start, -1), label: start + ' ~ ' + end, comparison: '직전 동일 일수 대비' };
   }
   const between = (rows, start, end) => rows.filter(row => row.date >= start && row.date <= end);
+  function seoulClock(now = new Date()) {
+    const local = new Date(now.getTime() + 9 * 3600000);
+    return { date: iso(local), hour: local.getUTCHours(), minute: local.getUTCMinutes() };
+  }
+  function financialIndex(now = new Date()) {
+    const today = seoulClock(now).date;
+    const latest = records.filter(row => row.date <= today).reduce((date, row) => row.date > date ? row.date : date, '');
+    if (!latest) return { today, asOf: null, value: null, previousValue: null, stale: true };
+    const start = shift(latest, -29), previousEnd = shift(start, -1), previousStart = shift(start, -30);
+    const average = (from, to) => {
+      const rows = analyze({ start: from, end: to, previousStart: shift(from, -30), previousEnd: shift(from, -1) }).daily;
+      if (rows.length !== 30 || rows.some(row => row.sales <= 0)) return null;
+      return sum(rows, row => Math.max(0, Math.min(100, 100 - row.expense / row.sales * 100))) / 30;
+    };
+    return { today, asOf: latest, start, previousStart, previousEnd,
+      value: average(start, latest), previousValue: average(previousStart, previousEnd), stale: latest < today };
+  }
   function analyze(period) {
     const pos = between(records, period.start, period.end);
     const previous = between(records, period.previousStart, period.previousEnd);
     const costs = between(expenses, period.start, period.end);
     const oldCosts = between(expenses, period.previousStart, period.previousEnd);
     const local = between(area, period.start, period.end), oldArea = between(area, period.previousStart, period.previousEnd);
+    const connected = merchantSales.filter(row => row.serviceConnected && row.district === '서문시장');
+    const localMerchants = between(connected, period.start, period.end), oldMerchants = between(connected, period.previousStart, period.previousEnd);
+    const front = between(storefront, period.start, period.end);
     const sales = sum(pos, row => row.netAmount), expense = sum(costs, row => row.amount);
     const previousSales = sum(previous, row => row.netAmount), previousExpense = sum(oldCosts, row => row.amount);
     const comparisonAvailable = period.previousStart >= '2026-07-01' && previous.length > 0;
@@ -85,7 +112,8 @@
       hour, label: hour + '~' + (hour + 2) + '시',
       traffic: sum(local.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.traffic),
       card: sum(local.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.cardAmount),
-      sales: sum(pos.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.netAmount)
+      sales: sum(pos.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.netAmount),
+      storefront: sum(front.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.passersby)
     }));
     const maxTraffic = Math.max(1, ...rawSlots.map(r => r.traffic)), maxCard = Math.max(1, ...rawSlots.map(r => r.card));
     const slots = rawSlots.map(r => Object.assign({}, r, { trafficIndex: r.traffic / maxTraffic * 100, cardIndex: r.card / maxCard * 100 }));
@@ -101,15 +129,23 @@
       const days = daily.filter(r => new Date(r.date + 'T00:00:00Z').getUTCDay() === day);
       return { day, label: ['일', '월', '화', '수', '목', '금', '토'][day], count: days.length, sales: days.length ? sum(days, r => r.sales) / days.length : null };
     });
+    const weekdaySlots = byWeekday.map(row => {
+      const matches = r => new Date(r.date + 'T00:00:00Z').getUTCDay() === row.day;
+      return { label: row.label + '요일', sales: row.sales, traffic: row.count ? sum(local.filter(matches), r => r.traffic) / row.count : null,
+        card: row.count ? sum(local.filter(matches), r => r.cardAmount) / row.count : null,
+        storefront: row.count ? sum(front.filter(matches), r => r.passersby) / row.count : null };
+    });
     return {
       period, pos, daily, byWeekday, sales, expense, previousSales, previousExpense, comparisonAvailable,
       delta: sales - expense, expenseRatio: sales ? expense / sales * 100 : null,
       salesRate: comparisonAvailable ? rate(sales, previousSales) : null,
       expenseRate: comparisonAvailable ? rate(expense, previousExpense) : null,
       cardRate: comparisonAvailable ? rate(sum(local, r => r.cardAmount), sum(oldArea, r => r.cardAmount)) : null,
+      merchantRate: comparisonAvailable ? rate(sum(localMerchants, r => r.amount), sum(oldMerchants, r => r.amount)) : null,
+      merchantConsumption: sum(localMerchants, r => r.amount), merchantCount: new Set(localMerchants.map(r => r.storeId)).size,
       trafficRate: comparisonAvailable ? rate(sum(local, r => r.traffic), sum(oldArea, r => r.traffic)) : null,
       soldUnits: sum(pos, r => r.netQuantity), cancellations: sum(pos, r => r.cancellations),
-      slots, focus, byCategory, topPurchases, sourceType: 'synthetic_demo',
+      slots, weekdaySlots, focus, byCategory, topPurchases, sourceType: 'synthetic_demo',
       dataStatus: pos.length ? 'available' : 'no_data',
       action: focus.label + ' 대표 메뉴 노출과 안내 문구를 점검하고, 변경 전후 판매 기록을 비교해 보세요.'
     };
@@ -181,32 +217,49 @@
     }
   };
   const ratio = (numerator, denominator) => denominator > 0 ? numerator / denominator * 100 : null;
-  function analyzeRecovery() {
-    const slots = recoveryScenario.slots.map(row => Object.assign({}, row, {
-      dwellRate: ratio(row.dwellers, row.passersby),
-      entryRate: ratio(row.entrants, row.passersby),
-      estimatedPurchaseRate: ratio(row.validPayments, row.entrants),
-      averageTicket: row.validPayments > 0 ? row.netSales / row.validPayments : null
-    }));
-    const opportunity = slots.find(row => row.id === recoveryScenario.opportunitySlotId) || null;
+  // Explicit prior-month generated observations; never substitute the seven-day follow-up.
+  recoveryScenario.history = ['2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27'].flatMap((date, index) =>
+    recoveryScenario.slots.map(row => ({ date, id: row.id, passersby: row.passersby + index * 9,
+      entrants: row.entrants + 4 + index, validPayments: row.validPayments + 3 + index, sourceType: 'synthetic_demo' }))
+  );
+  function analyzeRecovery(scenario = recoveryScenario) {
+    const date = new Date(scenario.analysisDate + 'T00:00:00Z');
+    const previousMonth = iso(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1))).slice(0, 7);
+    const history = (scenario.history || []).filter(row => row.date.slice(0, 7) === previousMonth &&
+      new Date(row.date + 'T00:00:00Z').getUTCDay() === date.getUTCDay());
+    const slots = scenario.slots.map(row => {
+      const baseline = history.filter(old => old.id === row.id);
+      const previousEntryRate = ratio(sum(baseline, r => r.entrants), sum(baseline, r => r.passersby));
+      const previousPurchaseRate = ratio(sum(baseline, r => r.validPayments), sum(baseline, r => r.entrants));
+      const entryRate = ratio(row.entrants, row.passersby);
+      const estimatedPurchaseRate = ratio(row.validPayments, row.entrants);
+      return Object.assign({}, row, {
+        comparisonDates: baseline.map(r => r.date), previousEntryRate, previousPurchaseRate,
+        entryRateDelta: previousEntryRate === null || entryRate === null ? null : entryRate - previousEntryRate,
+        purchaseRateDelta: previousPurchaseRate === null || estimatedPurchaseRate === null ? null : estimatedPurchaseRate - previousPurchaseRate,
+        dwellRate: ratio(row.dwellers, row.passersby), entryRate, estimatedPurchaseRate,
+        averageTicket: row.validPayments > 0 ? row.netSales / row.validPayments : null
+      });
+    });
+    const opportunity = slots.find(row => row.id === scenario.opportunitySlotId) || null;
     return {
-      analysisDate: recoveryScenario.analysisDate,
-      storeStatus: recoveryScenario.storeStatus,
-      sourceType: recoveryScenario.sourceType,
-      dataStatus: recoveryScenario.dataStatus,
-      conversionScope: recoveryScenario.conversionScope,
-      opportunitySelection: Object.assign({}, recoveryScenario.opportunitySelection),
+      analysisDate: scenario.analysisDate,
+      storeStatus: scenario.storeStatus,
+      sourceType: scenario.sourceType,
+      dataStatus: scenario.dataStatus,
+      conversionScope: scenario.conversionScope,
+      opportunitySelection: Object.assign({}, scenario.opportunitySelection),
       opportunity,
       slots,
-      diagnosis: Object.assign({}, recoveryScenario.diagnosis),
-      actions: recoveryScenario.actions.map(row => Object.assign({}, row)),
-      comparison: Object.assign({}, recoveryScenario.comparison),
-      supportingEvidence: Object.assign({}, recoveryScenario.supportingEvidence)
+      diagnosis: Object.assign({}, scenario.diagnosis),
+      actions: scenario.actions.map(row => Object.assign({}, row)),
+      comparison: Object.assign({}, scenario.comparison),
+      supportingEvidence: Object.assign({}, scenario.supportingEvidence)
     };
   }
   const api = {
-    records, expenses, purchases, area, periods, categories, menu, materials, policies, recoveryScenario,
-    analyze, analyzeRecovery, customPeriod, guidance, shift, rate,
+    records, expenses, purchases, area, merchantSales, storefront, periods, categories, menu, materials, policies, recoveryScenario,
+    analyze, analyzeRecovery, customPeriod, guidance, shift, rate, seoulClock, financialIndex,
     profile: { name: '이소현', storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: 3, age: '', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     generatedLabel: '생성 데이터 기반 시연', referenceDate: '2026-09-03',
     sources: { pos: 'POS 형식의 생성 판매 집계', expenses: '생성 지출·매입 자료', area: '생성 상권 비교 자료', cctv: 'CCTV 형식의 익명 통행·체류·입장 생성 집계', recovery: 'CCTV·POS 결합 기능 검토용 생성 시나리오', policies: '화면 구성용 가상 공고' }

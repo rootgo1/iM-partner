@@ -1,0 +1,48 @@
+'use strict';
+const assert = require('node:assert/strict');
+const D = require('../meeting-data.js');
+const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0);
+const at = value => new Date(value + 'T12:00:00+09:00');
+
+const index = D.financialIndex(at('2026-09-12'));
+assert.equal(index.asOf, '2026-09-02');
+assert.equal(index.start, '2026-08-04');
+assert.equal(index.previousStart, '2026-07-05');
+assert.equal(index.previousEnd, '2026-08-03');
+assert.equal(index.stale, true);
+const daily = D.analyze({start:index.start, end:index.asOf, previousStart:index.previousStart, previousEnd:index.previousEnd}).daily;
+const expected = daily.reduce((total, row) => total + Math.max(0, Math.min(100, 100 - row.expense / row.sales * 100)), 0) / 30;
+assert.ok(Math.abs(index.value - expected) < 1e-10);
+assert.notEqual(D.financialIndex(at('2026-09-01')).value, index.value);
+assert.equal(D.financialIndex(at('2026-07-15')).value, null, 'partial month must not be called a 30-day average');
+assert.equal(D.financialIndex(at('2026-06-30')).value, null);
+assert.equal(D.seoulClock(new Date('2026-09-12T15:00:00Z')).date, '2026-09-13');
+console.log('PASS 30-day arithmetic average, adjacent baseline, incomplete data, stale date and Seoul midnight');
+
+const a = D.analyze(D.periods.month);
+const local = D.merchantSales.filter(row => row.date >= a.period.start && row.date <= a.period.end);
+assert.equal(a.merchantConsumption, sum(local, 'amount'));
+assert.equal(sum(local.filter(row => row.storeId === 'store-01'), 'amount'), a.sales);
+assert.equal(a.merchantCount, 4);
+assert.notEqual(a.merchantRate, a.cardRate, 'service merchant totals are independent of external card sample');
+assert.equal(sum(a.slots, 'sales'), a.sales);
+assert.equal(sum(a.slots, 'storefront'), sum(D.storefront.filter(row => row.date >= a.period.start && row.date <= a.period.end), 'passersby'));
+assert.ok(a.weekdaySlots.every(row => ['sales','traffic','card','storefront'].every(key => Number.isFinite(row[key]))));
+const single = D.analyze(D.customPeriod('2026-08-31', '2026-08-31'));
+assert.equal(single.weekdaySlots.filter(row => row.sales === null).length, 6);
+console.log('PASS participating-store scope, own-store reconciliation, four chart series, missing weekdays');
+
+const r = D.analyzeRecovery().opportunity;
+const history = D.recoveryScenario.history.filter(row => row.id === r.id);
+assert.deepEqual(r.comparisonDates, ['2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27']);
+assert.equal(r.previousEntryRate, sum(history, 'entrants') / sum(history, 'passersby') * 100);
+assert.equal(r.previousPurchaseRate, sum(history, 'validPayments') / sum(history, 'entrants') * 100);
+assert.equal(r.entryRateDelta, r.entryRate - r.previousEntryRate);
+assert.equal(r.purchaseRateDelta, r.estimatedPurchaseRate - r.previousPurchaseRate);
+const absent = D.analyzeRecovery({...D.recoveryScenario, history:[]}).opportunity;
+assert.equal(absent.entryRateDelta, null);
+assert.equal(absent.purchaseRateDelta, null);
+const noTraffic = D.analyzeRecovery({...D.recoveryScenario, slots:D.recoveryScenario.slots.map(row => ({...row, passersby:0, entrants:0}))}).opportunity;
+assert.equal(noTraffic.entryRate, null);
+assert.equal(noTraffic.purchaseRateDelta, null);
+console.log('PASS previous-month same-weekday weighted conversion, percentage points and missing/zero denominators');

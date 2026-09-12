@@ -1,0 +1,113 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {pathToFileURL} = require('node:url');
+const {chromium} = require('playwright');
+const root = path.resolve(__dirname, '..');
+const url = file => pathToFileURL(path.join(root, file)).href;
+const output = path.resolve(root, '../tmp/meeting-revisions-qa');
+fs.mkdirSync(output, {recursive:true});
+(async () => {
+ const browser = await chromium.launch({headless:true, executablePath:['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync)});
+ try {
+  const page = await browser.newPage({viewport:{width:1440,height:900}});
+  const errors=[]; page.on('pageerror', e=>errors.push(e.message));
+  await page.goto(url('main-screen.html'));
+  await page.waitForSelector('#dashboardBanner');
+  await page.evaluate(() => document.fonts.ready);
+  assert.equal(await page.locator('.v-screen-section').count(),4);
+  assert.match(await page.locator('.v-screen-section').nth(1).innerText(), /시간대별 운영 안내/);
+  assert.match(await page.locator('.v-screen-section').nth(2).innerText(), /요일\/시간대별 유동인구와 매출량/);
+  assert.match(await page.locator('.v-finance-thermo-summary').innerText(), /현재\(당일\) 나의 금융지수/);
+  const temperature = await page.locator('.v-finance-thermo-summary h3 strong').innerText();
+  await page.screenshot({path:path.join(output,'dashboard.png')});
+  await page.locator('#dashboardBanner').hover(); await page.mouse.wheel(0,650); await page.waitForTimeout(900);
+  assert.ok(await page.locator('#viewRoot').evaluate(n=>n.scrollTop)>700, 'wheel over banner advances');
+  await page.mouse.wheel(0,650); await page.waitForTimeout(900);
+  const chart = page.locator('.v-comparison-chart');
+  await chart.scrollIntoViewIfNeeded();
+  assert.equal(await chart.locator('[data-chart-line]').count(),4);
+  await chart.locator('button[data-series="sales"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await chart.locator('[data-chart-line="sales"]').getAttribute('aria-pressed'),'true');
+  assert.ok(Number(await chart.locator('[data-chart-line="traffic"]').evaluate(n=>getComputedStyle(n).opacity))<.3);
+  await chart.locator('button[data-series="sales"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await chart.locator('[data-chart-line="traffic"]').evaluate(n=>getComputedStyle(n).opacity),'1');
+  await chart.locator('[data-chart-line="card"]').focus(); await page.keyboard.press('Enter');
+  assert.equal(await chart.locator('[data-chart-line="card"]').getAttribute('aria-pressed'),'true');
+  await chart.locator('[data-chart-mode="weekday"]').click();
+  assert.match(await chart.innerText(),/월요일/);
+  await chart.locator('[data-chart-mode="hour"]').click();
+  await page.screenshot({path:path.join(output,'chart.png')});
+  const before = await page.locator('#viewRoot').evaluate(n=>n.scrollTop);
+  await chart.locator('.v-chart').hover(); await page.mouse.wheel(0,650); await page.waitForTimeout(900);
+  assert.ok(await page.locator('#viewRoot').evaluate(n=>n.scrollTop)>before+100,'wheel over graph advances');
+  assert.match(await page.locator('.v-signal-context').innerText(),/결제 전환율\(추정\)/);
+  assert.match(await page.locator('.v-recovery-signal-note').innerText(),/전월 동일 요일·동일 시간대 4일/);
+  await page.screenshot({path:path.join(output,'cctv.png')});
+  await page.locator('#mainNavigation [data-view="analysis"]').click();
+  assert.match(await page.locator('#viewRoot').innerText(),/현금보유량/);
+  await page.locator('#sectionPeriodSelect').selectOption('week');
+  await page.locator('#mainNavigation [data-view="dashboard"]').click();
+  assert.equal(await page.locator('.v-finance-thermo-summary h3 strong').innerText(),temperature,'rolling index independent of dashboard selected period');
+  await page.locator('#aiToggle').click();
+  assert.equal(await page.locator('#chatWidth').count(),0);
+  const handle=page.locator('#chatResizeHandle');
+  await handle.focus(); await page.keyboard.press('Home'); await page.keyboard.press('ArrowLeft');
+  assert.equal(await handle.getAttribute('aria-valuenow'),'330');
+  await page.waitForTimeout(400);
+  const box=await handle.boundingBox(); await page.mouse.move(box.x+4,box.y+100); await page.mouse.down(); await page.mouse.move(box.x-56,box.y+100); await page.mouse.up();
+  assert.ok(Number(await handle.getAttribute('aria-valuenow'))>=380);
+  await page.locator('#aiClose').click();
+  // Ensure an inner scroller consumes input until its boundary, then releases the outer page.
+  await page.setViewportSize({width:1280,height:740});
+  await page.waitForTimeout(400);
+  await page.locator('#mainNavigation [data-view="dashboard"]').click();
+  await page.evaluate(()=>{ const inner=document.querySelector('.v-screen-inner'); inner.style.maxHeight='300px'; inner.scrollTop=0; });
+  await page.locator('#dashboardBanner').hover(); await page.mouse.wheel(0,180); await page.waitForTimeout(300);
+  assert.ok(await page.locator('.v-screen-inner').first().evaluate(n=>n.scrollTop)>0,'inner overflow scrolls');
+  await page.evaluate(()=>{const inner=document.querySelector('.v-screen-inner');inner.scrollTop=inner.scrollHeight;});
+  await page.locator('.v-dashboard-metrics').hover(); await page.mouse.wheel(0,650); await page.waitForTimeout(900);
+  assert.ok(await page.locator('#viewRoot').evaluate(n=>n.scrollTop)>100,'inner boundary releases outer wheel');
+  console.log('PASS desktop: section order, wheel over banner/chart, nested boundary, chart toggles and keyboard, cash and chat resizing');
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(url('login-preview/index.html'));
+  assert.equal(await page.locator('#headerDemoLink, #demoEntryLink').count(),0);
+  assert.equal(await page.locator('.value-panel img').count(),0);
+  await page.locator('#loginButton').click(); assert.equal(await page.locator('#userId').getAttribute('aria-invalid'),'true');
+  await page.locator('#userId').fill('test-user'); await page.locator('#userPassword').fill('not-a-real-password');
+  await page.locator('#passwordToggle').click(); assert.equal(await page.locator('#userPassword').getAttribute('type'),'text');
+  await page.locator('#loginButton').click(); assert.match(await page.locator('#loginStatus').innerText(),/현재 로그인할 수 없습니다/);
+  assert.ok(page.url().includes('login-preview')); assert.equal(await page.locator('#userPassword').inputValue(),'');
+  const featureBottom=await page.locator('.feature-list').evaluate(n=>n.getBoundingClientRect().bottom);
+  const panelBottom=await page.locator('.value-panel').evaluate(n=>n.getBoundingClientRect().bottom);
+  assert.ok(featureBottom <= panelBottom,'all login features remain visible');
+  await page.screenshot({path:path.join(output,'login.png'),fullPage:true});
+  for (const width of [390,760,1024]) {
+    await page.setViewportSize({width,height:844});
+    for (const file of ['login-preview/index.html','main-screen.html']) {
+      await page.goto(url(file)); await page.waitForTimeout(250);
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),file+' horizontal overflow at '+width);
+      if(file==='main-screen.html') {
+        await page.locator('.v-comparison-chart').scrollIntoViewIfNeeded();
+        assert.equal(await page.locator('[data-chart-line]').count(),4);
+      }
+      await page.screenshot({path:path.join(output,(file.startsWith('login')?'login':'chart')+'-'+width+'.png'),fullPage:width===390});
+    }
+  }
+  assert.deepEqual(errors,[]);
+  console.log('PASS login: no demo entry/fake authentication, image and validation; responsive 390/760/1024; no runtime errors');
+  const clockPage = await browser.newPage({viewport:{width:1440,height:900}});
+  await clockPage.clock.install({time:new Date('2026-09-12T23:59:55+09:00')});
+  await clockPage.goto(url('main-screen.html'));
+  assert.match(await clockPage.locator('.v-dashboard-insight').innerText(), /영업시간 밖/);
+  assert.match(await clockPage.locator('.v-finance-thermo-updated').innerText(), /2026-09-12 갱신/);
+  await clockPage.clock.fastForward(16000);
+  assert.match(await clockPage.locator('.v-finance-thermo-updated').innerText(), /2026-09-13 갱신/);
+  assert.match(await clockPage.locator('.v-dashboard-insight').innerText(), /2026-09-13 00:00/);
+  await clockPage.close();
+  console.log('PASS daily refresh across Seoul midnight and off-hours diagnosis');
+ } finally { await browser.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -28,7 +28,7 @@ assert.match(ui, /const triggerBadge = \$\('#profileTemperatureBadge'\)/);
 assert.match(ui, /buttonRole: 'menuitem'/);
 assert.match(ui, /temperature: null/);
 assert.match(ui, /referenceTemperature:/);
-assert.match(ui, /basisLabel: '매출·지출 기반 참고 온도'/);
+assert.match(ui, /basisLabel: '일별 금융지수의 최근 30일 평균'/);
 assert.match(ui, /dataStatus: 'reference'/);
 assert.match(ui, /\['storeName', 'region', 'industry'\]\.every/);
 assert.match(ui, /detail\.target !== 'finance-thermometer'/);
@@ -40,7 +40,7 @@ assert.match(ui, /state\.profile\.name \+ ' 프로필 메뉴, 나의 금융 온�
 assert.match(ui, /100 - value/);
 assert.match(ui, /나의 금융 체온계/);
 assert.match(ui, /연결 데이터 /);
-assert.match(ui, /참고 온도 산출식: 100 - 지출비율/);
+assert.match(ui, /선택 기간 지출 ÷ 매출 × 100/);
 assert.match(component, /label: '나의 금융 온도'/);
 assert.match(component, /'연결 데이터 ' \+ summary\.measuredCount/);
 assert.match(component, /summary\.temperature \|\| summary\.referenceTemperature/);
@@ -58,16 +58,11 @@ assert.match(menuCss, /\.sidebar-account-menu\s*\{[\s\S]*?max-height: calc\(100v
 assert.match(menuCss, /\.sidebar-account-name-row\s*\{/);
 assert.match(component, /if \(settings\.buttonRole === 'menuitem'\) host\.setAttribute\('role', 'none'\);/);
 
-const current = D.analyze(D.periods.month);
-const previousRatio = current.previousExpense / current.previousSales * 100;
-const delta = current.expenseRatio - previousRatio;
-const currentTemperature = 100 - current.expenseRatio;
-const previousTemperature = 100 - previousRatio;
-assert.equal(current.expenseRatio.toFixed(1), '48.1');
-assert.equal(delta.toFixed(1), '8.8');
-assert.equal(currentTemperature.toFixed(1), '51.9');
-assert.equal(previousTemperature.toFixed(1), '60.7');
-assert.equal((currentTemperature - previousTemperature).toFixed(1), '-8.8');
-assert.equal(current.comparisonAvailable, true);
+const current = D.financialIndex(new Date('2026-09-12T12:00:00+09:00'));
+assert.equal(current.value.toFixed(1), '51.2');
+assert.equal(current.previousValue.toFixed(1), '59.9');
+assert.equal((current.value - current.previousValue).toFixed(1), '-8.7');
+assert.equal(current.asOf, '2026-09-02');
+assert.equal(current.stale, true);
 
 console.log('PASS profile finance is integrated with verified demo metrics, guarded navigation, and accessible menu behavior');
