@@ -15,7 +15,7 @@
 
 ## 0. 2026-09-01 당시 감사 결론
 
-2026-09-01 당시 P0 프로토타입은 주요 KPI, 인사이트 문구, 회복 플랜 카드, 자금 흐름 카드, 정책 카드 및 대부분의 AI 비서 답변을 `prototype/mock-data.js`에서 읽어 화면에 표시했습니다.
+2026-09-01 당시 P0 프로토타입은 주요 KPI, 인사이트 문구, 회복 플랜 카드, 자금 흐름 카드, 정책 카드 및 대부분의 iM비서 답변을 `prototype/mock-data.js`에서 읽어 화면에 표시했습니다.
 
 다만 다음 항목은 현재 `mock-data.js`와 완전히 연결되어 있지 않습니다.
 
@@ -107,7 +107,7 @@
 
 ## 3. 핵심 수치별 전체 사용처 추적
 
-| ID | `mock-data.js` 필드 | HTML 사용 위치 | AI 비서 | 회복 플랜 | 발표 스크립트 | 심사 Q&A | 하드코딩·판정 |
+| ID | `mock-data.js` 필드 | HTML 사용 위치 | iM비서 | 회복 플랜 | 발표 스크립트 | 심사 Q&A | 하드코딩·판정 |
 |---|---|---|---|---|---|---|---|
 | D-04 | `metrics.salesChange` | 매출 KPI `sales-change` | 매출 질문의 원인 답변에서는 직접 표시하지 않고 카드소비·유동인구를 근거로 사용 | 직접 표시하지 않음 | `12.4% 감소` | 매출 변화와 요인 후보 설명 | 화면 KPI는 동적. 발표·Q&A 문장은 문서 하드코딩 |
 | D-05 | `metrics.cardChange` | 카드소비 KPI `card-change` | 매출·시간대·초기 인사이트·차트 상세 답변 | `recoveryPlan.evidence`에 포함된 고정 문구 | `-8.1%` | 카드소비 비교 근거 | 화면 일부는 동적. SVG 선은 값과 무관한 고정 경로 |
@@ -122,9 +122,9 @@
 
 ---
 
-## 4. AI 비서 5개 대표 질문 추적
+## 4. iM비서 5개 대표 질문 추적
 
-당시 AI 비서는 외부 AI API가 아니라 현재 `main-screen.before-meeting.html`로 보존된 화면의 `demoAnswer()` 키워드 규칙으로 답변했습니다. 각 질문은 클릭 시 입력창을 거쳐 동일한 함수로 처리되었습니다.
+당시 iM비서는 외부 AI API가 아니라 현재 `main-screen.before-meeting.html`로 보존된 화면의 `demoAnswer()` 키워드 규칙으로 답변했습니다. 각 질문은 클릭 시 입력창을 거쳐 동일한 함수로 처리되었습니다.
 
 | 질문 | 사용 데이터 | 판단 규칙 | 답변 구조 | 행동 제안 | 일관성 판정 |
 |---|---|---|---|---|---|
@@ -412,7 +412,7 @@ AI 답변 규칙과 근거 문장 교체
 | cashflow.* | cashflow_inputs와 검증된 입출금 | 현금 기준일·정산 시점·예상 매출/입금 구분 |
 | policy.* | policy_support_programs + 프로필 매칭 | 실제 공고·원문 자격·상태·조건 근거 |
 
-KPI·그래프·요인·플랜·iM챗봇·AI 비서·PDF가 동일 analysis_run_id와 source_ids·rule_version을 사용하도록 설계했습니다. 최신 사용자 확인에 따라 POS를 포함한 생성 데이터 시연을 허용하고 synthetic_demo와 dataset_mode로 구분합니다. 아직 실제 코드의 공통 데이터 원천 전환을 구현한 것은 아닙니다.
+KPI·그래프·요인·플랜·AI챗봇·iM비서·PDF가 동일 analysis_run_id와 source_ids·rule_version을 사용하도록 설계했습니다. 최신 사용자 확인에 따라 POS를 포함한 생성 데이터 시연을 허용하고 synthetic_demo와 dataset_mode로 구분합니다. 아직 실제 코드의 공통 데이터 원천 전환을 구현한 것은 아닙니다.
 
 ### 14-3. 회의의 새 예시·주장 처리
 
@@ -445,7 +445,7 @@ KPI·그래프·요인·플랜·iM챗봇·AI 비서·PDF가 동일 analysis_run_
 
 - 프로필 지역: 사업장 주소지로 확정. 거주지와 구분합니다.
 - 사업장 규모: 직원 수로 확정. 공고의 상시근로자 산정 기준과 자동 동일시하지 않습니다.
-- AI 리포트의 새 명칭: AI 비서. 우측 단순 질의응답은 iM챗봇입니다.
+- AI 리포트의 새 명칭: iM비서. 우측 단순 질의응답은 AI챗봇입니다.
 - 생성 데이터: POS 포함 공모전 시연에 사용 가능, 생성 자료임을 표시합니다.
 
 ---
@@ -458,19 +458,19 @@ KPI·그래프·요인·플랜·iM챗봇·AI 비서·PDF가 동일 analysis_run_
 
 | 단계 | 현행 코드 원천·계산 | 메인 화면·대화 사용 | 2026-09-08 판정과 한계 |
 |---|---|---|---|
-| 기간별 POS·지출·상권 | `meeting-data.js`의 `records`, `expenses`, `purchases`, `area`와 `analyze()` | 대시보드·상권·매출/지출·iM챗봇·AI 비서·PDF | 생성 레코드 계산과 기간 전환 구현. 실제 POS·카드사·통신사·DB 미연결 |
-| CCTV 형식 익명 집계 | `recoveryScenario.slots`의 `passersby`, `dwellers`, `entrants` | 대시보드 회복 신호·회복 플랜 퍼널·차트·iM챗봇 | 메인 통합 구현. 실제 영상·장비·정확도·중복 제거 검증 없음 |
+| 기간별 POS·지출·상권 | `meeting-data.js`의 `records`, `expenses`, `purchases`, `area`와 `analyze()` | 대시보드·상권·매출/지출·AI챗봇·iM비서·PDF | 생성 레코드 계산과 기간 전환 구현. 실제 POS·카드사·통신사·DB 미연결 |
+| CCTV 형식 익명 집계 | `recoveryScenario.slots`의 `passersby`, `dwellers`, `entrants` | 대시보드 회복 신호·회복 플랜 퍼널·차트·AI챗봇 | 메인 통합 구현. 실제 영상·장비·정확도·중복 제거 검증 없음 |
 | POS 형식 회복 집계 | 같은 슬롯의 `validPayments`, `netSales` | 유효 결제·순매출·전후 비교 기준값 | 생성값 표시 구현. 판매 채널·취소·환불을 실제 공급 자료와 맞춘 결과가 아님 |
-| 매장 유입률 | `entrants ÷ passersby × 100` | 퍼널·대시보드·차트·지표 설명·iM챗봇 | `analyzeRecovery()` 계산 구현 |
-| 추정 구매전환율 | `validPayments ÷ entrants × 100` | 퍼널·지표 설명·iM챗봇 | 생성 시나리오 계산 구현. 고유 구매자 수가 아니며 실제 판매 채널 비교 범위 미확정 |
+| 매장 유입률 | `entrants ÷ passersby × 100` | 퍼널·대시보드·차트·지표 설명·AI챗봇 | `analyzeRecovery()` 계산 구현 |
+| 추정 구매전환율 | `validPayments ÷ entrants × 100` | 퍼널·지표 설명·AI챗봇 | 생성 시나리오 계산 구현. 고유 구매자 수가 아니며 실제 판매 채널 비교 범위 미확정 |
 | 객단가 | `netSales ÷ validPayments` | 회복 플랜 퍼널 하단 | 생성 시나리오 계산 구현 |
-| 기회 시간대 | `opportunitySlotId: '18-20'` | 대시보드·회복 플랜·iM챗봇 | **고정 시나리오 선택**. 자동 산식·임계값·최소 표본·`ruleVersion` 없음 |
-| 요인 후보 | `diagnosis`의 고정 제목·설명, `ruleVersion: null` | 회복 플랜 진단·iM챗봇 | 고정 생성 시나리오. 검증된 자동 진단 규칙 아님 |
-| 실행 행동 | `actions`의 입간판·2인 세트·7일 후 비교 문구 | 회복 플랜·iM챗봇 | 고정 검토 예시. 할인율·비용·효과 검증 없음 |
+| 기회 시간대 | `opportunitySlotId: '18-20'` | 대시보드·회복 플랜·AI챗봇 | **고정 시나리오 선택**. 자동 산식·임계값·최소 표본·`ruleVersion` 없음 |
+| 요인 후보 | `diagnosis`의 고정 제목·설명, `ruleVersion: null` | 회복 플랜 진단·AI챗봇 | 고정 생성 시나리오. 검증된 자동 진단 규칙 아님 |
+| 실행 행동 | `actions`의 입간판·2인 세트·7일 후 비교 문구 | 회복 플랜·AI챗봇 | 고정 검토 예시. 할인율·비용·효과 검증 없음 |
 | 실행 상태 | `meeting-ui.js`의 메모리 상태 `recoveryStarted` | 버튼 문구와 실행 단계 | 브라우저 메모리에서만 변경. 새로고침 시 초기화되고 DB에 저장되지 않음 |
 | 7일 후 비교 | `comparison.status: 'waiting'`, `followUpMetrics: null` | 실행 전·후 비교 영역 | 기준값과 집계 대기 상태만 구현. 후속 수치·성공 판정·인과 추론 없음 |
 | 지도·상권 보조 | `supportingEvidence.*Status: 'not_connected'`, SVG 배치 예시 | 회복 플랜 보조 영역 | 실제 지도·동종업종·행사 API 미연결. 핵심 퍼널 수치를 대체하지 않음 |
-| 브라우저 PDF | `meeting-ui.js`가 기간별 `analysis`, 요인 문장, 비용 문장, 질문을 `report-pdf.js`에 전달 | AI 비서의 실제 PDF 파일 생성·다운로드 | 유효한 로컬 PDF 구현. 서버 저장·권한 없음. **`analyzeRecovery()`의 CCTV 퍼널, 실행 메모리 상태, 7일 waiting은 PDF에 포함되지 않음** |
+| 브라우저 PDF | `meeting-ui.js`가 기간별 `analysis`, 요인 문장, 비용 문장, 질문을 `report-pdf.js`에 전달 | iM비서의 실제 PDF 파일 생성·다운로드 | 유효한 로컬 PDF 구현. 서버 저장·권한 없음. **`analyzeRecovery()`의 CCTV 퍼널, 실행 메모리 상태, 7일 waiting은 PDF에 포함되지 않음** |
 
 ### 15-2. 현행 생성 시나리오 수치 추적
 
@@ -493,16 +493,16 @@ KPI·그래프·요인·플랜·iM챗봇·AI 비서·PDF가 동일 analysis_run_
 ```text
 meeting-data.js의 기간별 생성 POS·지출·상권 레코드
         ↓ analyze(period)
-대시보드 / 상권 / 매출·지출 / iM챗봇 / AI 비서 / 로컬 PDF
+대시보드 / 상권 / 매출·지출 / AI챗봇 / iM비서 / 로컬 PDF
 
 meeting-data.js의 recoveryScenario
         ↓ analyzeRecovery()
-대시보드 회복 신호 / 회복 플랜 / iM챗봇
+대시보드 회복 신호 / 회복 플랜 / AI챗봇
         ↘ PDF에는 아직 전달되지 않음
 ```
 
 - `mock-data.js`의 `-8.1%`, `+3.2%`, `62°`, `+650,000원`은 과거 보존값이며 현행 메인 데이터 원천이 아닙니다.
-- 회복 퍼널의 수치와 iM챗봇 답변은 같은 `analyzeRecovery()` 결과를 사용합니다.
+- 회복 퍼널의 수치와 AI챗봇 답변은 같은 `analyzeRecovery()` 결과를 사용합니다.
 - 기간별 POS·지출·상권 분석은 PDF까지 전달되지만 회복 시나리오는 PDF와 완전한 SSoT를 이루지 못했습니다.
 - 서버의 `analysis_run_id`, `source_ids`, `rule_version`, `recovery_experiment` 저장은 아직 구현되지 않았습니다.
 - 프로필 변경은 화면·가상 공고 조건에만 적용되고 생성 POS·CCTV 시나리오의 대상 자료를 바꾸지 않습니다.
@@ -524,7 +524,7 @@ meeting-data.js의 recoveryScenario
 - 행동 추천의 우선순위·비용·재고·인력 제약과 효과 검증.
 - 실행 기록·기준기간의 DB 저장과 7일 후 같은 조건 비교·외부 변수 표시.
 - 지도·동종업종·메뉴·영업시간·상권 고객·행사 제공처와 이용 조건.
-- 회복 퍼널·행동·7일 waiting을 포함하는 AI 비서 PDF와 서버 파일 권한.
+- 회복 퍼널·행동·7일 waiting을 포함하는 iM비서 PDF와 서버 파일 권한.
 - 실제 로그인·가게 소유권·분석 실행 ID·출처 ID를 통한 화면·대화·PDF 추적.
 
 ### 15-6. 주요 결정 상태 추적
@@ -540,7 +540,7 @@ meeting-data.js의 recoveryScenario
 
 1. 생성 CCTV·POS의 현재 산식과 표시를 유지하면서 자동 기회 시간·진단 규칙을 확정할 경우 `rule_version`을 부여합니다.
 2. 실제 자료를 도입할 때 권한·익명성·품질·시간 정렬을 검증하고 생성값과 자동으로 섞지 않습니다.
-3. 서버 분석 실행·출처·회복 실험 ID를 화면·iM챗봇·AI 비서·PDF에 함께 전달합니다.
+3. 서버 분석 실행·출처·회복 실험 ID를 화면·AI챗봇·iM비서·PDF에 함께 전달합니다.
 4. 회복 퍼널과 실행 상태를 PDF 범위에 포함할지 결정하고, 포함한다면 같은 분석 결과를 사용하도록 구현·검사합니다.
 5. 지도·상권·경쟁·행사 자료는 `supporting_context`로 분리하고 핵심 CCTV·POS 수치를 대체하지 않습니다.
 6. 블록체인은 [P2 도입 게이트](04_data-spec.md#11-6-도입-게이트)와 별도 PoC 승인 전까지 아키텍처·DB·API·보안·발표 문서에서 현재 적용 또는 예정 기술로 전제하지 않습니다. 검토 시에도 발급본의 변경 여부 확인과 원본 데이터·AI 정확성·공식 효력의 비검증 범위를 함께 추적합니다.

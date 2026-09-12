@@ -44,7 +44,7 @@ check('Local assets exist and no external script/style dependency', () => {
   assert.ok(!html.includes('class="data-chip"'));
   assert.match(html, /<div class="demo-label">생성 데이터 기반 시연/);
   assert.ok(!html.includes('iM 파트너'));
-  assert.ok(html.includes('iM챗봇'));
+  assert.ok(html.includes('AI챗봇'));
   assert.ok(!code.includes("addEventListener('wheel'"));
   assert.ok(!code.includes('handleSectionWheel'));
   assert.match(html, /vendor\/lenis\/lenis\.min\.js/);

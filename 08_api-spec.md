@@ -74,15 +74,15 @@ data_status: available / partial / no_data / not_comparable / definition_pending
 | A-09 | GET | /stores/{store_profile_id}/finance | 대시보드 체온계 비교 자료 |
 | A-10 | GET | /policies | 추천/전체 목록·검색 |
 | A-11 | GET | /policies/{policy_id} | 원문·자격 상세 |
-| A-12 | GET | /analysis-runs/{analysis_run_id}/report | AI 비서에서 사용하는 분석 요약 조회 |
-| A-13 | POST | /assistant/messages | iM챗봇 질의응답, 기존 경로 보존 |
+| A-12 | GET | /analysis-runs/{analysis_run_id}/report | iM비서에서 사용하는 분석 요약 조회 |
+| A-13 | POST | /assistant/messages | AI챗봇 질의응답, 기존 경로 보존 |
 | A-14 | POST | /stores/{store_profile_id}/receipts | 영수증 확장, 현재 미구현·후순위 |
 | A-15 | GET | /analysis-runs/{analysis_run_id}/recovery-plan | 회복 근거·행동·금융 참고 |
 | A-16 | GET, PATCH | /me/profile | 사용자 프로필 |
 | A-17 | GET, PATCH | /stores/{store_profile_id} | 사업장 프로필 |
-| A-18 | POST | /secretary-sessions | AI 비서 대화 시작 |
+| A-18 | POST | /secretary-sessions | iM비서 대화 시작 |
 | A-19 | POST | /secretary-sessions/{session_id}/messages | 질문별 분석 |
-| A-20 | GET | /secretary-sessions/{session_id}/messages | AI 비서 대화·근거 조회 |
+| A-20 | GET | /secretary-sessions/{session_id}/messages | iM비서 대화·근거 조회 |
 | A-21 | POST | /secretary-sessions/{session_id}/reports | 실제 PDF 생성 요청 |
 | A-22 | GET | /reports/{report_id} | PDF 생성 상태 |
 | A-23 | GET | /reports/{report_id}/download | 권한 확인 후 PDF 파일 |
@@ -176,15 +176,15 @@ A-11은 지원 내용·원문·접수기간·조건 구조·추출 상태·원�
 
 수집의 금융·창업 및 제목 3키워드 OR 조건은 서버 수집 계층의 규칙입니다. 화면 검색과 구분합니다. 외부 공고 분류·권한 확인 전 호출하지 않습니다.
 
-## 7. A-12~A-13 요약·iM챗봇 구분
+## 7. A-12~A-13 요약·AI챗봇 구분
 
 ### A-12 분석 요약
 
 실제 분석 결과의 sections, evidence, limitations, analysis_run_id, report_file(생성된 경우)을 반환합니다. 조회 요청만으로 가짜 PDF를 생성했다고 응답하지 않습니다.
 
-### A-13 iM챗봇
+### A-13 AI챗봇
 
-목표 화면 이름은 ‘iM챗봇’이지만 기존 /assistant/messages 경로를 유지합니다. AI 비서의 다단계 분석 경로와 구분합니다.
+목표 화면 이름은 ‘AI챗봇’이지만 기존 /assistant/messages 경로를 유지합니다. iM비서의 다단계 분석 경로와 구분합니다.
 
 입력: store_profile_id, analysis_run_id(분석 관련 질문 시), message, current_screen(문맥 보조).
 
@@ -248,13 +248,13 @@ A-29 응답: status, baseline, comparison, deltas, comparison_conditions, source
 - 실행 행동과 지표 변화의 상관관계는 보여줄 수 있지만, 다른 요인을 통제하지 않았다면 인과 효과로 단정하지 않습니다.
 - 비교 결과가 준비되기 전에 개선 수치나 수익을 생성하지 않습니다.
 
-## 9. A-16~A-23 프로필·AI 비서·PDF
+## 9. A-16~A-23 프로필·iM비서·PDF
 
 A-16 사용자 프로필: name, phone, age, age_as_of, username, email. 비밀번호·해시는 GET 응답에서 제외하고 변경은 인증 계층에서 처리합니다.
 
 A-17 사업장: 업종·사업 지역·주소·사업자번호·창업일자·직원 수(employee_count, employee_count_as_of, employee_count_basis)·매출 범위. 프로필 화면의 ‘지역’은 이 API의 사업장 소재지를 사용합니다. 거주지 자격을 대신 판정하지 않습니다. 사업장 규모는 직원 수로 확정했습니다. 공고의 상시근로자 수나 다른 규모 지표와 산정 기준이 다르면 확인 필요로 처리합니다.
 
-AI 비서:
+iM비서:
 
 1. A-18: store_profile_id로 세션 생성. 예시 질문은 화면에서 제공.
 2. A-19: message와 필요한 기간·분석 범위 확인 후 분석 서비스 호출.
@@ -265,7 +265,7 @@ AI 비서:
 
 A-23 성공 응답은 JSON이 아닌 PDF 바이트이며 Content-Disposition으로 파일 다운로드를 안내합니다. 실패는 공통 오류 구조를 사용합니다. 생성 완료 전 다운로드 URL을 활성화하지 않습니다.
 
-PDF의 숫자·기간·출처는 화면·iM챗봇과 동일 실행을 참조합니다.
+PDF의 숫자·기간·출처는 화면·AI챗봇과 동일 실행을 참조합니다.
 
 ## 10. A-25~A-26 이슈·시간 안내
 
@@ -286,10 +286,10 @@ A-26은 서버 기준 현재 날짜 이전의 완료된 7일을 기본 참고창
 | S-03 | A-04, A-26 |
 | S-04 | A-05~A-08 |
 | S-06 | A-10, A-11 |
-| S-07 AI 비서 | A-12, A-18~A-23 |
+| S-07 iM비서 | A-12, A-18~A-23 |
 | S-08 회복 | A-15, A-24, A-25, A-27~A-29 |
 | S-09 프로필 | A-16, A-17 |
-| 공통 iM챗봇 | A-13 |
+| 공통 AI챗봇 | A-13 |
 
 ## 12. 검증·구현 순서
 

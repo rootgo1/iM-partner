@@ -18,7 +18,7 @@
   const note = (text, variant) => '<div class="v-note ' + (variant || '') + '">' + text + '</div>';
   const card = (body, variant) => '<article class="card v-card' + (variant ? ' ' + variant : '') + '">' + body + '</article>';
   const head = (title, extra) => '<div class="v-row v-between"><h2>' + title + '</h2>' + (extra || '') + '</div>';
-  const productName = korean => '<span class="im-product-name"><span>iM</span><span class="im-product-korean">' + korean + '</span></span>';
+  const productName = korean => '<span class="im-product-name"><span>' + (korean === '챗봇' ? 'AI' : 'iM') + '</span><span class="im-product-korean">' + korean + '</span></span>';
   const avatarName = value => {
     const characters = Array.from(String(value || '').trim().replace(/\s+/g, ''));
     if (characters.length <= 1) return characters[0] || '?';

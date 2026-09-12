@@ -354,7 +354,7 @@ const { chromium } = require('playwright');
   assert.ok((await page.locator('#bannerTitle').innerText()).length > 0, 'rotating banner remains populated after returning home');
   assert.equal(await page.locator('.top-nav').count(), 0);
 
-  await page.getByRole('button', { name: 'iM챗봇' }).click();
+  await page.getByRole('button', { name: 'AI챗봇' }).click();
   const panel = page.locator('#aiPanel');
   await panel.waitFor({ state: 'visible' });
   await page.waitForFunction(() => document.querySelector('#aiPanel')?.getBoundingClientRect().width >= 320);
@@ -386,7 +386,7 @@ const { chromium } = require('playwright');
   assert.equal(await page.locator('.metric-card').count(), 4);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, 'horizontal overflow: ' + overflow);
-  await page.getByRole('button', { name: 'iM챗봇' }).click();
+  await page.getByRole('button', { name: 'AI챗봇' }).click();
   await page.waitForFunction(() => document.querySelector('#aiPanel')?.getBoundingClientRect().width >= 320);
   const tabletBox = await page.locator('#aiPanel').boundingBox();
   assert.ok(tabletBox && tabletBox.width >= 320 && tabletBox.width <= 560);

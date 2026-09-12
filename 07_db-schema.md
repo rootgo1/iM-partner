@@ -38,7 +38,7 @@
 | nearby_places | 목표 신규 | 상권 점포 좌표와 확인된 경쟁 근거 |
 | analysis_runs / analysis_insights | 이전 초안명 기반 목표 확장 | 분석 조건·결과·근거·규칙 |
 | recovery_experiments | 목표 신규 | 실행 행동·기준기간·7일 후 비교 |
-| assistant_sessions / assistant_messages | 목표 신규 | AI 비서 대화와 분석 연결 |
+| assistant_sessions / assistant_messages | 목표 신규 | iM비서 대화와 분석 연결 |
 | report_files | 목표 신규 | 실제 PDF 생성·접근 관리 |
 
 ```text
@@ -56,7 +56,7 @@ data_sources ─ 각 입력자료·분석 실행의 source_ids
            policy_support_programs / event_weather_data / nearby_places
 ```
 
-회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. iM챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
+회복 플랜은 `store_funnel_counts`와 POS 거래를 핵심 사실 데이터로 사용하고, `nearby_places`·상권·행사 자료는 보조 근거로 사용합니다. 추천 행동과 7일 후 비교 이력은 `recovery_experiments`에 분리합니다. AI챗봇 대화의 장기 보관은 이번 요구가 아니므로 강제하지 않습니다.
 
 위 표의 모든 항목은 **목표 논리 스키마**입니다. 현재 저장소에는 실제 Django 모델·MySQL 테이블·마이그레이션이 없습니다. ‘이전 초안명’은 과거 설계 문서의 명칭을 재사용한다는 뜻이며 운영 DB에 이미 존재한다는 뜻이 아닙니다.
 
@@ -292,7 +292,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 
 7일 후 비교는 달력상 7일 경과만으로 성공 처리하지 않습니다. 같은 매장·시간대·영업일 조건의 CCTV/POS 자료가 충분한지 확인하고, 부족하면 `waiting` 또는 `not_comparable`로 남깁니다. 비교 결과는 연결된 분석 결과에 근거와 함께 저장하며 추천 효과를 미리 확정값으로 기록하지 않습니다.
 
-## 12. AI 비서 대화와 PDF
+## 12. iM비서 대화와 PDF
 
 - assistant_sessions: user_id, store_profile_id, analysis_run_id(nullable), title, status. 외부 API 경로의 `secretary-sessions`가 이 내부 테이블에 대응합니다.
 - assistant_messages: session_id, role, content, analysis_run_id(nullable), evidence_refs, created_at.
@@ -321,7 +321,7 @@ insight_type은 기존 매출·소비·유동·현금흐름·회복 유형을 �
 4. CCTV 익명 집계와 POS의 매장·시간대·영업일 정렬, 집계 품질, 취소·환불·중복·단위 검증.
 5. 퍼널 지표→요인 후보→실행 행동→7일 후 비교를 같은 analysis_run·rule_version으로 연결.
 6. 지도·상권·행사 자료는 보조 근거로 연결하고 핵심 퍼널을 대신하지 않는지 확인.
-7. 분석 실행→화면→iM챗봇→AI 비서→PDF 연결.
+7. 분석 실행→화면→AI챗봇→iM비서→PDF 연결.
 8. 생성 여부 표시·실자료 혼동·기존 하드코딩 잔여 검사.
 9. [테스트 계획](09_test-plan.md) 통과 후 발표 설명 변경.
 
