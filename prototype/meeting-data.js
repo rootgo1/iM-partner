@@ -171,13 +171,13 @@
     const nextPeak = (remaining.length ? remaining : totals).reduce((best, r) => r.amount > best.amount ? r : best);
     const nextLabel = (remaining.length ? '' : '다음 영업일 ') + nextPeak.hour + '~' + (nextPeak.hour + 1) + '시';
     return {
-      title: quiet ? '한가한 시간, 다음 영업을 준비하세요' : '판매가 이어지는 시간, 준비 상태를 점검하세요',
+      title: quiet ? '한가한 시간에는 다음 영업을 준비하세요.' : '판매에 맞춰 재료와 응대를 점검하세요.',
       text: quiet ? '최근 30일 기준 매출이 낮은 시간대입니다. 영업을 유지하면서 정비 시간을 분산해 보세요.' : '최근 30일 기록에서 판매가 이어지는 시간대입니다. 재료와 응대 상태를 먼저 점검하세요.',
       average: row.amount, share: row.amount / dailyAverage * 100, count, period, quiet, nextPeak,
       checks: [quiet
-        ? { title: '지금 · 매장 정비 시간을 나누세요', detail: '식사·청소를 분산하고 다음 주문을 받을 준비를 유지하세요.' }
-        : { title: '지금 · 주력 메뉴와 응대를 점검하세요', detail: '준비 수량과 주문 대기 상황을 확인하고 역할을 나누세요.' },
-        { title: '다음 · ' + nextLabel + ' 판매에 대비하세요', detail: (remaining.length ? '남은 시간 중' : '하루 중') + ' 매출이 가장 높았던 구간입니다. 재료와 인력을 미리 확인하세요.' }]
+        ? { title: '지금 · 매장 정비 시간을 나누세요.', detail: '식사·청소를 분산하고 다음 주문을 받을 준비를 유지하세요.' }
+        : { title: '지금 · 주력 메뉴와 응대를 점검하세요.', detail: '준비 수량과 주문 대기 상황을 확인하고 역할을 나누세요.' },
+        { title: '다음 · ' + nextLabel + ' 판매에 대비하세요.', detail: (remaining.length ? '남은 시간 중' : '하루 중') + ' 매출이 가장 높았던 구간입니다. 재료와 인력을 미리 확인하세요.' }]
     };
   }
   function neighborhoodInsights(now = new Date()) {
@@ -200,6 +200,20 @@
       merchantCount: new Set(sameMerchants.map(r => r.storeId)).size,
       trafficRate: rate(traffic, sum(local.filter(r => dates.has(r.date)), r => r.traffic) / dates.size),
       consumptionRate: rate(consumption, sum(merchants.filter(r => dates.has(r.date)), r => r.amount) / dates.size) };
+  }
+  function salesInsight(period, now = new Date()) {
+    const clock = seoulClock(now), analysis = analyze(period);
+    const slot = analysis.slots.find(row => clock.hour >= row.hour && clock.hour < row.hour + 2);
+    if (!slot) return { clock, status: 'off_hours' };
+    const salesDays = new Set(analysis.pos.map(row => row.date)).size;
+    const frontDays = new Set(between(storefront, period.start, period.end).filter(row => row.hour >= slot.hour && row.hour < slot.hour + 2).map(row => row.date)).size;
+    if (!salesDays || analysis.sales <= 0) return { clock, slot, status: 'no_data' };
+    const share = slot.sales / analysis.sales * 100;
+    const quiet = slot.sales <= analysis.slots.map(row => row.sales).sort((a, b) => a - b)[1];
+    return { clock, slot, status: 'available', salesDays, frontDays,
+      salesAverage: slot.sales / salesDays, storefrontAverage: frontDays ? slot.storefront / frontDays : null, share,
+      title: quiet ? '매출 비중이 낮은 시간대입니다.' : '판매 준비와 주문 응대를 점검하세요.',
+      action: quiet ? '주문 응대를 유지하며 재료 보충과 정비 시간을 나누세요.' : '주력 메뉴의 준비 수량과 주문 대기 상황을 확인하세요.' };
   }
   const policyTitles = ['소상공인 운영자금', '골목상권 점포 환경개선', '전통시장 디지털 전환', '소상공인 창업 준비', '골목상권 공동 홍보', '전통시장 온라인 판매', '소상공인 경영 교육', '골목상권 청년 창업', '전통시장 협업', '소상공인 비용 관리'];
   const policies = policyTitles.map((name, i) => ({
@@ -297,7 +311,7 @@
   }
   const api = {
     records, expenses, purchases, area, merchantSales, storefront, periods, categories, menu, materials, policies, recoveryScenario,
-    analyze, analyzeRecovery, customPeriod, guidance, operatingPeriod, neighborhoodInsights, shift, rate, seoulClock, financialIndex,
+    analyze, analyzeRecovery, customPeriod, guidance, operatingPeriod, neighborhoodInsights, salesInsight, shift, rate, seoulClock, financialIndex,
     profile: { name: '이소현', storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: 3, age: '', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     generatedLabel: '생성 데이터 기반 시연', referenceDate: '2026-09-03',
     sources: { pos: 'POS 형식의 생성 판매 집계', expenses: '생성 지출·매입 자료', area: '생성 상권 비교 자료', cctv: 'CCTV 형식의 익명 통행·체류·입장 생성 집계', recovery: 'CCTV·POS 결합 기능 검토용 생성 시나리오', policies: '화면 구성용 가상 공고' }

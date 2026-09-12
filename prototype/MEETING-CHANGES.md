@@ -2,6 +2,17 @@
 
 기존 정적 HTML, 함수 기반 렌더링, 공통 데이터 계산 및 Lenis 스크롤 구조를 유지했습니다.
 
+## 화면 배치·복수 지표 선택 추가 수정 — 최신 반영
+
+- 섹션의 고정 높이와 내부 세로 스크롤을 제거했습니다. 내용에 맞춰 섹션이 늘어나며 전체 화면에서 스크롤합니다. 모든 섹션이 화면에 맞으면 기존 단위 이동을 유지하고, 긴 섹션이 있으면 연속 스크롤로 바꿔 하단 내용도 접근할 수 있게 했습니다. 진단 카드 안쪽 스크롤도 제거했습니다.
+- 체온계 증감은 ‘▼ 8.7° 낮음’처럼 간결하게 표시합니다. 별도 갱신 상태 줄을 삭제하고 자료 기준일·지수 갱신일은 ‘현재 나의 금융지수’의 도움말로 옮겼습니다. 상권 요약 카드의 화살표는 숫자 크기의 약 절반으로 줄이고 ‘생성 자료’ 반복 문구를 삭제했습니다. 비교 기간과 자료 범위는 유지합니다.
+- 운영 안내에서 ‘생성 POS 확인 가능 시간’을 삭제했습니다. ‘판매에 맞춰 재료와 응대를 점검하세요.’처럼 행동이 명확한 문장으로 바꾸고 문장 끝에 마침표를 적용했습니다.
+- 네 차트 지표를 여러 개 선택해 함께 강조할 수 있습니다. 선택하지 않은 선은 흐리게 표시하고, 선택을 모두 해제하면 전체를 표시합니다. 시간대별·요일별 전환 시 선택을 유지합니다. 네 지표 비교의 가독성을 위해 2시간 구간을 유지합니다.
+- ‘현재 매출진단’의 중복 ‘만만 원’을 수정하고, 선택 기간의 해당 2시간 구간 일평균 매출·가게 앞 통행과 하루 매출 중 비중을 표시합니다. 매출과 통행은 각각 실제 관측일 수로 나누며 해석도 같은 선택 기간으로 통일합니다. 좁은 화면에서는 지표를 세로로 배치합니다.
+- ‘가게 주변의 오늘’은 과거 관측 패턴에 더 적합한 ‘주변 상권 흐름’으로 변경했습니다.
+- 수정 파일: `meeting-data.js`, `meeting-ui.js`, `meeting-preview.css`, `smooth-scroll.js`, `tests/meeting-preview.test.cjs`, `tests/meeting-revisions.browser.test.cjs`, `tests/operating-guidance.test.cjs`, 루트 `README.md`, 이 문서. 신규 검사: `tests/dashboard-layout.browser.test.cjs`.
+- 320~1920px의 7개 화면 크기에서 내부 스크롤·내용 잘림·금액 단위·복수 선택 유지·키보드·배너와 그래프 위 스크롤을 검사합니다. 기존 화면·스크롤 회귀검사도 함께 실행했습니다.
+
 ## 금융 체온계·운영 안내 추가 수정 — 최신 반영
 
 - 금융지수 명칭은 ‘현재 나의 금융지수’, 집계 설명은 ‘최근 1개월 일별 이동평균 지수’로 통일했습니다. 연결 항목명과 상태를 위아래로 분리해 ‘예정 입출금 / 연결 필요’가 겹치지 않도록 수정했습니다.
@@ -83,6 +94,7 @@ Playwright 패키지 경로를 `NODE_PATH`로 지정하고 Chrome 또는 Edge가
 ```powershell
 node prototype/tests/meeting-revisions.browser.test.cjs
 node prototype/tests/operating-guidance.browser.test.cjs
+node prototype/tests/dashboard-layout.browser.test.cjs
 node prototype/tests/visual-preview.test.cjs
 node prototype/login-preview/visual-login-preview.test.cjs
 ```

@@ -41,7 +41,7 @@
     view: 'dashboard', periodMode: 'month', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
     policyView: 'recommended', keyword: '', category: 'all', offset: 0,
     reportMessages: [], reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
-    guideHour: null, contextMode: 'traffic', chartMode: 'hour', chartSeries: null, bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
+    guideHour: null, contextMode: 'traffic', chartMode: 'hour', chartSeries: [], bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
   };
   let analysis = D.analyze(state.period);
   const recoveryData = D.analyzeRecovery();
@@ -78,10 +78,10 @@
   }
   function indexChange(value) {
     if (value == null) return '<span class="v-index-change is-neutral">비교 자료 없음</span>';
-    return '<span class="v-index-change ' + (value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-neutral') + '" aria-label="' + Math.abs(value).toFixed(1) + '% ' + (value > 0 ? '상승' : value < 0 ? '하락' : '변동 없음') + '">' + (value > 0 ? '▲ ' : value < 0 ? '▼ ' : '— ') + Math.abs(value).toFixed(1) + '%</span>';
+    return '<span class="v-index-change ' + (value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-neutral') + '" aria-label="' + Math.abs(value).toFixed(1) + '% ' + (value > 0 ? '상승' : value < 0 ? '하락' : '변동 없음') + '">' + '<i class="v-index-arrow" aria-hidden="true">' + (value > 0 ? '▲' : value < 0 ? '▼' : '—') + '</i> ' + Math.abs(value).toFixed(1) + '%</span>';
   }
   function marketMetric(label, value, scope) {
-    return '<article class="card metric-card v-market-metric"><div class="metric-label">' + label + '</div><div class="metric-value">' + indexChange(value) + '</div><div class="v-metric-meta"><span>' + esc(state.period.comparison) + '</span><span>' + esc(scope) + '</span><span class="v-metric-source">생성 자료</span></div></article>';
+    return '<article class="card metric-card v-market-metric"><div class="metric-label">' + label + '</div><div class="metric-value">' + indexChange(value) + '</div><div class="v-metric-meta"><span>' + esc(state.period.comparison) + '</span><span>' + esc(scope) + '</span></div></article>';
   }
   function comparisonChart() {
     const rows = state.chartMode === 'weekday' ? analysis.weekdaySlots : analysis.slots;
@@ -92,7 +92,7 @@
       { key: 'storefront', label: '우리 가게 앞 유동인구', color: '#9560b4', dash: '3 5', unit: '명' }
     ];
     const x = i => 55 + i * 490 / Math.max(1, rows.length - 1), y = value => 210 - value * 1.65;
-    let svg = '<svg class="v-chart" viewBox="0 0 600 255" role="group" aria-label="네 지표의 상대 지수 비교. 범례 또는 선을 선택하면 강조됩니다.">';
+    let svg = '<svg class="v-chart" viewBox="0 0 600 255" role="group" aria-label="네 지표의 상대 지수 비교. 범례 또는 선을 여러 개 선택해 함께 강조할 수 있습니다.">';
     [0, 50, 100].forEach(value => { svg += '<line x1="55" x2="550" y1="' + y(value) + '" y2="' + y(value) + '" stroke="#e6eee9"/><text x="12" y="' + (y(value) + 5) + '">' + value + '</text>'; });
     series.forEach(item => {
       const max = Math.max(1, ...rows.map(row => row[item.key] || 0));
@@ -109,15 +109,19 @@
       svg += '</g>';
     });
     rows.forEach((row, i) => { svg += '<text x="' + x(i) + '" y="241" text-anchor="middle">' + row.label + '</text>'; });
-    return '<div class="v-comparison-chart"><div class="v-chart-mode" aria-label="그래프 집계 단위">' + ['hour', 'weekday'].map(mode => '<button type="button" data-chart-mode="' + mode + '" aria-pressed="' + (state.chartMode === mode) + '">' + (mode === 'hour' ? '시간대별' : '요일별') + '</button>').join('') + '</div><div class="v-legend v-series-legend">' + series.map(item => '<button type="button" data-series="' + item.key + '" aria-pressed="false"><svg width="24" height="10" aria-hidden="true"><line x1="0" x2="24" y1="5" y2="5" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '"/></svg>' + item.label + '</button>').join('') + '</div>' + svg + '</svg><p class="v-metadata">' + esc(state.period.start + ' ~ ' + state.period.end) + ' · 생성 자료<br>각 지표의 최댓값 = 100 · ' + (state.chartMode === 'weekday' ? '관측일 수로 나눈 요일별 일평균' : '선택 기간의 시간대별 합계') + ' · 점 위에서 실제 수치 확인<br>카드소비는 별도 상권 표본이며, 홈의 서비스 이용 가게 소비 합계와 범위가 다릅니다.</p></div>';
+    return '<div class="v-comparison-chart"><div class="v-chart-mode" aria-label="그래프 집계 단위">' + ['hour', 'weekday'].map(mode => '<button type="button" data-chart-mode="' + mode + '" aria-pressed="' + (state.chartMode === mode) + '">' + (mode === 'hour' ? '시간대별' : '요일별') + '</button>').join('') + '</div><p class="v-chart-selection-note">비교할 지표를 여러 개 선택하세요. 선택을 모두 해제하면 전체를 표시합니다.</p><div class="v-legend v-series-legend">' + series.map(item => '<button type="button" data-series="' + item.key + '" aria-pressed="false"><svg width="24" height="10" aria-hidden="true"><line x1="0" x2="24" y1="5" y2="5" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '"/></svg>' + item.label + '</button>').join('') + '</div>' + svg + '</svg><p class="v-metadata">' + esc(state.period.start + ' ~ ' + state.period.end) + ' · 생성 자료<br>각 지표의 최댓값 = 100 · ' + (state.chartMode === 'weekday' ? '관측일 수로 나눈 요일별 일평균' : '선택 기간의 시간대별 합계') + ' · 점 위에서 실제 수치 확인<br>카드소비는 별도 상권 표본이며, 홈의 서비스 이용 가게 소비 합계와 범위가 다릅니다.</p></div>';
+  }
+  function syncChartSelection() {
+    document.querySelectorAll('[data-series]').forEach(node => {
+      const selected = state.chartSeries.includes(node.dataset.series);
+      node.setAttribute('aria-pressed', String(selected));
+      node.style.opacity = state.chartSeries.length && !selected ? '.18' : '1';
+    });
   }
   function highlightChartSeries(key) {
-    state.chartSeries = state.chartSeries === key ? null : key;
-    document.querySelectorAll('[data-series]').forEach(node => {
-      const selected = state.chartSeries === node.dataset.series;
-      node.setAttribute('aria-pressed', String(selected));
-      node.style.opacity = state.chartSeries && !selected ? '.22' : '1';
-    });
+    if (!['traffic', 'card', 'sales', 'storefront'].includes(key)) return;
+    state.chartSeries = state.chartSeries.includes(key) ? state.chartSeries.filter(item => item !== key) : [...state.chartSeries, key];
+    syncChartSelection();
   }
   function salesChart() {
     const rows = analysis.daily, max = Math.max(1, ...rows.flatMap(r => [r.sales, r.expense]));
@@ -134,14 +138,16 @@
     return '내 가게 매출 ' + pct(analysis.salesRate) + ', 상권 카드소비 ' + pct(analysis.cardRate) + ', 유동인구 ' + pct(analysis.trafficRate) + '입니다. ' + analysis.focus.label + ' 상대 지수 차이를 운영 점검의 요인 후보로 살펴보세요.';
   }
   function dashboardInsight() {
-    const clock = D.seoulClock();
-    const slot = analysis.slots.find(row => clock.hour >= row.hour && clock.hour < row.hour + 2);
-    const stamp = clock.date + ' ' + String(clock.hour).padStart(2, '0') + ':' + String(clock.minute).padStart(2, '0');
-    const guidance = D.guidance(clock.hour);
+    const insight = D.salesInsight(state.period), clock = insight.clock;
+    const available = insight.status === 'available';
+    const stamp = String(clock.hour).padStart(2, '0') + ':' + String(clock.minute).padStart(2, '0') + ' 현재';
+    const title = insight.status === 'off_hours' ? '다음 영업을 준비하세요.' : available ? insight.slot.label + ' 운영 점검' : '판매 기록을 기다리고 있어요.';
     return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">현재 매출진단</span><span>' + stamp + '</span></div>' +
-      '<h2>' + (slot ? slot.label + ' 운영 점검' : '영업시간 밖입니다') + '</h2><p class="v-dashboard-insight-lead">' + (slot ? '현재 시각이 포함된 시간대를 선택 기간의 기록으로 살펴봅니다.' : '분석 가능한 시간대는 08~20시입니다.') + '</p>' +
-      (slot ? '<div class="v-dashboard-insight-values"><div><span>해당 시간대 매출 합계</span><strong>' + compact(slot.sales) + '만 원</strong></div><div><span>가게 앞 통행 합계</span><strong>' + number(slot.storefront) + '명</strong></div></div>' : '') +
-      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (slot ? guidance.title : '다음 영업을 준비하세요') + '</strong><p>' + (slot ? guidance.text : '재고·정산 예정금액을 확인하고 다음 영업시간의 인력과 재료를 준비하세요.') + '</p><small>' + esc(state.period.start + '~' + state.period.end) + ' 생성 기록 · 실시간 매출 아님 · 운영 안내는 최근 30일 기록 참고</small></div>' +
+      '<h2>' + title + '</h2><p class="v-dashboard-insight-lead">' + (available ? '현재 시간대의 평소 판매·통행 흐름입니다.' : insight.status === 'off_hours' ? '분석 가능한 시간대는 08~20시입니다.' : '선택 기간에 비교할 매출 자료가 없습니다.') + '</p>' +
+      (available ? '<div class="v-dashboard-insight-values"><div><span>시간대 일평균 매출</span><strong>' + compact(insight.salesAverage) + '<small> 원</small></strong></div><div><span>가게 앞 일평균 통행</span><strong>' + (insight.storefrontAverage == null ? '자료 없음' : number(insight.storefrontAverage) + '<small>명</small>') + '</strong></div></div>' : '') +
+      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (available ? insight.title : '재료와 정산 일정을 확인하세요.') + '</strong><p>' + (available ? insight.action : '다음 영업시간의 준비 수량과 예정 지출을 점검하세요.') + '</p>' +
+      (available ? '<small>하루 매출 중 이 시간대 비중 <b>' + ratioText(insight.share) + '</b></small>' : '') + '</div>' +
+      '<p class="v-dashboard-insight-source">' + dateText(state.period.start) + '~' + dateText(state.period.end) + ' 기준 · 실시간 실적 아님</p>' +
       '<button class="v-button primary v-dashboard-insight-action" type="button" data-view="recovery">회복전략 확인하기 →</button></article>';
   }
   function costText() {
@@ -184,7 +190,7 @@
     const currentHour = Number(new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\D/g, '')) % 24;
     const hour = state.guideHour === null ? Math.max(8, Math.min(19, currentHour)) : state.guideHour;
     return '<div class="v-guidance-head"><div><span class="v-guidance-kicker">시간대별 운영 안내</span><h2>지금 무엇을 하면 좋을까요</h2></div>' + badge('최근 30일 참고', 'neutral') + '</div>' +
-      '<div class="v-guidance-time"><span id="guideHourLabel">확인 시간</span>' + guideHourPicker(hour) + '<small>생성 POS 확인 가능 시간</small></div><div id="guidanceContent" class="v-guidance-content">' + guidanceContent(hour) + '</div>' +
+      '<div class="v-guidance-time"><span id="guideHourLabel">확인 시간</span>' + guideHourPicker(hour) + '</div><div id="guidanceContent" class="v-guidance-content">' + guidanceContent(hour) + '</div>' +
       '<button class="v-button primary v-guidance-action" type="button" data-view="analysis">시간대별 매출진단 보기 →</button>';
   }
   function guidanceContent(hour) {
@@ -199,7 +205,7 @@
   function dashboardContextCard() {
     const context = D.neighborhoodInsights();
     const date = dateText(context.today) + ' ' + context.weekdayLabel;
-    const header = '<div class="v-dashboard-context-head"><div><span class="v-context-kicker">' + date + ' · 영업 준비 참고</span><h2>가게 주변의 오늘</h2></div>' + badge('30일 패턴', 'neutral') + '</div>';
+    const header = '<div class="v-dashboard-context-head"><div><span class="v-context-kicker">' + date + ' · 영업 준비 참고</span><h2>주변 상권 흐름</h2></div>' + badge('30일 패턴', 'neutral') + '</div>';
     if (!context.slots.length) return '<article class="card v-card v-dashboard-context">' + header + '<p class="v-subtitle">최근 30일의 상권 자료가 준비되면 같은 요일의 소비·유동 패턴을 안내합니다.</p></article>';
     const mode = state.contextMode, trafficMode = mode === 'traffic';
     const peak = context.slots.reduce((best, row) => row[mode] > best[mode] ? row : best);
@@ -300,8 +306,8 @@
     const deltaText = temperatureDelta === null
       ? '비교 기간 자료 없음'
       : temperatureDelta === 0
-        ? (metric.deltaLabel || '직전 기간보다') + ' 동일'
-        : (metric.deltaLabel || '직전 기간보다') + ' ' + Math.abs(temperatureDelta).toFixed(1) + '° ' + (temperatureDelta > 0 ? '높음' : '낮음');
+        ? '변동 없음'
+        : Math.abs(temperatureDelta).toFixed(1) + '° ' + (temperatureDelta > 0 ? '높음' : '낮음');
     const deltaClass = temperatureDelta === null || temperatureDelta === 0 ? 'is-neutral' : temperatureDelta > 0 ? 'is-improved' : 'is-caution';
     const sourceItems = [
       { label: '매출', connected: summary.measured.includes('매출') },
@@ -319,9 +325,9 @@
     const actionLabel = hasMetric ? '근거와 연결 항목 보기' : '내 가게 정보 확인하기';
     return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 금융신호 한눈에 보기</p><h2 id="financeThermoTitle">나의 금융 체온계</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
       '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월 일별 이동평균 지수</p></div>' +
-      '<div class="v-finance-thermo-summary"><span>현재 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
+      '<div class="v-finance-thermo-summary"><span title="자료 기준 ' + esc(financeIndex.asOf || '없음') + ' · 지수 갱신 ' + esc(financeIndex.today) + '">현재 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
       '<div class="v-finance-thermo-sources" aria-label="금융 체온계 데이터 연결 상태">' + sources + '</div><button class="v-finance-thermo-action" type="button" data-view="' + actionTarget + '"><span>' + actionLabel + '</span><i aria-hidden="true">→</i></button>' +
-      '<p class="v-finance-thermo-updated">' + esc(financeIndex.today) + ' 갱신 · 자료 기준 ' + esc(financeIndex.asOf || '없음') + (financeIndex.stale ? ' · 당일 자료 대기' : '') + '</p><p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
+      '<p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
   }
   function dashboardLead() {
     return '<section class="v-dashboard-lead" aria-label="오늘의 브리핑과 나의 금융 체온계">' +
@@ -607,7 +613,7 @@
     window.IMProfileFinance.mount(mount, summary, { buttonRole: 'menuitem' });
   }
   function render() {
-    state.chartSeries = null;
+    state.chartSeries = [];
     const dashboardView = state.view === 'dashboard';
     $('#mainContent').classList.toggle('dashboard-view', dashboardView);
     $('#pageHeading').hidden = true;
@@ -825,8 +831,9 @@
     if (series && series.dataset.series) { highlightChartSeries(series.dataset.series); return; }
     const mode = event.target.closest('[data-chart-mode]');
     if (mode && mode.dataset.chartMode) {
-      state.chartMode = mode.dataset.chartMode; state.chartSeries = null;
+      state.chartMode = mode.dataset.chartMode;
       document.querySelectorAll('.v-comparison-chart').forEach(chart => { chart.outerHTML = comparisonChart(); });
+      syncChartSelection();
       return;
     }
     const contextMode = event.target.closest('[data-context-mode]');

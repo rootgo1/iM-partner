@@ -33,3 +33,13 @@ assert.equal(c.slots.reduce((best,row)=>row.traffic>best.traffic?row:best).label
 assert.equal(D.neighborhoodInsights(new Date('2026-09-12T15:00:00Z')).weekdayLabel,'일요일');
 assert.equal(D.neighborhoodInsights(new Date('2026-06-30T14:00:00+09:00')).slots.length,0);
 console.log('PASS same-weekday cohorts, six hourly aggregates, participating store scope and Seoul date rollover');
+
+const insight = D.salesInsight(D.periods.month, now);
+const analysis = D.analyze(D.periods.month);
+const slot = analysis.slots.find(row => row.hour === 14);
+assert.equal(insight.salesAverage, slot.sales / 31);
+assert.equal(insight.storefrontAverage, slot.storefront / 31);
+assert.equal(insight.share, slot.sales / analysis.sales * 100);
+assert.equal(D.salesInsight(D.periods.month, new Date('2026-09-12T20:00:00+09:00')).status, 'off_hours');
+assert.equal(D.salesInsight({start:'2027-01-01',end:'2027-01-31',previousStart:'2026-12-01',previousEnd:'2026-12-31'}, now).status, 'no_data');
+console.log('PASS current two-hour diagnosis: observed-day averages, same-period share, missing data and off-hours');

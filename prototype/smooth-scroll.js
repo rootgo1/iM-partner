@@ -20,6 +20,14 @@
   let gestureEventCount = 0;
   let gestureHasCoarseWheel = false;
 
+  function usesContinuousScroll() {
+    return sections.some(section => section.getBoundingClientRect().height > viewportHeight + 2);
+  }
+
+  function updateScrollMode() {
+    if (root) root.dataset.scrollMode = usesContinuousScroll() ? 'lenis-continuous' : 'lenis-single-settle';
+  }
+
   function supportsEnhancedScroll() {
     return typeof window.Lenis === 'function' && window.matchMedia(ENHANCED_SCROLL_QUERY).matches;
   }
@@ -106,6 +114,7 @@
   function settleAtSection(sequence) {
     settleTimer = null;
     if (!lenis || !root || sequence !== inputSequence) return;
+    if (usesContinuousScroll()) { resetGesture(); updateScrollMode(); return; }
 
     const targetIndex = chooseSectionIndex(lenis.targetScroll);
     const target = targetIndex * viewportHeight;
@@ -133,6 +142,7 @@
 
   function handleVirtualScroll({ deltaY, event }) {
     if (!lenis || !root || !deltaY) return;
+    if (usesContinuousScroll()) { clearSettleTimer(); updateScrollMode(); return; }
 
     if (isSettling) {
       const incomingDirection = Math.sign(deltaY);
@@ -157,6 +167,7 @@
       resetGesture();
     } else if (!continuingGesture) {
       resetGesture();
+      lastSettledIndex = clampIndex(Math.round(lenis.scroll / Math.max(1, viewportHeight)));
     }
 
     gestureDelta += deltaY;
@@ -175,7 +186,7 @@
     viewportHeight = Math.max(1, root.clientHeight);
     lastSettledIndex = clampIndex(Math.round(root.scrollTop / viewportHeight));
     root.classList.add('is-lenis-enhanced');
-    root.dataset.scrollMode = 'lenis-single-settle';
+    updateScrollMode();
     markNestedScrollAreas();
 
     lenis = new window.Lenis({
@@ -198,6 +209,7 @@
       if (!lenis || root !== nextRoot) return;
       lenis.resize();
       viewportHeight = Math.max(1, root.clientHeight);
+      updateScrollMode();
       lastSettledIndex = clampIndex(Math.round(lenis.scroll / viewportHeight));
       markNestedScrollAreas();
     });
@@ -212,7 +224,8 @@
         return;
       }
 
-      const currentIndex = clampIndex(Math.round(lenis.scroll / Math.max(1, viewportHeight)));
+      const currentScroll = lenis.scroll;
+      const currentIndex = clampIndex(Math.round(currentScroll / Math.max(1, viewportHeight)));
       inputSequence += 1;
       clearSettleTimer();
       isSettling = false;
@@ -221,7 +234,8 @@
       resetGesture();
       viewportHeight = Math.max(1, root.clientHeight);
       lenis.resize();
-      lenis.scrollTo(currentIndex * viewportHeight, { immediate: true });
+      updateScrollMode();
+      lenis.scrollTo(usesContinuousScroll() ? currentScroll : currentIndex * viewportHeight, { immediate: true });
       lastSettledIndex = currentIndex;
       markNestedScrollAreas();
     }, 140);
