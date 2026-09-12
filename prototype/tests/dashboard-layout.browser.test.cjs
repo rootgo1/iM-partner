@@ -17,7 +17,7 @@ fs.mkdirSync(output, { recursive: true });
       await page.setViewportSize({ width, height });
       await page.goto(pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href);
       await page.evaluate(() => document.fonts.ready);
-      assert.match(await page.locator('.v-finance-thermo-change').innerText(), /^▼ 8\.7° 낮음$/);
+      assert.match(await page.locator('.v-finance-thermo-change').innerText(), /^▼ 8\.7° 감소$/);
       assert.equal(await page.locator('.v-finance-thermo-updated').count(), 0);
       assert.ok(!(await page.locator('.v-market-metric').first().innerText()).includes('생성 자료'));
       assert.ok(await page.locator('.v-market-metric .v-index-arrow').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize) < parseFloat(getComputedStyle(node.parentElement).fontSize) * .6));

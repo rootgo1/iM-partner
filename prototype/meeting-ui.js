@@ -183,12 +183,16 @@
     if (triggerValue) triggerValue.textContent = String(hour).padStart(2, '0') + ':00';
     document.querySelectorAll('[data-guide-hour]').forEach(option => option.setAttribute('aria-selected', String(Number(option.dataset.guideHour) === hour)));
     if ($('#guidanceContent')) $('#guidanceContent').innerHTML = guidanceContent(hour);
+    const contextCard = document.querySelector('.v-dashboard-context');
+    if (contextCard) contextCard.outerHTML = dashboardContextCard();
     setGuideHourMenu(false);
     if ($('#guideHourButton')) $('#guideHourButton').focus({ preventScroll: true });
   }
+  function selectedGuideHour() {
+    return state.guideHour === null ? Math.max(8, Math.min(19, D.seoulClock().hour)) : state.guideHour;
+  }
   function guidanceCard() {
-    const currentHour = Number(new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\D/g, '')) % 24;
-    const hour = state.guideHour === null ? Math.max(8, Math.min(19, currentHour)) : state.guideHour;
+    const hour = selectedGuideHour();
     return '<div class="v-guidance-head"><div><span class="v-guidance-kicker">시간대별 운영 안내</span><h2>지금 무엇을 하면 좋을까요</h2></div>' + badge('최근 30일 참고', 'neutral') + '</div>' +
       '<div class="v-guidance-time"><span id="guideHourLabel">확인 시간</span>' + guideHourPicker(hour) + '</div><div id="guidanceContent" class="v-guidance-content">' + guidanceContent(hour) + '</div>' +
       '<button class="v-button primary v-guidance-action" type="button" data-view="analysis">시간대별 매출진단 보기 →</button>';
@@ -208,18 +212,19 @@
     const header = '<div class="v-dashboard-context-head"><div><span class="v-context-kicker">' + date + ' · 영업 준비 참고</span><h2>주변 상권 흐름</h2></div>' + badge('30일 패턴', 'neutral') + '</div>';
     if (!context.slots.length) return '<article class="card v-card v-dashboard-context">' + header + '<p class="v-subtitle">최근 30일의 상권 자료가 준비되면 같은 요일의 소비·유동 패턴을 안내합니다.</p></article>';
     const mode = state.contextMode, trafficMode = mode === 'traffic';
-    const peak = context.slots.reduce((best, row) => row[mode] > best[mode] ? row : best);
+    const hour = selectedGuideHour();
+    const selected = context.slots.find(row => hour >= row.hour && hour < row.hour + 2);
     const max = Math.max(1, ...context.slots.map(row => row[mode]));
     const unit = trafficMode ? '명' : '원';
-    const value = trafficMode ? number(context.traffic) + '명' : money(context.consumption);
-    const delta = trafficMode ? context.trafficRate : context.consumptionRate;
+    const total = trafficMode ? context.traffic : context.consumption;
+    const share = total > 0 ? selected[mode] / total * 100 : null;
     return '<article class="card v-card v-dashboard-context">' + header +
       '<div class="v-context-tabs" aria-label="주변 상권 분석 지표"><button type="button" data-context-mode="traffic" aria-pressed="' + trafficMode + '">유동인구</button><button type="button" data-context-mode="consumption" aria-pressed="' + !trafficMode + '">이용 가게 소비</button></div>' +
-      '<div class="v-context-highlight"><span>최근 30일 중 ' + context.weekdayLabel + '의 ' + (trafficMode ? '유동' : '소비') + ' 집중 시간</span><h3>' + peak.label + '</h3><p>' + (trafficMode ? '주변 통행이 가장 많았던 시간대입니다.' : '서비스 이용 가게의 소비가 가장 많았던 시간대입니다.') + '</p></div>' +
-      '<p class="v-context-chart-unit">단위: ' + (trafficMode ? '명' : '만 원') + ' · 시간(시)</p><div class="v-context-bars" role="img" aria-label="' + context.weekdayLabel + ' 시간대별 일평균 ' + (trafficMode ? '유동인구' : '서비스 이용 가게 소비') + '">' + context.slots.map(row => '<div class="' + (row.hour === peak.hour ? 'is-peak' : '') + '" title="' + row.label + ' · ' + number(row[mode]) + unit + '"><span class="v-context-bar-track"><i style="height:' + Math.max(2, row[mode] / max * 100).toFixed(1) + '%"></i></span><strong>' + (trafficMode ? number(row[mode]) : compact(row[mode]).replace('만', '')) + '</strong><small>' + row.label.replace('시', '') + '</small></div>').join('') + '</div>' +
-      '<div class="v-context-summary"><div><span>' + context.weekdayLabel + ' 하루 평균</span><strong>' + value + '</strong></div><div><span>30일 전체 일평균 대비</span><strong>' + indexChange(delta) + '</strong></div></div>' +
-      '<div class="v-context-action"><span>영업에 이렇게 활용하세요</span><p>' + (trafficMode ? peak.label + ' 전에 대표 메뉴·가격이 잘 보이는지 점검하세요.' : peak.label + ' 판매에 맞춰 재료 준비와 주문 응대 인력을 점검하세요.') + '</p><button class="text-button" type="button" data-view="analysis">매출진단과 함께 보기 →</button></div>' +
-      '<p class="v-context-source">' + dateText(context.period.start) + '~' + dateText(context.period.end) + ' 중 같은 요일 ' + context.count + '일 평균 · 생성 자료<br>' + (trafficMode ? '상권 유동인구 표본' : '상권 내 서비스 이용 가게 ' + context.merchantCount + '곳의 소비 합계') + ' · 오늘 실적·수요 예측 아님<br>날씨·행사 정보는 아직 연결되지 않았습니다.</p></article>';
+      '<div class="v-context-highlight"><span>운영 안내 ' + String(hour).padStart(2, '0') + ':00 선택과 연동</span><h3>' + selected.label + '</h3><p>최근 30일 중 ' + context.weekdayLabel + '의 해당 시간대 평균입니다.</p></div>' +
+      '<p class="v-context-chart-unit">선택 구간 강조 · 단위: ' + (trafficMode ? '명' : '만 원') + ' · 시간(시)</p><div class="v-context-bars" role="img" aria-label="' + context.weekdayLabel + ' 시간대별 일평균 ' + (trafficMode ? '유동인구' : '서비스 이용 가게 소비') + ', 선택 구간 ' + selected.label + '">' + context.slots.map(row => '<div class="' + (row.hour === selected.hour ? 'is-selected' : '') + '" title="' + row.label + ' · ' + number(row[mode]) + unit + '"><span class="v-context-bar-track"><i style="height:' + Math.max(2, row[mode] / max * 100).toFixed(1) + '%"></i></span><strong>' + (trafficMode ? number(row[mode]) : compact(row[mode]).replace('만', '')) + '</strong><small>' + row.label.replace('시', '') + '</small></div>').join('') + '</div>' +
+      '<div class="v-context-summary" aria-label="선택 구간 ' + selected.label + '의 일평균"><div><span>유동인구 · 일평균</span><strong>' + number(selected.traffic) + '명</strong></div><div><span>이용 가게 소비 · 일평균</span><strong>' + money(selected.consumption) + '</strong></div></div>' +
+      '<div class="v-context-action"><span>선택 시간대 운영 참고</span><p>' + (share === null ? '선택 지표의 기록을 확인한 뒤 운영을 준비하세요.' : selected.label + '에 하루 ' + (trafficMode ? '통행' : '소비') + '의 ' + ratioText(share) + '가 관측됐습니다. ' + (trafficMode ? '메뉴·가격 안내를 점검하세요.' : '재료 준비와 주문 응대를 점검하세요.')) + '</p><button class="text-button" type="button" data-view="analysis">매출진단과 함께 보기 →</button></div>' +
+      '<p class="v-context-source">' + dateText(context.period.start) + '~' + dateText(context.period.end) + ' 중 같은 요일 ' + context.count + '일 평균 · 생성 자료<br>상권 유동인구 표본 · 서비스 이용 가게 ' + context.merchantCount + '곳의 소비<br>오늘 실적·수요 예측 아님 · 날씨·행사 미연결</p></article>';
   }
   function periodOptions(selected) {
     return [
@@ -307,7 +312,7 @@
       ? '비교 기간 자료 없음'
       : temperatureDelta === 0
         ? '변동 없음'
-        : Math.abs(temperatureDelta).toFixed(1) + '° ' + (temperatureDelta > 0 ? '높음' : '낮음');
+        : Math.abs(temperatureDelta).toFixed(1) + '° ' + (temperatureDelta > 0 ? '증가' : '감소');
     const deltaClass = temperatureDelta === null || temperatureDelta === 0 ? 'is-neutral' : temperatureDelta > 0 ? 'is-improved' : 'is-caution';
     const sourceItems = [
       { label: '매출', connected: summary.measured.includes('매출') },
@@ -1054,7 +1059,11 @@
       syncProfileFinance();
     }
     const guide = document.querySelector('.v-dashboard-guidance');
-    if (guide && hourChanged && state.guideHour === null) guide.innerHTML = guidanceCard();
+    if (guide && hourChanged && state.guideHour === null) {
+      guide.innerHTML = guidanceCard();
+      const contextCard = document.querySelector('.v-dashboard-context');
+      if (contextCard) contextCard.outerHTML = dashboardContextCard();
+    }
     const insight = document.querySelector('.v-dashboard-insight');
     if (insight) insight.outerHTML = dashboardInsight();
   }

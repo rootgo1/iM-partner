@@ -960,11 +960,11 @@ h3 { font-size: 17px; letter-spacing: -.025em; }
 .v-context-bars > div { min-width: 0; text-align: center; }
 .v-context-bar-track { display: flex; align-items: flex-end; justify-content: center; height: 65px; border-bottom: 1px solid #e2ebe7; }
 .v-context-bar-track i { display: block; width: min(80%, 38px); border-radius: 6px 6px 0 0; background: #b5d5c8; }
-.v-context-bars .is-peak i { background: #308c74; }
+.v-context-bars .is-selected i { background: #308c74; }
 .v-context-bars strong, .v-context-bars small { display: block; white-space: nowrap; }
 .v-context-bars strong { margin-top: 6px; color: #476b60; font-size: 12px; font-variant-numeric: tabular-nums; }
 .v-context-bars small { margin-top: 3px; color: #788b84; font-size: 11px; }
-.v-context-bars .is-peak small { color: #21735f; font-weight: 700; }
+.v-context-bars .is-selected small { color: #21735f; font-weight: 700; }
 .v-context-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; padding: 13px 14px; border-radius: 12px; background: #f1f7f4; }
 .v-context-summary span { color: #6d847b; font-size: 12px; word-break: keep-all; }
 .v-context-summary strong { display: block; margin-top: 5px; color: #244d41; font-size: 19px; word-break: keep-all; }

@@ -37,8 +37,12 @@ fs.mkdirSync(output,{recursive:true});
    assert.equal(await guide.locator('.v-guidance-checklist > div').count(),2);
    await page.locator('#guideHourButton').click();await page.locator('[data-guide-hour="8"]').click();
    const before=await guide.locator('.v-guidance-facts').innerText();
+   assert.equal(await page.locator('.v-context-highlight h3').innerText(),'8~10시');
+   const nearbyBefore=await page.locator('.v-context-summary').innerText();
    await page.locator('#guideHourButton').click();await page.locator('[data-guide-hour="18"]').click();
    assert.notEqual(await guide.locator('.v-guidance-facts').innerText(),before);
+   assert.equal(await page.locator('.v-context-highlight h3').innerText(),'18~20시');
+   assert.notEqual(await page.locator('.v-context-summary').innerText(),nearbyBefore);
    await page.locator('.v-dashboard-context').scrollIntoViewIfNeeded();
    assert.match(await page.locator('.v-dashboard-context').innerText(),/토요일/);
    assert.equal(await page.locator('.v-context-bars > div').count(),6);
@@ -57,13 +61,37 @@ fs.mkdirSync(output,{recursive:true});
    })),'chart consumption amounts must fit at '+width);
    await page.screenshot({path:path.join(output,'consumption-'+width+'.png')});
    await page.locator('[data-context-mode="traffic"]').click();
-   assert.match(await page.locator('.v-context-highlight h3').innerText(),/12~14시/);
+   assert.match(await page.locator('.v-context-highlight h3').innerText(),/18~20시/);
+   assert.equal(await page.locator('.v-context-bars .is-selected small').innerText(),'18~20');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no page overflow at '+width);
    await page.screenshot({path:path.join(output,'guidance-'+width+'.png')});
   }
   await page.clock.fastForward(10*3600*1000);
   assert.match(await page.locator('.v-context-kicker').innerText(),/2026.09.13.*일요일/);
+  assert.match(await page.locator('.v-context-highlight h3').innerText(),/18~20시/);
+
+  const linked=await browser.newPage({viewport:{width:1440,height:900}});
+  await linked.clock.install({time:new Date('2026-09-12T14:59:55+09:00')});
+  await linked.goto(pathToFileURL(path.resolve(__dirname,'../main-screen.html')).href);
+  await linked.clock.fastForward(3600000+16000);
+  assert.match(await linked.locator('#guideHourValue').innerText(),/16:00/);
+  assert.equal(await linked.locator('.v-context-highlight h3').innerText(),'16~18시');
+  for(let hour=8;hour<=19;hour++){
+   await linked.locator('#guideHourButton').click();await linked.locator('[data-guide-hour="'+hour+'"]').click();
+   const expected=await linked.evaluate(hour=>{
+    const row=window.IM_MEETING_DEMO.neighborhoodInsights().slots.find(row=>hour>=row.hour&&hour<row.hour+2);
+    return [row.label,Math.round(row.traffic).toLocaleString('ko-KR')+'명',Math.round(row.consumption).toLocaleString('ko-KR')+'원'];
+   },hour);
+   assert.equal(await linked.locator('.v-context-highlight h3').innerText(),expected[0]);
+   assert.deepEqual(await linked.locator('.v-context-summary strong').allTextContents(),expected.slice(1));
+   await linked.locator('[data-context-mode="consumption"]').click();
+   assert.deepEqual(await linked.locator('.v-context-summary strong').allTextContents(),expected.slice(1));
+  }
+  await linked.clock.fastForward(3600000);
+  assert.equal(await linked.locator('#guideHourValue').innerText(),'19:00');
+  assert.equal(await linked.locator('.v-context-highlight h3').innerText(),'18~20시');
+  await linked.close();
   assert.deepEqual(errors,[]);
-  console.log('PASS 6 viewports: labels, trend arrows, 30-day guidance, two actions, metric switching, neighborhood tabs and midnight refresh');
+  console.log('PASS 6 viewports, all 12 linked hours, both neighborhood metrics, tab persistence, auto hour update and manual selection across time changes');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
