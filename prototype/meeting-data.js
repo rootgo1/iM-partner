@@ -150,18 +150,56 @@
       action: focus.label + ' 대표 메뉴 노출과 안내 문구를 점검하고, 변경 전후 판매 기록을 비교해 보세요.'
     };
   }
-  function guidance(hour) {
-    const reference = between(records, periods.week.start, periods.week.end);
-    const totals = hours.map(h => ({ hour: h, amount: sum(reference.filter(r => r.hour === h), r => r.netAmount) / 7 }));
+  function operatingPeriod(now = new Date()) {
+    const today = seoulClock(now).date;
+    const end = records.filter(row => row.date <= today).reduce((date, row) => row.date > date ? row.date : date, '');
+    return end ? { start: shift(end, -29), end, today } : null;
+  }
+  function guidance(hour, now = new Date()) {
+    const period = operatingPeriod(now);
+    const reference = period ? between(records, period.start, period.end) : [];
+    const count = new Set(reference.map(row => row.date)).size;
+    if (count < 30) return { title: '운영 안내 자료를 기다리고 있어요', text: '최근 30일의 판매 기록이 준비되면 시간대별 안내를 제공합니다.', average: null, share: null, count, period };
+    const totals = hours.map(h => ({ hour: h, amount: sum(reference.filter(r => r.hour === h), r => r.netAmount) / count }));
     const row = totals.find(r => r.hour === hour);
-    if (!row) return { title: '해당 시간의 판매 자료가 없어요', text: '생성 POS는 08~20시 구간입니다. 시간대를 선택해 안내 시안을 확인해 보세요.', average: null, count: 0 };
+    if (!row) return { title: '해당 시간의 판매 자료가 없어요', text: '생성 POS는 08~20시 구간입니다. 시간대를 선택해 안내를 확인해 보세요.', average: null, share: null, count, period };
+    const dailyAverage = sum(totals, r => r.amount);
+    if (dailyAverage <= 0) return { title: '판매 기록을 확인해 주세요', text: '비교할 매출이 없어 시간대별 행동을 제안하지 않습니다.', average: null, share: null, count, period };
     const sorted = totals.map(r => r.amount).sort((a, b) => a - b);
     const quiet = row.amount <= sorted[3];
+    const remaining = totals.filter(r => r.hour > hour);
+    const nextPeak = (remaining.length ? remaining : totals).reduce((best, r) => r.amount > best.amount ? r : best);
+    const nextLabel = (remaining.length ? '' : '다음 영업일 ') + nextPeak.hour + '~' + (nextPeak.hour + 1) + '시';
     return {
       title: quiet ? '한가한 시간, 다음 영업을 준비하세요' : '판매가 이어지는 시간, 준비 상태를 점검하세요',
-      text: quiet ? '식사·청소·장보기 시간을 검토해 보세요. 시연 자료에서 일평균 매출이 낮은 4개 시간에 해당합니다.' : '대표 메뉴 재료와 주문 응대를 점검해 보세요. 실제 수요 예측이 아닌 지난 7일 생성 기록의 참고 안내입니다.',
-      average: row.amount, count: 7
+      text: quiet ? '최근 30일 기준 매출이 낮은 시간대입니다. 영업을 유지하면서 정비 시간을 분산해 보세요.' : '최근 30일 기록에서 판매가 이어지는 시간대입니다. 재료와 응대 상태를 먼저 점검하세요.',
+      average: row.amount, share: row.amount / dailyAverage * 100, count, period, quiet, nextPeak,
+      checks: [quiet
+        ? { title: '지금 · 매장 정비 시간을 나누세요', detail: '식사·청소를 분산하고 다음 주문을 받을 준비를 유지하세요.' }
+        : { title: '지금 · 주력 메뉴와 응대를 점검하세요', detail: '준비 수량과 주문 대기 상황을 확인하고 역할을 나누세요.' },
+        { title: '다음 · ' + nextLabel + ' 판매에 대비하세요', detail: (remaining.length ? '남은 시간 중' : '하루 중') + ' 매출이 가장 높았던 구간입니다. 재료와 인력을 미리 확인하세요.' }]
     };
+  }
+  function neighborhoodInsights(now = new Date()) {
+    const period = operatingPeriod(now), today = seoulClock(now).date;
+    const weekday = new Date(today + 'T00:00:00Z').getUTCDay();
+    const weekdayLabel = ['일', '월', '화', '수', '목', '금', '토'][weekday] + '요일';
+    const local = period ? between(area, period.start, period.end) : [];
+    const merchants = period ? between(merchantSales, period.start, period.end).filter(row => row.serviceConnected && row.district === '서문시장') : [];
+    // Compare the same observed days for both sources; absent days are not zero-sales days.
+    const merchantDates = new Set(merchants.map(row => row.date));
+    const dates = new Set(local.filter(row => merchantDates.has(row.date)).map(row => row.date));
+    const sameDates = new Set([...dates].filter(date => new Date(date + 'T00:00:00Z').getUTCDay() === weekday));
+    if (dates.size < 30 || !sameDates.size) return { today, weekdayLabel, period, count: 0, slots: [] };
+    const sameLocal = local.filter(row => sameDates.has(row.date)), sameMerchants = merchants.filter(row => sameDates.has(row.date));
+    const slots = [8, 10, 12, 14, 16, 18].map(hour => ({ hour, label: hour + '~' + (hour + 2) + '시',
+      traffic: sum(sameLocal.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.traffic) / sameDates.size,
+      consumption: sum(sameMerchants.filter(r => r.hour >= hour && r.hour < hour + 2), r => r.amount) / sameDates.size }));
+    const traffic = sum(slots, r => r.traffic), consumption = sum(slots, r => r.consumption);
+    return { today, weekdayLabel, period, count: sameDates.size, slots, traffic, consumption,
+      merchantCount: new Set(sameMerchants.map(r => r.storeId)).size,
+      trafficRate: rate(traffic, sum(local.filter(r => dates.has(r.date)), r => r.traffic) / dates.size),
+      consumptionRate: rate(consumption, sum(merchants.filter(r => dates.has(r.date)), r => r.amount) / dates.size) };
   }
   const policyTitles = ['소상공인 운영자금', '골목상권 점포 환경개선', '전통시장 디지털 전환', '소상공인 창업 준비', '골목상권 공동 홍보', '전통시장 온라인 판매', '소상공인 경영 교육', '골목상권 청년 창업', '전통시장 협업', '소상공인 비용 관리'];
   const policies = policyTitles.map((name, i) => ({
@@ -259,7 +297,7 @@
   }
   const api = {
     records, expenses, purchases, area, merchantSales, storefront, periods, categories, menu, materials, policies, recoveryScenario,
-    analyze, analyzeRecovery, customPeriod, guidance, shift, rate, seoulClock, financialIndex,
+    analyze, analyzeRecovery, customPeriod, guidance, operatingPeriod, neighborhoodInsights, shift, rate, seoulClock, financialIndex,
     profile: { name: '이소현', storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: 3, age: '', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     generatedLabel: '생성 데이터 기반 시연', referenceDate: '2026-09-03',
     sources: { pos: 'POS 형식의 생성 판매 집계', expenses: '생성 지출·매입 자료', area: '생성 상권 비교 자료', cctv: 'CCTV 형식의 익명 통행·체류·입장 생성 집계', recovery: 'CCTV·POS 결합 기능 검토용 생성 시나리오', policies: '화면 구성용 가상 공고' }

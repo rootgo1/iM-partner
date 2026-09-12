@@ -41,7 +41,7 @@
     view: 'dashboard', periodMode: 'month', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
     policyView: 'recommended', keyword: '', category: 'all', offset: 0,
     reportMessages: [], reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
-    chartMode: 'hour', chartSeries: null, bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
+    guideHour: null, contextMode: 'traffic', chartMode: 'hour', chartSeries: null, bannerIndex: 0, bannerPaused: false, chatOpen: false, radius: 500, recoveryStarted: false
   };
   let analysis = D.analyze(state.period);
   const recoveryData = D.analyzeRecovery();
@@ -75,6 +75,13 @@
   function metric(label, value, delta, foot, primary, direction) {
     return '<article class="card metric-card' + (primary ? ' primary' : '') + '"><div class="metric-label">' + label + '</div><div class="metric-value">' + value +
       '</div><div class="metric-foot">' + metricTrend(delta, direction) + '<span>' + foot + '</span></div></article>';
+  }
+  function indexChange(value) {
+    if (value == null) return '<span class="v-index-change is-neutral">비교 자료 없음</span>';
+    return '<span class="v-index-change ' + (value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-neutral') + '" aria-label="' + Math.abs(value).toFixed(1) + '% ' + (value > 0 ? '상승' : value < 0 ? '하락' : '변동 없음') + '">' + (value > 0 ? '▲ ' : value < 0 ? '▼ ' : '— ') + Math.abs(value).toFixed(1) + '%</span>';
+  }
+  function marketMetric(label, value, scope) {
+    return '<article class="card metric-card v-market-metric"><div class="metric-label">' + label + '</div><div class="metric-value">' + indexChange(value) + '</div><div class="v-metric-meta"><span>' + esc(state.period.comparison) + '</span><span>' + esc(scope) + '</span><span class="v-metric-source">생성 자료</span></div></article>';
   }
   function comparisonChart() {
     const rows = state.chartMode === 'weekday' ? analysis.weekdaySlots : analysis.slots;
@@ -134,7 +141,7 @@
     return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">현재 매출진단</span><span>' + stamp + '</span></div>' +
       '<h2>' + (slot ? slot.label + ' 운영 점검' : '영업시간 밖입니다') + '</h2><p class="v-dashboard-insight-lead">' + (slot ? '현재 시각이 포함된 시간대를 선택 기간의 기록으로 살펴봅니다.' : '분석 가능한 시간대는 08~20시입니다.') + '</p>' +
       (slot ? '<div class="v-dashboard-insight-values"><div><span>해당 시간대 매출 합계</span><strong>' + compact(slot.sales) + '만 원</strong></div><div><span>가게 앞 통행 합계</span><strong>' + number(slot.storefront) + '명</strong></div></div>' : '') +
-      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (slot ? guidance.title : '다음 영업을 준비하세요') + '</strong><p>' + (slot ? guidance.text : '재고·정산 예정금액을 확인하고 다음 영업시간의 인력과 재료를 준비하세요.') + '</p><small>' + esc(state.period.start + '~' + state.period.end) + ' 생성 기록 · 실시간 매출 아님 · 운영 안내는 최근 7일 기록 참고</small></div>' +
+      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (slot ? guidance.title : '다음 영업을 준비하세요') + '</strong><p>' + (slot ? guidance.text : '재고·정산 예정금액을 확인하고 다음 영업시간의 인력과 재료를 준비하세요.') + '</p><small>' + esc(state.period.start + '~' + state.period.end) + ' 생성 기록 · 실시간 매출 아님 · 운영 안내는 최근 30일 기록 참고</small></div>' +
       '<button class="v-button primary v-dashboard-insight-action" type="button" data-view="recovery">회복전략 확인하기 →</button></article>';
   }
   function costText() {
@@ -165,6 +172,7 @@
   }
   function selectGuideHour(value) {
     const hour = Math.max(8, Math.min(19, Number(value)));
+    state.guideHour = hour;
     const triggerValue = $('#guideHourValue');
     if (triggerValue) triggerValue.textContent = String(hour).padStart(2, '0') + ':00';
     document.querySelectorAll('[data-guide-hour]').forEach(option => option.setAttribute('aria-selected', String(Number(option.dataset.guideHour) === hour)));
@@ -174,34 +182,38 @@
   }
   function guidanceCard() {
     const currentHour = Number(new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\D/g, '')) % 24;
-    const hour = Math.max(8, Math.min(19, currentHour));
-    return '<div class="v-guidance-head"><div><span class="v-guidance-kicker">시간대별 운영 안내</span><h2>지금 무엇을 하면 좋을까요</h2></div>' + badge('지난 7일 참고', 'neutral') + '</div>' +
+    const hour = state.guideHour === null ? Math.max(8, Math.min(19, currentHour)) : state.guideHour;
+    return '<div class="v-guidance-head"><div><span class="v-guidance-kicker">시간대별 운영 안내</span><h2>지금 무엇을 하면 좋을까요</h2></div>' + badge('최근 30일 참고', 'neutral') + '</div>' +
       '<div class="v-guidance-time"><span id="guideHourLabel">확인 시간</span>' + guideHourPicker(hour) + '<small>생성 POS 확인 가능 시간</small></div><div id="guidanceContent" class="v-guidance-content">' + guidanceContent(hour) + '</div>' +
       '<button class="v-button primary v-guidance-action" type="button" data-view="analysis">시간대별 매출진단 보기 →</button>';
   }
   function guidanceContent(hour) {
     const g = D.guidance(hour);
     if (g.average == null) return '<div class="v-guidance-empty"><span>선택 시간 안내</span><h3>' + g.title + '</h3><p>' + g.text + '</p></div>';
-    const quiet = g.title.indexOf('한가한 시간') === 0;
     const periodLabel = hour < 11 ? '오전 운영' : hour < 15 ? '점심 운영' : '저녁 운영';
-    const checks = quiet
-      ? [['식사·청소 시간 검토', '영업 흐름을 방해하지 않는 시간을 확인합니다'], ['다음 영업 준비', '재료와 대표 메뉴 준비 상태를 점검합니다']]
-      : [['대표 메뉴·재료 확인', '판매 흐름이 이어지도록 재고를 먼저 확인합니다'], ['주문 응대 동선 점검', '대기와 누락이 생기지 않도록 역할을 살펴봅니다']];
     return '<div class="v-guidance-result"><span class="v-guidance-result-label">' + periodLabel + ' · ' + String(hour).padStart(2, '0') + ':00</span><h3>' + g.title + '</h3><p>' + g.text + '</p>' +
-      '<div class="v-guidance-facts"><div><span>해당 시간 일평균 매출</span><strong>' + money(g.average) + '</strong></div><div><span>관측 범위</span><strong>' + g.count + '일</strong></div></div>' +
-      '<div class="v-guidance-checklist"><span>지금 확인할 항목</span>' + checks.map((item, index) => '<div><i>0' + (index + 1) + '</i><p><strong>' + item[0] + '</strong><small>' + item[1] + '</small></p></div>').join('') + '</div>' +
-      '<p class="v-guidance-note">시연 기준일 2026.09.03 · 8/27~9/2 생성 자료<br>같은 요일은 1회 관측이며 반복 수요를 보장하지 않습니다</p></div>';
-  }
-  function calendar() {
-    let cells = ['일', '월', '화', '수', '목', '금', '토'].map(d => '<span class="day-name">' + d + '</span>').join('');
-    cells += '<span></span><span></span>';
-    for (let d = 1; d <= 30; d++) cells += '<span class="' + (d === 3 ? 'today' : '') + '">' + d + '</span>';
-    return '<div class="v-row v-between"><h3>2026년 9월</h3><span class="v-metadata">시연 기준 달력</span></div><div class="v-calendar">' + cells + '</div><div class="v-calendar-legend"><span><i></i>기준일 9월 3일</span><span>행사 일정 연결 대기</span></div>';
+      '<div class="v-guidance-facts"><div><span>해당 시간 일평균 매출</span><strong>' + money(g.average) + '</strong></div><div><span>하루 매출 중 비중</span><strong>' + ratioText(g.share) + '</strong></div></div>' +
+      '<div class="v-guidance-checklist"><span>지금 확인할 항목</span>' + g.checks.map((item, index) => '<div><i>0' + (index + 1) + '</i><p><strong>' + esc(item.title) + '</strong><small>' + esc(item.detail) + '</small></p></div>').join('') + '</div>' +
+      '<p class="v-guidance-note">' + dateText(g.period.start) + '~' + dateText(g.period.end) + ' 생성 기록 · 최근 30일 일평균<br>매출 비중 = 해당 시간 매출 ÷ 하루 매출 · 실제 수요 예측 아님</p></div>';
   }
   function dashboardContextCard() {
-    return '<article class="card v-card v-dashboard-context"><div class="v-dashboard-context-head"><div><span class="v-context-kicker">영업 준비 참고</span><h2>가게 주변의 오늘</h2></div>' + badge('연결 준비', 'neutral') + '</div>' +
-      '<div class="v-context-connections" aria-label="가게 주변 정보 연결 상태"><div><span>날씨 정보</span><strong>실시간 연결 대기</strong><small>기온·강수·특보</small></div><div><span>시장 주변 행사</span><strong>일정 연결 대기</strong><small>행사·휴무·변경 일정</small></div></div>' +
-      '<div class="v-context-calendar">' + calendar() + '</div><div class="v-context-principle"><span>정보 표시 기준</span><strong>확인된 정보만 안내합니다</strong><p>연결 전에는 날씨와 행사 내용을 추정해서 보여주지 않습니다</p></div></article>';
+    const context = D.neighborhoodInsights();
+    const date = dateText(context.today) + ' ' + context.weekdayLabel;
+    const header = '<div class="v-dashboard-context-head"><div><span class="v-context-kicker">' + date + ' · 영업 준비 참고</span><h2>가게 주변의 오늘</h2></div>' + badge('30일 패턴', 'neutral') + '</div>';
+    if (!context.slots.length) return '<article class="card v-card v-dashboard-context">' + header + '<p class="v-subtitle">최근 30일의 상권 자료가 준비되면 같은 요일의 소비·유동 패턴을 안내합니다.</p></article>';
+    const mode = state.contextMode, trafficMode = mode === 'traffic';
+    const peak = context.slots.reduce((best, row) => row[mode] > best[mode] ? row : best);
+    const max = Math.max(1, ...context.slots.map(row => row[mode]));
+    const unit = trafficMode ? '명' : '원';
+    const value = trafficMode ? number(context.traffic) + '명' : money(context.consumption);
+    const delta = trafficMode ? context.trafficRate : context.consumptionRate;
+    return '<article class="card v-card v-dashboard-context">' + header +
+      '<div class="v-context-tabs" aria-label="주변 상권 분석 지표"><button type="button" data-context-mode="traffic" aria-pressed="' + trafficMode + '">유동인구</button><button type="button" data-context-mode="consumption" aria-pressed="' + !trafficMode + '">이용 가게 소비</button></div>' +
+      '<div class="v-context-highlight"><span>최근 30일 중 ' + context.weekdayLabel + '의 ' + (trafficMode ? '유동' : '소비') + ' 집중 시간</span><h3>' + peak.label + '</h3><p>' + (trafficMode ? '주변 통행이 가장 많았던 시간대입니다.' : '서비스 이용 가게의 소비가 가장 많았던 시간대입니다.') + '</p></div>' +
+      '<p class="v-context-chart-unit">단위: ' + (trafficMode ? '명' : '만 원') + ' · 시간(시)</p><div class="v-context-bars" role="img" aria-label="' + context.weekdayLabel + ' 시간대별 일평균 ' + (trafficMode ? '유동인구' : '서비스 이용 가게 소비') + '">' + context.slots.map(row => '<div class="' + (row.hour === peak.hour ? 'is-peak' : '') + '" title="' + row.label + ' · ' + number(row[mode]) + unit + '"><span class="v-context-bar-track"><i style="height:' + Math.max(2, row[mode] / max * 100).toFixed(1) + '%"></i></span><strong>' + (trafficMode ? number(row[mode]) : compact(row[mode]).replace('만', '')) + '</strong><small>' + row.label.replace('시', '') + '</small></div>').join('') + '</div>' +
+      '<div class="v-context-summary"><div><span>' + context.weekdayLabel + ' 하루 평균</span><strong>' + value + '</strong></div><div><span>30일 전체 일평균 대비</span><strong>' + indexChange(delta) + '</strong></div></div>' +
+      '<div class="v-context-action"><span>영업에 이렇게 활용하세요</span><p>' + (trafficMode ? peak.label + ' 전에 대표 메뉴·가격이 잘 보이는지 점검하세요.' : peak.label + ' 판매에 맞춰 재료 준비와 주문 응대 인력을 점검하세요.') + '</p><button class="text-button" type="button" data-view="analysis">매출진단과 함께 보기 →</button></div>' +
+      '<p class="v-context-source">' + dateText(context.period.start) + '~' + dateText(context.period.end) + ' 중 같은 요일 ' + context.count + '일 평균 · 생성 자료<br>' + (trafficMode ? '상권 유동인구 표본' : '상권 내 서비스 이용 가게 ' + context.merchantCount + '곳의 소비 합계') + ' · 오늘 실적·수요 예측 아님<br>날씨·행사 정보는 아직 연결되지 않았습니다.</p></article>';
   }
   function periodOptions(selected) {
     return [
@@ -306,8 +318,8 @@
     const actionTarget = hasMetric ? 'analysis' : 'profile';
     const actionLabel = hasMetric ? '근거와 연결 항목 보기' : '내 가게 정보 확인하기';
     return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 금융신호 한눈에 보기</p><h2 id="financeThermoTitle">나의 금융 체온계</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
-      '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월(30일)<br>일별 지수 이동평균</p></div>' +
-      '<div class="v-finance-thermo-summary"><span>현재(당일) 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
+      '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월 일별 이동평균 지수</p></div>' +
+      '<div class="v-finance-thermo-summary"><span>현재 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
       '<div class="v-finance-thermo-sources" aria-label="금융 체온계 데이터 연결 상태">' + sources + '</div><button class="v-finance-thermo-action" type="button" data-view="' + actionTarget + '"><span>' + actionLabel + '</span><i aria-hidden="true">→</i></button>' +
       '<p class="v-finance-thermo-updated">' + esc(financeIndex.today) + ' 갱신 · 자료 기준 ' + esc(financeIndex.asOf || '없음') + (financeIndex.stale ? ' · 당일 자료 대기' : '') + '</p><p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
   }
@@ -385,8 +397,8 @@
     return dashboardLead() + '<section class="metric-grid v-dashboard-metrics" aria-label="선택 기간 핵심 지표">' +
       metric('내 가게 매출', compact(analysis.sales) + '<small> 원</small>', analysis.salesRate, state.period.comparison, false) +
       metric('총지출', compact(analysis.expense) + '<small> 원</small>', analysis.expenseRate, state.period.comparison, false, 'expense') +
-      metric('상권 소비 변화', pct(analysis.merchantRate), undefined, state.period.comparison + ' · 상권 내 서비스 이용 ' + analysis.merchantCount + '개 가게 · 생성 자료') +
-      metric('상권 유동인구 변화', pct(analysis.trafficRate), undefined, state.period.comparison + ' · 생성 자료') +
+      marketMetric('상권 소비 변화', analysis.merchantRate, '서비스 이용 가게 ' + analysis.merchantCount + '곳') +
+      marketMetric('상권 유동인구 변화', analysis.trafficRate, '상권 유동인구 표본') +
       '</section><div class="v-grid2 v-dashboard-support">' + card(guidanceCard(), 'v-dashboard-guidance v-decision-action') + dashboardContextCard() + '</div><div class="v-decision-layout v-dashboard-decision">' +
       card(head('요일/시간대별 유동인구와 매출량', '<button class="text-button" type="button" data-view="analysis">상세 분석 →</button>') + comparisonChart(), 'v-evidence-panel v-dashboard-flow-card') +
       dashboardInsight() + '</div>' + recoveryDashboardCard();
@@ -564,7 +576,7 @@
         direction: referenceTemperatureDelta === null
           ? 'unknown'
           : referenceTemperatureDelta > 0 ? 'better' : referenceTemperatureDelta < 0 ? 'worse' : 'neutral',
-        basisLabel: '일별 금융지수의 최근 30일 평균',
+        basisLabel: '최근 1개월 일별 이동평균 지수',
         ruleVersion: 'daily-index-30d-average-v2',
         scoringDefinition: '일별 max(0, min(100, 100 - 지출/매출 × 100))의 30일 산술평균',
         dataStatus: 'reference'
@@ -817,6 +829,14 @@
       document.querySelectorAll('.v-comparison-chart').forEach(chart => { chart.outerHTML = comparisonChart(); });
       return;
     }
+    const contextMode = event.target.closest('[data-context-mode]');
+    if (contextMode && ['traffic', 'consumption'].includes(contextMode.dataset.contextMode)) {
+      state.contextMode = contextMode.dataset.contextMode;
+      const card = document.querySelector('.v-dashboard-context');
+      if (card) card.outerHTML = dashboardContextCard();
+      document.querySelector('[data-context-mode="' + state.contextMode + '"]')?.focus({ preventScroll: true });
+      return;
+    }
     const accountArea = event.target.closest('.sidebar-account');
     const guidePickerArea = event.target.closest('.v-guide-hour-picker');
     const el = event.target.closest('button, a');
@@ -1016,13 +1036,18 @@
     const clock = D.seoulClock();
     const key = clock.date + ':' + clock.hour + ':' + clock.minute;
     if (key === clockKey) return;
+    const hourChanged = clockKey.split(':').slice(0, 2).join(':') !== [clock.date, clock.hour].join(':');
     clockKey = key;
     if (financeIndex.today !== clock.date) {
       financeIndex = D.financialIndex();
+      const contextCard = document.querySelector('.v-dashboard-context');
+      if (contextCard) contextCard.outerHTML = dashboardContextCard();
       const card = document.querySelector('.v-finance-thermo-card');
       if (card) card.outerHTML = financeThermometerCard();
       syncProfileFinance();
     }
+    const guide = document.querySelector('.v-dashboard-guidance');
+    if (guide && hourChanged && state.guideHour === null) guide.innerHTML = guidanceCard();
     const insight = document.querySelector('.v-dashboard-insight');
     if (insight) insight.outerHTML = dashboardInsight();
   }

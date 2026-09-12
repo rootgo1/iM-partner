@@ -2,6 +2,17 @@
 
 기존 정적 HTML, 함수 기반 렌더링, 공통 데이터 계산 및 Lenis 스크롤 구조를 유지했습니다.
 
+## 금융 체온계·운영 안내 추가 수정 — 최신 반영
+
+- 금융지수 명칭은 ‘현재 나의 금융지수’, 집계 설명은 ‘최근 1개월 일별 이동평균 지수’로 통일했습니다. 연결 항목명과 상태를 위아래로 분리해 ‘예정 입출금 / 연결 필요’가 겹치지 않도록 수정했습니다.
+- 상권 소비 변화·유동인구 변화에 ▲/▼와 상승·하락 색상을 추가했습니다. 비교 기간, 자료 범위, 생성 자료 표기를 각각 나누고 단어 단위 줄바꿈을 적용했습니다.
+- 시간대별 운영 안내는 최신 기록일까지의 최근 30일로 계산합니다. 고정 관측 범위 대신 ‘하루 매출 중 비중’을 표시합니다. 관측일이 30일 미만이면 자료 대기 상태로 표시합니다.
+- ‘지금 확인할 항목’은 두 가지로 유지했습니다. 당장 실행할 일과 다음 판매 집중 시간 준비로 역할을 나누고, 선택 시간의 매출 패턴에 따라 내용을 바꿉니다. 마지막 시간에는 다음 영업일 준비를 안내합니다.
+- ‘가게 주변의 오늘’에는 최근 30일 중 오늘과 같은 요일의 6개 시간대 막대그래프, 집중 시간, 요일 일평균과 전체 일평균 대비 변화, 운영 행동을 추가했습니다. 유동인구와 서비스 이용 가게 소비를 전환할 수 있으며 한국 시간 날짜 변경 시 요일 기준도 갱신합니다.
+- 주변 패턴은 자료 기준일과 같은 요일의 실제 관측일 수를 표시합니다. 오늘 실적·예측으로 제시하지 않으며, 날씨·행사 정보는 미연결 상태입니다.
+- 수정 파일: `meeting-data.js`, `meeting-ui.js`, `meeting-preview.css`, `tests/meeting-preview.test.cjs`, `tests/meeting-revisions.browser.test.cjs`, `profile-finance-preview/profile-finance.integration.test.cjs`, 루트 `README.md`, 이 문서. 신규 검사: `tests/operating-guidance.test.cjs`, `tests/operating-guidance.browser.test.cjs`.
+- 신규 검사는 30일 계산·매출 비중·두 가지 행동·자료 부족·동일 요일 집계와 320~1440px의 6개 화면 크기, 문구 겹침, 지표 전환, 자정 갱신을 확인합니다.
+
 ## 로그인 화면 추가 수정 — 최신 반영
 
 아래 최초 반영 내용 중 로그인 이미지·안내 배치는 다음 내용으로 대체합니다.
@@ -61,6 +72,7 @@ Node 환경에서 아래 계산·구조 검사를 실행합니다.
 
 ```powershell
 node prototype/tests/meeting-revisions.test.cjs
+node prototype/tests/operating-guidance.test.cjs
 node prototype/tests/meeting-preview.test.cjs
 node prototype/login-preview/login-preview.test.cjs
 node prototype/profile-finance-preview/profile-finance.integration.test.cjs
@@ -70,6 +82,7 @@ Playwright 패키지 경로를 `NODE_PATH`로 지정하고 Chrome 또는 Edge가
 
 ```powershell
 node prototype/tests/meeting-revisions.browser.test.cjs
+node prototype/tests/operating-guidance.browser.test.cjs
 node prototype/tests/visual-preview.test.cjs
 node prototype/login-preview/visual-login-preview.test.cjs
 ```

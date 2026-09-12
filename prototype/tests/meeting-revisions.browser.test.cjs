@@ -19,7 +19,7 @@ fs.mkdirSync(output, {recursive:true});
   assert.equal(await page.locator('.v-screen-section').count(),4);
   assert.match(await page.locator('.v-screen-section').nth(1).innerText(), /시간대별 운영 안내/);
   assert.match(await page.locator('.v-screen-section').nth(2).innerText(), /요일\/시간대별 유동인구와 매출량/);
-  assert.match(await page.locator('.v-finance-thermo-summary').innerText(), /현재\(당일\) 나의 금융지수/);
+  assert.match(await page.locator('.v-finance-thermo-summary').innerText(), /현재 나의 금융지수/);
   const temperature = await page.locator('.v-finance-thermo-summary h3 strong').innerText();
   await page.screenshot({path:path.join(output,'dashboard.png')});
   await page.locator('#dashboardBanner').hover(); await page.mouse.wheel(0,650); await page.waitForTimeout(900);

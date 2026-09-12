@@ -28,7 +28,7 @@ assert.match(ui, /const triggerBadge = \$\('#profileTemperatureBadge'\)/);
 assert.match(ui, /buttonRole: 'menuitem'/);
 assert.match(ui, /temperature: null/);
 assert.match(ui, /referenceTemperature:/);
-assert.match(ui, /basisLabel: '일별 금융지수의 최근 30일 평균'/);
+assert.match(ui, /basisLabel: '최근 1개월 일별 이동평균 지수'/);
 assert.match(ui, /dataStatus: 'reference'/);
 assert.match(ui, /\['storeName', 'region', 'industry'\]\.every/);
 assert.match(ui, /detail\.target !== 'finance-thermometer'/);

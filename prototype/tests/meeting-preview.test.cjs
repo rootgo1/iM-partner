@@ -215,7 +215,7 @@ check('Finance thermometer uses the declared partial formula without calling it 
   assert.match(markup, /나의 금융 체온계/);
   assert.match(markup, /연결 데이터 2\/4/);
   assert.match(markup, /데이터 연결도/);
-  assert.match(markup, /일별 지수 이동평균/);
+  assert.match(markup, /최근 1개월 일별 이동평균 지수/);
   assert.match(markup, /나의 금융 온도<br><strong>51\.2°/);
   assert.match(markup, /직전 기간 59\.9도에서 현재 51\.2도로 변화/);
   assert.match(markup, /직전기간보다 8\.7° 낮음/);
