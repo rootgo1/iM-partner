@@ -166,6 +166,10 @@ const context = {
 function click(dataset) { const e = new Element(); e.dataset = dataset; listeners.click({ target: e }); }
 function change(id, value) { nodes.get(id).value = value; listeners.change({ target: nodes.get(id) }); }
 function submit(id, values) { const form = nodes.get(id); form.values = values; listeners.submit({ target: form, preventDefault() {} }); }
+context.window.IM_MARKET_DATA = require('../market-analysis-data.js');
+vm.runInNewContext(fs.readFileSync(require('node:path').join(root, 'market-analysis.js'), 'utf8'), context);
+// DOM event interaction is covered by the real browser suite.
+context.window.IM_MARKET_ANALYSIS.bind = () => {};
 vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
@@ -187,13 +191,13 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.match(nodes.get('profileMenuButton').attrs['aria-label'], /나의 금융 온도 51\.2도/);
   assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
   assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
-  assert.match(nodes.get('mainNavigation').innerHTML, />회복전략</);
+  assert.match(nodes.get('mainNavigation').innerHTML, />상권분석</);
   assert.match(nodes.get('mainNavigation').innerHTML, />지원사업</);
   assert.match(nodes.get('mainNavigation').innerHTML, /aria-label="iM비서"/);
   assert.match(nodes.get('mainNavigation').innerHTML, /class="im-product-name"/);
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('상권·시간 분석'));
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('매출·지출 분석'));
-  for (const view of ['dashboard', 'analysis', 'recovery', 'policies', 'secretary', 'profile']) {
+  for (const view of ['dashboard', 'analysis', 'market', 'policies', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
   click({ view: 'analysis' });
@@ -201,7 +205,7 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-connection-grid"'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('요일/시간대별 유동인구와 매출량'));
   click({ view: 'market' });
-  assert.equal(location.hash, '#analysis');
+  assert.equal(location.hash, '#market');
   click({ view: 'policies' });
   assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
@@ -262,17 +266,12 @@ check('Report prompts, sidebar, chat controls, calendar and policy modal', () =>
   click({ view: 'dashboard' }); assert.ok(nodes.get('bannerTitle').textContent.includes('뉴스'));
   click({ action: 'banner-next' }); assert.ok(nodes.get('bannerTitle').textContent.includes('행사'));
 });
-check('Recovery funnel, definitions, action state and chatbot share one source', () => {
+check('Market route replaces recovery while secretary chatbot retains its current source', () => {
   click({ view: 'recovery' });
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('통행자는 <b>310명</b>'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('입장 전환율이 <b>6.8%</b>'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('유효 결제'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('데이터 집계 대기'));
-  click({ action: 'show-recovery-definitions' }); assert.equal(nodes.get('recoveryMetricModal').open, true);
-  click({ action: 'close-recovery-definitions' }); assert.equal(nodes.get('recoveryMetricModal').open, false);
-  click({ action: 'start-recovery' });
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('실행 기록 시안 진행 중'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('DB에 저장되지 않습니다'));
+  assert.equal(location.hash, '#market');
+  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="ma-panel"/g) || []).length, 5);
+  assert.match(nodes.get('viewRoot').innerHTML, /CCTV 관측 영역/);
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('실행 기록 시안 시작하기'));
   click({ question: 'CCTV 유입률과 구매전환율을 알려주세요' });
   assert.ok(nodes.get('aiMessages').textContent.includes('통행자 310명'));
   assert.ok(nodes.get('aiMessages').textContent.includes('추정 구매전환율은 66.7%'));

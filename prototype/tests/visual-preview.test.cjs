@@ -369,7 +369,7 @@ const { chromium } = require('playwright');
   await page.getByRole('button', { name: 'iM비서', exact: true }).first().click();
   assert.equal(await page.locator('.v-secretary-layout > .v-decision-action').count(), 1);
   await page.getByRole('button', { name: '시간대별 운영 전략을 정리해 주세요.' }).click();
-  await page.getByRole('button', { name: '최종 요약 PDF 만들기' }).click();
+  await page.getByRole('button', { name: '회복전략 리포트 PDF 만들기' }).click();
   await page.locator('#pdfLink').waitFor({ state: 'visible' });
   assert.match(await page.locator('#pdfLink').getAttribute('href'), /^blob:/);
 
@@ -419,8 +419,8 @@ const { chromium } = require('playwright');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.setViewportSize({ width: 1366, height: 768 });
-  const densityViews = ['dashboard', 'analysis', 'recovery', 'policies', 'secretary', 'profile'];
-  const densityShots = new Set(['dashboard-3', 'analysis-1', 'analysis-2', 'analysis-4', 'analysis-6', 'recovery-4', 'policies-1']);
+  const densityViews = ['dashboard', 'analysis', 'market', 'policies', 'secretary', 'profile'];
+  const densityShots = new Set(['dashboard-3', 'analysis-1', 'analysis-2', 'analysis-4', 'analysis-6', 'market-4', 'policies-1']);
   for (const view of densityViews) {
     await page.goto(url + '?qa=density#' + view, { waitUntil: 'load' });
     await page.waitForSelector('#viewRoot > .v-screen-section');

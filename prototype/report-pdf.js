@@ -74,7 +74,7 @@
     const money = value => Math.round(value).toLocaleString('ko-KR') + '원';
     const pct = value => value == null ? '비교 불가' : (value > 0 ? '+' : '') + value.toFixed(1) + '%';
     newPage();
-    line('내 가게 분석 요약', 46, true, '#153e32', 76);
+    line('회복전략 리포트', 46, true, '#153e32', 76);
     line(p.name + ' · ' + p.storeName, 24, true);
     line(p.region + ' · ' + p.industry + ' / ' + a.period.start + ' - ' + a.period.end, 22, false, '#75867d');
     line(a.period.comparison, 20, false, '#75867d');

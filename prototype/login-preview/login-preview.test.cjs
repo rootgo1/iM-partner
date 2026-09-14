@@ -53,7 +53,7 @@ check("guest entry matches the existing product flow", () => {
   assert.ok(!html.includes("생성 데이터 기반 시연"));
   assert.ok(!/service-preview|login-dashboard/.test(html));
   assert.match(html, /매출진단<\/strong><small>매출·지출과 상권 흐름을 한눈에 확인하세요/);
-  assert.match(html, /회복전략<\/strong><small>우리 가게에 필요한 운영 개선 방향을 찾아보세요/);
+  assert.match(html, /상권분석<\/strong><small>CCTV 관측으로 거리의 통행·체류·입장 흐름을 확인하세요/);
   assert.match(html, /iM비서<\/strong><small>경영 질문부터 분석 보고서까지 간편하게 확인하세요/);
   assert.ok(!/flow-strip|flowTitle|서비스 이용 흐름/.test(html));
   assert.ok(!/\.flow-strip|\.site-footer/.test(css));
