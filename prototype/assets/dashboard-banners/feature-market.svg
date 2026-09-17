@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 280" fill="none">
+  <defs>
+    <linearGradient id="map" x1="44" y1="164" x2="269" y2="250" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFF4"/><stop offset="1" stop-color="#DDE9CF"/></linearGradient>
+    <linearGradient id="wall" x1="119" y1="82" x2="251" y2="204" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFBE7"/><stop offset="1" stop-color="#DDDCC0"/></linearGradient>
+    <linearGradient id="mint" x1="75" y1="42" x2="140" y2="185" gradientUnits="userSpaceOnUse"><stop stop-color="#A8EFD3"/><stop offset="1" stop-color="#409680"/></linearGradient>
+    <linearGradient id="roof" x1="114" y1="70" x2="251" y2="138" gradientUnits="userSpaceOnUse"><stop stop-color="#9EDDBD"/><stop offset="1" stop-color="#4C9983"/></linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="180%" height="180%"><feDropShadow dx="3" dy="10" stdDeviation="8" flood-color="#234C39" flood-opacity=".2"/></filter>
+  </defs>
+  <ellipse cx="162" cy="246" rx="122" ry="16" fill="#245F4E" opacity=".13"/>
+  <g filter="url(#shadow)">
+    <path d="M38 211L105 165L186 184L244 165L288 210L228 246L145 229L87 247L38 223V211Z" fill="#B9CDA6"/>
+    <path d="M38 211L102 164L184 181L244 164L288 210L228 237L145 220L87 237L38 211Z" fill="url(#map)" stroke="#FFFFF0" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M79 190L133 211L193 194L250 220M121 173L159 194L134 222M216 174L228 186" stroke="#A8CDA5" stroke-width="11" stroke-linecap="round"/>
+    <path d="M79 190L133 211L193 194L250 220M121 173L159 194L134 222M216 174L228 186" stroke="#DDF0CC" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M127 110H232V196C232 203 227 207 220 207H139C132 207 127 203 127 196V110Z" fill="url(#wall)"/>
+    <path d="M232 111L253 124V197L232 207V111Z" fill="#B6C7AB"/>
+    <rect x="142" y="144" width="33" height="44" rx="6" fill="#478772"/>
+    <rect x="146" y="148" width="25" height="36" rx="3" fill="#CBEAD5"/>
+    <rect x="190" y="141" width="28" height="65" rx="5" fill="#518C72"/>
+    <rect x="195" y="147" width="18" height="35" rx="3" fill="#A9CFB9"/>
+    <circle cx="212" cy="188" r="3" fill="#F0F6BF"/>
+    <path d="M129 78H231L257 112H109L129 78Z" fill="url(#roof)"/>
+    <path d="M110 111H139V124C139 134 110 136 110 124V111Z" fill="#8FD5B9"/>
+    <path d="M139 111H168V124C168 136 139 136 139 124V111Z" fill="#FFFDEC"/>
+    <path d="M168 111H197V124C197 136 168 136 168 124V111Z" fill="#8FD5B9"/>
+    <path d="M197 111H227V124C227 136 197 136 197 124V111Z" fill="#FFFDEC"/>
+    <path d="M227 111H257V124C257 136 227 136 227 124V111Z" fill="#CCE986"/>
+    <rect x="148" y="53" width="65" height="29" rx="9" fill="#F2F4D9" stroke="#D9E8CD" stroke-width="3"/>
+    <path d="M161 67H199" stroke="#6CAB8D" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M44 127C44 107 59 91 79 91C99 91 114 107 114 127C114 154 79 180 79 180S44 154 44 127Z" fill="url(#mint)" stroke="#BAF2D8" stroke-width="3"/>
+    <circle cx="79" cy="126" r="14" fill="#FFFCEC"/>
+  </g>
+  <path d="M60 72C71 60 86 57 100 61M55 57C72 39 93 35 113 42" stroke="#DCEDBD" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+</svg>

@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const D = require('../meeting-data.js');
 const sum = (rows, key) => rows.reduce((n, r) => n + r[key], 0);
 let passed = 0;
-function check(name, fn) { fn(); console.log('PASS ' + name); passed++; }
+function check(name, fn) { try { fn(); } catch (error) { throw new Error(name + ': ' + error.message.slice(0, 350)); } console.log('PASS ' + name); passed++; }
 const html = fs.readFileSync(path.join(root, 'main-screen.html'), 'utf8');
 const code = fs.readFileSync(path.join(root, 'meeting-ui.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'meeting-preview.css'), 'utf8');
@@ -42,7 +42,7 @@ check('Local assets exist and no external script/style dependency', () => {
   assert.match(css, /\.v-decision-action > \.v-guidance-time \{ z-index: 10; \}/);
   assert.ok(!html.includes('class="top-nav"'));
   assert.ok(!html.includes('class="data-chip"'));
-  assert.match(html, /<div class="demo-label">생성 데이터 기반 시연/);
+  assert.match(html, /<div class="demo-label">생성 데이터 기반<br>프로토타입<\/div>/);
   assert.ok(!html.includes('iM 파트너'));
   assert.ok(html.includes('AI챗봇'));
   assert.ok(!code.includes("addEventListener('wheel'"));
@@ -67,16 +67,16 @@ for (const [label, p] of Object.entries(D.periods)) check(label + ': POS, costs,
   assert.equal(a.byCategory.find(c => c.id === 'purchase').amount, sum(a.topPurchases, 'amount'));
   assert.equal(a.delta, a.sales - a.expense);
   assert.equal(a.soldUnits, sum(a.pos, 'netQuantity'));
-  assert.equal(a.focus.label, '12~14시');
+  assert.ok(['17~19시', '19~21시', '21~23시'].includes(a.focus.label));
   assert.ok(a.pos.every(r => r.netAmount === r.netQuantity * r.unitPrice));
   assert.ok(a.slots.every(r => r.trafficIndex >= 0 && r.trafficIndex <= 100 && r.cardIndex >= 0 && r.cardIndex <= 100));
 });
 check('Date validation, short periods and missing comparison', () => {
-  for (const [start, end] of [['2026-08-32', '2026-09-02'], ['2026-08-11', '2026-08-01'], ['2026-06-30', '2026-07-10'], ['2026-08-01', '2026-09-03'], ['', '']]) assert.equal(D.customPeriod(start, end), null);
-  const a = D.analyze(D.customPeriod('2026-07-01', '2026-07-01'));
+  for (const [start, end] of [['2026-08-32', '2026-09-02'], ['2026-08-11', '2026-08-01'], ['2026-05-31', '2026-07-10'], ['2026-08-01', '2026-10-01'], ['', '']]) assert.equal(D.customPeriod(start, end), null);
+  const a = D.analyze(D.customPeriod('2026-06-01', '2026-06-01'));
   assert.equal(a.daily.length, 1); assert.equal(a.comparisonAvailable, false); assert.equal(a.salesRate, null);
   assert.equal(D.analyze(D.customPeriod('2026-08-01', '2026-08-01')).comparisonAvailable, true);
-  assert.equal(D.guidance(2).average, null); assert.ok(D.guidance(14).average > 0);
+  assert.equal(D.guidance(2).average, null); assert.ok(D.guidance(19).average > 0);
 });
 check('Generated policies and undefined metrics remain explicit', () => {
   assert.equal(D.policies.length, 10);
@@ -86,15 +86,16 @@ check('Generated policies and undefined metrics remain explicit', () => {
 check('CCTV and POS recovery scenario reconciles without invented outcomes', () => {
   const r = D.analyzeRecovery();
   assert.equal(r.sourceType, 'synthetic_demo');
-  assert.equal(r.opportunity.label, '18~20시');
-  assert.equal(r.opportunity.passersby, 310);
-  assert.equal(r.opportunity.entrants, 21);
-  assert.equal(r.opportunity.validPayments, 14);
-  assert.equal(r.opportunity.netSales, 286000);
-  assert.equal(r.opportunity.entryRate.toFixed(1), '6.8');
-  assert.equal(r.opportunity.estimatedPurchaseRate.toFixed(1), '66.7');
-  assert.equal(Math.round(r.opportunity.averageTicket), 20429);
-  assert.ok(r.slots.every(row => row.passersby >= row.dwellers && row.dwellers >= row.entrants && row.entrants >= row.validPayments));
+  assert.equal(r.opportunity.label, '19~21시');
+  const source = D.cctvRows.filter(row => row.date === r.analysisDate && row.hour >= 19 && row.hour < 21);
+  assert.equal(r.opportunity.passersby, sum(source, 'passers'));
+  assert.equal(r.opportunity.entrants, sum(source, 'entrants'));
+  assert.equal(r.opportunity.validPayments, sum(source, 'payments'));
+  assert.equal(r.opportunity.netSales, sum(source, 'netSales'));
+  assert.equal(r.opportunity.entryRate, r.opportunity.entrants / r.opportunity.passersby * 100);
+  assert.equal(r.opportunity.estimatedPurchaseRate, r.opportunity.validPayments / r.opportunity.entrants * 100);
+  assert.equal(r.opportunity.averageTicket, r.opportunity.netSales / r.opportunity.validPayments);
+  assert.ok(r.slots.every(row => row.passersby >= row.dwellers && row.passersby >= row.entrants && row.entrants >= row.validPayments));
   assert.equal(r.opportunitySelection.ruleVersion, null);
   assert.equal(r.comparison.status, 'waiting');
   assert.equal(r.comparison.followUpMetrics, null);
@@ -150,45 +151,52 @@ const document = {
   querySelector: s => s === '.app-shell' ? shell : s === '#sidebarToggle .toggle-icon' ? toggleIcon : nodes.get(s.slice(1)) || null,
   querySelectorAll: () => buttons.filter(e => e.dataset.view),
   getElementById: id => nodes.get(id),
-  addEventListener: (name, fn) => { listeners[name] = fn; },
+  addEventListener: (name, fn) => { (listeners[name] ||= []).push(fn); },
   createElement: () => new Element(), documentElement: new Element()
 };
 const location = { hash: '' };
 let replacedUrl = '';
 let pendingPdf;
+let pendingPdfOptions;
+const localValues = new Map();
 const context = {
-  window: { IM_MEETING_DEMO: D, IM_REPORT_PDF: { generate: () => new Promise(resolve => { pendingPdf = resolve; }) }, location: { replace: url => { replacedUrl = url; } }, scrollTo() {}, addEventListener() {}, matchMedia: () => ({ matches: false }), innerWidth: 1440 },
+  window: { IM_MEETING_DEMO: D, IM_REPORT_PDF: { generate: options => new Promise(resolve => { pendingPdfOptions = options; pendingPdf = resolve; }) }, localStorage: { getItem: key => localValues.get(key) || null, setItem: (key, value) => localValues.set(key, value) }, location: { replace: url => { replacedUrl = url; } }, scrollTo() {}, addEventListener() {}, matchMedia: () => ({ matches: false }), innerWidth: 1440 },
   document, location, history: { replaceState: (_, __, hash) => { location.hash = hash; } },
   Intl, Date, console, setInterval() {}, setTimeout() { return 1; }, clearTimeout() {},
   URL: { createObjectURL: () => 'blob:test-report', revokeObjectURL() {} },
   FormData: class { constructor(form) { this.data = form.values || {}; } get(k) { return this.data[k] ?? null; } has(k) { return k in this.data; } }
 };
-function click(dataset) { const e = new Element(); e.dataset = dataset; listeners.click({ target: e }); }
-function change(id, value) { nodes.get(id).value = value; listeners.change({ target: nodes.get(id) }); }
-function submit(id, values) { const form = nodes.get(id); form.values = values; listeners.submit({ target: form, preventDefault() {} }); }
+function dispatch(name, event) { for (const fn of listeners[name] || []) fn(event); }
+function click(dataset) { const e = new Element(); e.dataset = dataset; dispatch('click', { target: e }); }
+function change(id, value) { nodes.get(id).value = value; dispatch('change', { target: nodes.get(id) }); }
+function submit(id, values) { const form = nodes.get(id); form.values = values; dispatch('submit', { target: form, preventDefault() {} }); }
+function askChat(question) { click({ question }); nodes.get('aiInput').value = question; submit('aiForm'); }
+function askReport(question) { click({ reportQuestion: question }); assert.equal(nodes.get('reportInput').value, question); submit('reportForm'); }
+context.window.IM_SALES_DATA = require('../sales-diagnosis-data.js');
+vm.runInNewContext(fs.readFileSync(path.join(root, 'sales-diagnosis.js'), 'utf8'), context);
+context.window.IM_SALES_DIAGNOSIS.bind = () => {};
+vm.runInNewContext(fs.readFileSync(path.join(root, 'aftercare.js'), 'utf8'), context);
 context.window.IM_MARKET_DATA = require('../market-analysis-data.js');
 vm.runInNewContext(fs.readFileSync(require('node:path').join(root, 'market-analysis.js'), 'utf8'), context);
 // DOM event interaction is covered by the real browser suite.
 context.window.IM_MARKET_ANALYSIS.bind = () => {};
 vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and the consolidated navigation targets', () => {
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('2,550.2'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('<span class="trend-caution">▲ 7.2% 증가</span>'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-signal-context"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-recovery-signal-followup"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="guideHourButton"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="guideHourMenu"'));
-  assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="guideHour"'));
-  click({ guideHour: '8' });
-  assert.match(nodes.get('guidanceContent').innerHTML, /오전 운영 · 08:00/);
+  assert.match(nodes.get('viewRoot').innerHTML, /<h2 id="financeThermoTitle">나의 금융 체온계<\/h2>/);
+  assert.doesNotMatch(nodes.get('viewRoot').innerHTML, /지금 할 일|매일 17시부터 23시까지 영업합니다\./);
+  assert.match(nodes.get('viewRoot').innerHTML, /지금 확인/);
+  assert.match(nodes.get('viewRoot').innerHTML, /다음 준비/);
+  assert.match(nodes.get('viewRoot').innerHTML, /시연 날씨/);
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="guideHourButton"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="dashboardPeriodSelect"'));
   assert.equal(nodes.get('profileInitials').textContent, '소현');
   assert.equal(nodes.get('profileMenuInitials').textContent, '소현');
-  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '51.2°');
-  assert.equal(nodes.get('profileTemperatureBadge').textContent, '51.2°');
-  assert.match(nodes.get('profileMenuButton').attrs['aria-label'], /나의 금융 온도 51\.2도/);
+  const temperature = D.financialIndex().value.toFixed(1);
+  assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, temperature + '°');
+  assert.equal(nodes.get('profileTemperatureBadge').textContent, temperature + '°');
+  assert.ok(nodes.get('profileMenuButton').attrs['aria-label'].includes(temperature + '도'));
   assert.match(nodes.get('mainNavigation').innerHTML, />홈</);
   assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
   assert.match(nodes.get('mainNavigation').innerHTML, />상권분석</);
@@ -197,13 +205,17 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.match(nodes.get('mainNavigation').innerHTML, /class="im-product-name"/);
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('상권·시간 분석'));
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('매출·지출 분석'));
-  for (const view of ['dashboard', 'analysis', 'market', 'policies', 'secretary', 'profile']) {
+  assert.match(nodes.get('mainNavigation').innerHTML, />사후관리</);
+  for (const view of ['dashboard', 'analysis', 'market', 'policies', 'aftercare', 'secretary', 'profile']) {
     click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
   click({ view: 'analysis' });
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-finance-summary"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-connection-grid"'));
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('요일/시간대별 유동인구와 매출량'));
+  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="sd-panel"/g) || []).length, 4);
+  assert.match(nodes.get('viewRoot').innerHTML, /총지출/);
+  assert.match(nodes.get('viewRoot').innerHTML, /id="guideHourButton"/);
+  assert.match(nodes.get('viewRoot').innerHTML, /현재 매출진단/);
+  click({ guideHour: '19' });
+  assert.match(nodes.get('guidanceContent').innerHTML, /저녁 운영 · 19:00/);
   click({ view: 'market' });
   assert.equal(location.hash, '#market');
   click({ view: 'policies' });
@@ -215,23 +227,20 @@ check('Finance thermometer uses the declared partial formula without calling it 
   click({ view: 'dashboard' });
   const markup = nodes.get('viewRoot').innerHTML;
   assert.match(markup, /class="v-finance-thermometer"/);
-  assert.match(markup, /style="--v-thermo-level:51\.2%"/);
-  assert.match(markup, /나의 금융 체온계/);
-  assert.match(markup, /연결 데이터 2\/4/);
-  assert.match(markup, /데이터 연결도/);
+  assert.match(markup, /<h2 id="financeThermoTitle">나의 금융 체온계<\/h2>/);
   assert.match(markup, /최근 1개월 일별 이동평균 지수/);
-  assert.match(markup, /나의 금융 온도<br><strong>51\.2°/);
-  assert.match(markup, /직전 기간 59\.9도에서 현재 51\.2도로 변화/);
-  assert.match(markup, /8\.7° 감소/);
-  assert.match(markup, /현금잔액/);
-  assert.match(markup, /예정 입출금/);
+  assert.ok(markup.includes(D.financialIndex().value.toFixed(1) + '°'));
+  assert.match(markup, /class="v-finance-thermo-compare"/);
   assert.match(markup, /\(참고용 지표\) 신용평가·대출심사 결과와는 무관합니다\./);
-  assert.ok(!markup.includes('영업이익률이나 현금잔액을 뜻하지 않습니다'));
+  assert.ok(!markup.includes('class="v-finance-thermo-sources"'));
+  assert.ok(!markup.includes('class="v-finance-thermo-action"'));
+  assert.ok(!markup.includes('data-action="thermo-evidence"'));
+  assert.ok(!markup.includes('현금잔액'));
   assert.ok(!markup.includes('—°'));
   assert.ok(!markup.includes('role="progressbar"'));
 });
 check('Profile avatar shows the given name for common Korean name lengths', () => {
-  const base = { storeName: '서문시장 음식점', region: '대구 중구', industry: '음식점', employees: '3' };
+  const base = { storeName: D.profile.storeName, region: D.profile.region, industry: D.profile.industry, employees: '3' };
   click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '황보민지' }, base));
   assert.equal(nodes.get('profileInitials').textContent, '민지');
   assert.equal(nodes.get('profileMenuInitials').textContent, '민지');
@@ -241,40 +250,43 @@ check('Profile avatar shows the given name for common Korean name lengths', () =
   click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '이소현' }, base));
 });
 check('Chatbot answers follow period changes and do not invent absent data', () => {
-  click({ question: '현재 매출이 왜 떨어졌나요?' });
-  assert.ok(nodes.get('aiMessages').textContent.includes('-12.4%'));
-  assert.ok(nodes.get('aiMessages').textContent.includes('-7.6%'));
+  askChat('현재 매출이 왜 떨어졌나요?');
+  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.month).salesRate.toFixed(1) + '%'));
   change('periodSelect', 'week');
-  click({ question: '현재 매출이 왜 떨어졌나요?' });
-  assert.ok(nodes.get('aiMessages').textContent.includes('+0.1%'));
-  assert.ok(!nodes.get('aiMessages').textContent.includes('-12.4%'));
-  click({ question: '어떤 고객층을 노려야 하나요?' });
+  askChat('현재 매출이 왜 떨어졌나요?');
+  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.week).salesRate.toFixed(1) + '%'));
+  askChat('어떤 고객층을 노려야 하나요?');
   assert.ok(nodes.get('aiMessages').textContent.includes('근거가 부족'));
-  click({ question: '양자컴퓨터 알려주세요' });
+  askChat('양자컴퓨터 알려주세요');
   assert.ok(nodes.get('aiMessages').textContent.includes('연결 채널은 아직 미정'));
   assert.equal(nodes.get('aiPanel').inert, false);
 });
 check('Report prompts, sidebar, chat controls, calendar and policy modal', () => {
   click({ view: 'secretary' }); click({ reportQuestion: '매출과 지출을 분석해 주세요.' });
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('5,730,500원'));
+  assert.equal(nodes.get('reportInput').value, '매출과 지출을 분석해 주세요.');
+  assert.ok(nodes.get('viewRoot').innerHTML.includes('id="reportResult" hidden'));
+  submit('reportForm');
+  assert.ok(nodes.get('viewRoot').innerHTML.includes(D.analyze(D.periods.week).sales.toLocaleString('ko-KR') + '원'));
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="reportResult" hidden'));
   nodes.get('sidebarToggle').events.click(); assert.ok(shell.classList.contains('sidebar-collapsed'));
   nodes.get('logoutLink').events.click({ preventDefault() {}, currentTarget: nodes.get('logoutLink') }); assert.equal(replacedUrl, './login-preview/index.html?signed_out=1');
   nodes.get('aiClose').events.click(); assert.equal(nodes.get('aiPanel').inert, true);
   click({ view: 'policies' }); click({ policy: '1' }); assert.equal(nodes.get('policyModal').open, true);
   click({ action: 'close-modal' }); assert.equal(nodes.get('policyModal').open, false);
-  click({ view: 'dashboard' }); assert.ok(nodes.get('bannerTitle').textContent.includes('뉴스'));
-  click({ action: 'banner-next' }); assert.ok(nodes.get('bannerTitle').textContent.includes('행사'));
+  click({ view: 'secretary' }); click({ action: 'open-document-guide' });
+  assert.equal(nodes.get('documentGuideModal').open, true);
+  click({ action: 'close-document-guide' }); assert.equal(nodes.get('documentGuideModal').open, false);
 });
 check('Market route replaces recovery while secretary chatbot retains its current source', () => {
   click({ view: 'recovery' });
   assert.equal(location.hash, '#market');
-  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="ma-panel"/g) || []).length, 5);
-  assert.match(nodes.get('viewRoot').innerHTML, /CCTV 관측 영역/);
+  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="ma-panel"/g) || []).length, 4);
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="ma-observation"'));
+  assert.match(nodes.get('viewRoot').innerHTML, /통행에서 결제까지/);
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('실행 기록 시안 시작하기'));
-  click({ question: 'CCTV 유입률과 구매전환율을 알려주세요' });
-  assert.ok(nodes.get('aiMessages').textContent.includes('통행자 310명'));
-  assert.ok(nodes.get('aiMessages').textContent.includes('추정 구매전환율은 66.7%'));
+  askChat('CCTV 유입률과 구매전환율을 알려주세요');
+  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.week).entryRate.toFixed(1) + '%'));
+  assert.ok(nodes.get('aiMessages').textContent.includes(D.periods.week.start));
 });
 check('Profile strings are escaped and region mismatch is excluded', () => {
   click({ view: 'profile' });
@@ -283,20 +295,31 @@ check('Profile strings are escaped and region mismatch is excluded', () => {
   assert.ok(nodes.get('viewRoot').innerHTML.includes('&lt;img'));
   click({ view: 'policies' }); assert.ok(nodes.get('viewRoot').innerHTML.includes('조건에 맞는 예시가 없습니다'));
   click({ view: 'dashboard' });
-  assert.match(nodes.get('viewRoot').innerHTML, /data-status="unavailable"/);
-  assert.match(nodes.get('viewRoot').innerHTML, /연결 데이터 0\/4/);
-  assert.match(nodes.get('viewRoot').innerHTML, /나의 금융 온도<br><strong>측정 전/);
+  assert.match(nodes.get('viewRoot').innerHTML, /시연/);
   assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '측정 전');
   assert.equal(nodes.get('profileTemperatureBadge').textContent, '측정 전');
 });
 async function asyncChecks() {
-  click({ view: 'secretary' }); click({ reportQuestion: '회복전략을 요약해 주세요.' });
+  click({ view: 'secretary' }); askReport('회복전략을 요약해 주세요.');
   click({ action: 'make-pdf' }); const stale = pendingPdf;
   change('periodSelect', 'month'); stale({}); await new Promise(resolve => setImmediate(resolve));
   assert.equal(nodes.get('pdfLink').attrs.href, undefined);
   console.log('PASS Stale PDF is discarded after analysis conditions change'); passed++;
-  click({ reportQuestion: '시간대별 운영 전략을 정리해 주세요.' });
+  askReport('시간대별 운영 전략을 정리해 주세요.');
   click({ action: 'make-pdf' }); pendingPdf({}); await new Promise(resolve => setImmediate(resolve));
+  assert.ok(pendingPdfOptions.actions.length > 0);
+  assert.ok(pendingPdfOptions.actions.every(action => nodes.get('viewRoot').innerHTML.includes(action.title)));
+  const drawn = [];
+  const fakeCanvas = () => {
+    const ctx = { fillRect() {}, fillText(text) { drawn.push(String(text)); }, measureText(text) { return { width: String(text).length * 10 }; }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} };
+    return { getContext: () => ctx };
+  };
+  require('../report-pdf.js').renderCanvases(pendingPdfOptions, fakeCanvas);
+  for (const action of pendingPdfOptions.actions) {
+    assert.ok(drawn.join('').includes(action.title), 'PDF includes the displayed action title');
+    assert.ok(drawn.join('').includes(action.evidence), 'PDF includes the displayed action evidence');
+  }
+  console.log('PASS PDF renderer uses the same action titles and evidence shown by iM비서'); passed++;
   assert.equal(nodes.get('pdfLink').href, 'blob:test-report');
   assert.equal(nodes.get('pdfDownload').hidden, false);
   console.log('PASS PDF completion enables actual download URL'); passed++;

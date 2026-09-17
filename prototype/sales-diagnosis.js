@@ -1,129 +1,120 @@
 (function () {
   'use strict';
-  const A = window.IM_SALES_DATA;
-  const D = window.IM_MEETING_DEMO;
-  const state = { comparison: 'previous', item: 'all', hour: 'all', dayType: 'all', sort: 'sales', page: 0, checks: new Set() };
-  let result, redraw, dialog, detail, detailPage = 0;
+  const A = window.IM_SALES_DATA, D = window.IM_MEETING_DEMO;
+  const state = { comparison: 'weekday', category: 'all', subcategory: 'all', item: 'all', hour: 'all', days: [], sort: 'sales', direction: 'desc', expandedItem: null, selectedDay: '1', selectedDate: null, collapsed: true };
+  const dayOrder = [1, 2, 3, 4, 5, 6, 0], dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  let result, redraw, dialog, detail, detailPage = 0, extrasRenderer = () => '';
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const num = n => n == null ? '—' : Math.round(n).toLocaleString('ko-KR');
-  const money = n => n == null ? '—' : num(n) + '원';
-  const signed = n => n == null ? '비교 자료 없음' : (Math.round(n) > 0 ? '+' : Math.round(n) < 0 ? '−' : '') + money(Math.abs(n));
-  const percent = n => n == null ? '—' : n.toFixed(1) + '%';
-  const delta = (now, before) => now == null ? '산출 자료 없음' : before == null ? '비교 자료 없음' : before === 0 ? (now === 0 ? '변동 없음' : '기준값 0 · 증감률 미산정') : (now > before ? '+' : '') + percent(A.change(now, before));
-  const tone = value => value < 0 ? 'sd-negative' : value > 0 ? 'sd-positive' : '';
+  const num = n => n == null || !Number.isFinite(n) ? '—' : Math.round(n).toLocaleString('ko-KR');
+  const money = n => num(n) + (n == null ? '' : '원');
+  const percent = n => n == null || !Number.isFinite(n) ? '—' : n.toFixed(1) + '%';
+  const tone = n => n < 0 ? 'sd-negative' : n > 0 ? 'sd-positive' : '';
+  const amountChange = n => n == null ? '비교 자료 없음' : n === 0 ? '변동 없음' : (n > 0 ? '▲ ' : '▼ ') + money(Math.abs(n)) + (n > 0 ? ' 증가' : ' 감소');
+  const delta = (now, before) => now == null ? '자료 없음' : before == null ? '비교 자료 없음' : before <= 0 ? (now === before ? '변동 없음' : '기준값 0 이하 · 증감률 미산정') : now === before ? '변동 없음' : (now > before ? '▲ ' : '▼ ') + percent(Math.abs((now - before) / before * 100)) + (now > before ? ' 증가' : ' 감소');
   const button = (label, attrs, primary) => '<button type="button" class="v-button' + (primary ? ' primary' : '') + '" ' + attrs + '>' + label + '</button>';
-  const tag = text => '<span class="v-tag neutral">' + text + '</span>';
   const card = body => '<article class="card v-card sd-card">' + body + '</article>';
-  const options = (rows, value) => rows.map(([id, label]) => '<option value="' + id + '"' + (id === value ? ' selected' : '') + '>' + esc(label) + '</option>').join('');
-  const select = (label, key, rows) => '<label class="sd-field">' + label + '<select class="v-select" id="sd-' + key + '" data-sd-filter="' + key + '">' + options(rows, state[key]) + '</select></label>';
-  const heading = (index, title, subtitle) => '<div class="sd-section-heading"><div><span class="sd-kicker">' + index + ' / 매출진단</span><h2>' + title + '</h2><p class="v-subtitle">' + subtitle + '</p></div>' + (index === '01' ? tag('생성 데이터 · POS 시연') : button('분석 조건 ↑', 'data-sd-jump="0"')) + '</div>';
-  const wrap = (id, content) => '<div class="sd-panel" id="sd-panel-' + id + '">' + content + '</div>';
-  const scope = () => [D.menu.find(item => item.id === state.item)?.name || '전체 품목', result.range.label, state.dayType === 'weekday' ? '평일' : state.dayType === 'weekend' ? '주말' : '모든 요일'].join(' · ');
-  const scopeLine = () => '<p class="sd-scope">' + esc(result.period.start + ' ~ ' + result.period.end) + ' · ' + esc(scope()) + '</p>';
+  const wrap = (id, body) => '<div class="sd-panel" id="sd-panel-' + id + '">' + body + '</div>';
+  const heading = (index, title, subtitle) => '<div class="sd-section-heading"><div><span class="sd-kicker">' + index + ' / ' + title + '</span><h2>' + title + '</h2><p class="v-subtitle">' + subtitle + '</p></div>' + (index === '01' ? button('판매집계내역 CSV 파일 ↓', 'data-sd-export', true) : '') + '</div>';
+  const select = (label, key, rows) => '<label class="sd-field">' + label + '<select class="v-select" id="sd-' + key + '" data-sd-filter="' + key + '">' + rows.map(([id, text]) => '<option value="' + esc(id) + '"' + (id === state[key] ? ' selected' : '') + '>' + esc(text) + '</option>').join('') + '</select></label>';
+  const daysText = () => state.days.length ? dayOrder.filter(day => state.days.includes(day)).map(day => dayNames[day]).join('·') : '모든 요일';
+  const scope = () => [D.menu.find(item => item.id === state.item)?.name || (state.subcategory !== 'all' ? D.menu.find(item => item.subcategory === state.subcategory)?.subcategoryLabel : state.category !== 'all' ? D.menu.find(item => item.category === state.category)?.categoryLabel : '전체 품목'), result.range.label, daysText()].filter(Boolean).join(' · ');
+  const scopeLine = () => '<p class="sd-scope">' + esc(result.period.start + ' ~ ' + result.period.end + ' · ' + scope()) + '</p>';
+  const uniqueOptions = (items, key) => Array.from(new Map(items.map(item => [item[key], item[key + 'Label'] || item[key]])).entries()).filter(row => row[0]);
+  function filters() {
+    const eligible = D.menu.filter(item => state.category === 'all' || item.category === state.category);
+    return '<div id="sd-filter-dock" class="sd-filter-dock' + (state.collapsed ? ' is-collapsed' : '') + '"><button type="button" class="sd-filter-toggle" data-sd-toggle aria-expanded="' + !state.collapsed + '" aria-controls="sd-filter-fields">분석 필터 ' + (state.collapsed ? '펼치기' : '접기') + '<span>' + esc(scope()) + '</span></button><div id="sd-filter-fields" class="sd-filters">' +
+      select('대분류', 'category', [['all', '전체 분류'], ...uniqueOptions(D.menu, 'category')]) + select('중분류', 'subcategory', [['all', '전체 종류'], ...uniqueOptions(eligible, 'subcategory')]) +
+      '<div class="sd-field sd-day-field"><span>요일 · 복수 선택</span><div class="sd-day-buttons" role="group" aria-label="매출 분석 요일">' + button('전체', 'data-sd-day="all" aria-pressed="' + !state.days.length + '"') + dayOrder.map(day => button(dayNames[day], 'data-sd-day="' + day + '" aria-pressed="' + state.days.includes(day) + '"')).join('') + '</div></div>' +
+      select('시간대', 'hour', A.ranges.map(row => [row.id, row.label])) + button('초기화', 'data-sd-reset') + '</div><div id="sd-period-mount"></div><p class="sd-filter-comparison">비교: ' + result.previousStart + '~' + result.previousEnd + ' · 겹치지 않는 같은 요일 구성</p></div>';
+  }
   function metric(label, value, current, previous, foot, primary) {
-    return '<article class="card metric-card' + (primary ? ' primary' : '') + '"><div class="metric-label">' + label + '</div><div class="metric-value">' + value + '</div><div class="metric-foot"><strong class="' + tone(previous == null ? 0 : current - previous) + '">' + delta(current, previous) + '</strong></div><p class="v-metadata">' + foot + '</p></article>';
+    return '<article class="card metric-card' + (primary ? ' primary' : '') + '"><div class="metric-label">' + label + '</div><div class="metric-value">' + value + '</div><div class="metric-foot"><strong class="' + tone(previous == null || current == null ? 0 : current - previous) + '">' + delta(current, previous) + '</strong></div><p class="v-metadata">' + foot + '</p></article>';
   }
   function summary() {
-    const { current: c, previous: p, effects } = result;
-    const change = p ? c.sales - p.sales : null;
-    const title = !result.currentComplete ? '선택 조건에 해당하는 날짜가 없습니다.' : !p ? '현재 매출을 확인하고, 비교 기간을 조정해 보세요.' : change < 0 ? '매출이 줄었습니다. 감소한 지점부터 확인하세요.' : change > 0 ? '매출이 늘었습니다. 증가한 지점을 확인하세요.' : '매출이 유지되고 있습니다. 세부 변화를 살펴보세요.';
-    const description = !p ? '비교 기간 전체를 포함하는 자료가 없어 증감률과 실행 후보를 만들지 않았습니다.' : '비교 기간 대비 순매출 ' + signed(change) + '.' + (effects ? ' 판매 수량 변화에 따른 영향은 ' + signed(effects.quantity) + '입니다.' : ' 비교 기간의 판매 수량이 없어 요인 분해는 제공하지 않습니다.');
-    return wrap('summary', heading('01', '매출의 변화, 다음 행동까지', '우리 가게의 판매 기록으로 점검할 곳을 찾으세요.') +
-      '<div class="sd-filters">' + select('비교 기준', 'comparison', [['previous', '직전 동일 일수'], ['weekday', '같은 요일 구성']]) + select('판매 품목', 'item', [['all', '전체 품목'], ...D.menu.map(item => [item.id, item.name])]) + select('시간대', 'hour', A.ranges.map(row => [row.id, row.label])) + select('요일', 'dayType', [['all', '모든 요일'], ['weekday', '평일'], ['weekend', '주말']]) + button('필터 초기화', 'data-sd-reset') + '</div>' +
-      '<div class="sd-period-line"><span>분석 <b>' + result.period.start + ' ~ ' + result.period.end + '</b></span><span>비교 <b>' + result.previousStart + ' ~ ' + result.previousEnd + '</b> · ' + (state.comparison === 'weekday' ? '7일 배수만큼 이전으로 이동' : '직전 동일 일수') + '</span></div>' +
-      '<div class="sd-insight" role="status"><div><span class="v-tag">이번 기간의 진단</span><h3>' + title + '</h3><p>' + description + '</p></div>' + button('변화 근거 보기 →', 'data-sd-jump="1"', true) + '</div>' +
-      '<div class="metric-grid sd-metrics">' + metric('순매출', money(c.sales), c.sales, p?.sales, '취소 금액 차감', true) + metric('일평균 매출', money(c.average), c.average, p?.average, '선택 요일 ' + result.dayCount + '일 · 비교 ' + result.previousDayCount + '일') + metric('판매 수량', num(c.units) + '<small> 개</small>', c.units, p?.units, '주문 건수·방문 인원과 다릅니다') + metric('판매 1개당 평균 금액', money(c.unitAmount), c.unitAmount, p?.unitAmount, '순매출 ÷ 순판매 수량') + '</div>' +
-      '<div class="v-connection-grid sd-cash-status" aria-label="자금 지표 연결 상태"><div><span>현금보유량</span><strong>미연결</strong></div><div><span>미정산 매출</span><strong>미연결</strong></div><div><span>예정 지출</span><strong>미연결</strong></div><div><span>정산 예정일</span><strong>미연결</strong></div></div><p class="v-metadata">현금보유량은 사업용 계좌 잔액과 보유 현금 자료가 필요합니다. 매출 − 지출로 계산하지 않습니다.</p>' +
-      '<nav class="sd-section-links" aria-label="매출진단 섹션 이동">' + ['매출 변화', '품목별 진단', '요일·시간대', '지출과 실행', '집계 근거'].map((label, i) => button(label + ' ↗', 'data-sd-jump="' + (i + 1) + '"')).join('') + '</nav>' +
-      '<details class="sd-definitions"><summary>데이터 범위와 계산 기준</summary><p>생성 자료 범위: 2026.07.01~09.02, 08~20시. 시간대의 끝 시각은 포함하지 않습니다. 날짜별 집계 존재 여부를 확인한 뒤 비교하며, 불완전한 이전 기간은 비교에 사용하지 않습니다. 일평균은 선택 요일의 관측 일수로 나누며 휴무 정보는 없습니다. 같은 요일 구성은 기간이 겹치지 않도록 7일의 배수만큼 이동합니다.</p><p>판매 1개당 평균 금액은 주문당 객단가가 아닙니다. 판매 채널·고객·주문번호는 연결 전입니다. 필터는 이 매출진단 화면에 적용되며, 홈·AI챗봇·PDF는 전체 품목 기준입니다. 데이터 기준일은 2026.09.02이며 실시간 자료가 아닙니다.</p></details>');
+    const c = result.current, p = result.previous, f = result.finance;
+    const title = !result.currentComplete ? '선택한 조건의 영업 기록을 확인해 주세요.' : !p ? '현재 매출을 먼저 확인하세요.' : c.sales > p.sales ? '매출이 늘었습니다. 어떤 판매가 늘었는지 확인하세요.' : c.sales < p.sales ? '매출이 줄었습니다. 변화가 큰 품목과 시간을 확인하세요.' : '매출이 유지되고 있습니다.';
+    const financePrevious = f.comparisonAvailable ? f.previousSales - f.previousExpense : null;
+    return wrap('summary', filters() + heading('01', '매출 요약', '판매 기록을 바탕으로 우리 가게의 흐름을 살펴보세요.') +
+      '<div class="sd-period-line">분석 ' + result.period.start + ' ~ ' + result.period.end + '</div><div class="sd-insight" role="status"><div><span class="v-tag">이번 기간의 진단</span><h3>' + title + '</h3><p>' + (p ? '같은 요일 구성의 이전 기간 대비 ' + amountChange(c.sales - p.sales) + '.' : '이전 기간의 완전한 자료가 없어 비교 해석을 생략했습니다.') + '</p></div></div>' +
+      '<div class="metric-grid sd-metrics">' + metric('매출', money(c.sales), c.sales, p?.sales, '취소 차감 후 판매 금액 · 선택 조건', true) + metric('일평균 매출', money(c.average), c.average, p?.average, '선택 요일의 정상 영업일 ' + result.dayCount + '일 기준') + metric('매출 − 지출 차이', money(f.delta), f.delta, financePrevious, '같은 기간 가게 전체 · 품목·요일·시간 필터 제외') + metric('결제 객단가', money(c.customerAverage), c.customerAverage, p?.customerAverage, '매출 ÷ 유효 결제 ' + num(c.transactions) + '건' + (state.category !== 'all' || state.subcategory !== 'all' || state.item !== 'all' ? ' · 선택 품목 금액 기준' : '')) + '</div>' +
+      '<div class="sd-finance-context"><span>같은 기간 가게 전체</span><span>전체 매출 <b>' + money(f.sales) + '</b></span><span>총지출 <b>' + money(f.expense) + '</b></span><small>품목·요일·시간 필터로 비용을 나누지 않습니다.</small></div>' +
+      '<details class="sd-definitions"><summary>매출과 계산 기준</summary><p>매출은 취소를 차감한 판매 금액입니다. 일평균은 선택 기간·요일의 정상 영업일 수로 나눕니다. 결제 객단가는 선택 조건의 매출을 해당 품목이 포함된 고유한 유효 결제 건수로 나눕니다. 품목을 좁히면 선택 품목 금액 기준이며 결제 전체 금액과 다릅니다.</p><p>매출 − 지출 차이는 동일 기간 가게 전체 금액입니다. 품목·요일·시간별로 비용을 나누지 않습니다. 비용 범위와 원가가 확정되지 않아 순이익이 아니며, 보유 현금도 아닙니다.</p><p>분석과 CSV는 같은 선택 조건을 사용합니다. 영업시간은 17~23시이며 차트는 2시간 단위, CSV는 원래 10분 단위 판매 기록을 보존합니다. 비교는 기간이 겹치지 않는 같은 요일 구성입니다. 생성 자료이며 실제 POS·날씨·외부 AI는 연결되지 않았습니다.</p></details>');
   }
   function trendChart() {
-    const rows = result.daily, max = Math.max(1, ...rows.flatMap(row => [row.sales || 0, row.previous || 0]));
-    const x = index => rows.length === 1 ? 355 : 58 + index * 602 / (rows.length - 1);
-    const y = value => 184 - value / max * 148;
-    const ticks = [0, .5, 1].map(value => '<line x1="58" x2="670" y1="' + y(max * value) + '" y2="' + y(max * value) + '" stroke="#e5eeeb"/><text x="48" y="' + (y(max * value) + 4) + '" text-anchor="end">' + (max * value / 10000).toFixed(0) + '만</text>').join('');
-    const lines = ['previous', 'sales'].map(key => {
-      let path = '', connected = false;
-      rows.forEach((row, index) => { if (row[key] == null) { connected = false; return; } path += (connected ? ' L ' : ' M ') + x(index) + ' ' + y(row[key]); connected = true; });
-      return '<path d="' + path + '" fill="none" stroke="' + (key === 'sales' ? '#198775' : '#9daeb8') + '" stroke-width="3"' + (key === 'previous' ? ' stroke-dasharray="6 5"' : '') + '/>';
-    }).join('');
-    const points = rows.map((row, i) => row.sales == null ? '' : '<g tabindex="0" role="button" data-sd-detail="date" data-value="' + row.date + '" aria-label="' + row.date + ' 순매출 ' + money(row.sales) + ', 비교 ' + row.previousDate + ' ' + money(row.previous) + ', 집계 상세 보기"><title>' + row.date + ': ' + money(row.sales) + '\n비교 ' + row.previousDate + ': ' + money(row.previous) + '</title><circle cx="' + x(i) + '" cy="' + y(row.sales) + '" r="11" fill="transparent"/><circle cx="' + x(i) + '" cy="' + y(row.sales) + '" r="3.5" fill="#198775"/></g>').join('');
+    const rows = result.daily;
+    if (!rows.length) return '<p class="sd-empty">표시할 날짜가 없습니다.</p>';
+    const max = Math.max(1, ...rows.flatMap(row => [row.sales || 0, row.previous || 0]));
+    const x = i => rows.length === 1 ? 355 : 58 + i * 602 / (rows.length - 1), y = n => 184 - n / max * 148;
+    const ticks = [0, .5, 1].map(v => '<line x1="58" x2="670" y1="' + y(max * v) + '" y2="' + y(max * v) + '" stroke="#e5eeeb"/><text x="48" y="' + (y(max * v) + 4) + '" text-anchor="end">' + (max * v / 10000).toFixed(0) + '만</text>').join('');
+    const lines = ['previous', 'sales'].map(key => { let path = '', connected = false; rows.forEach((row, i) => { if (row[key] == null) { connected = false; return; } path += (connected ? ' L ' : ' M ') + x(i) + ' ' + y(row[key]); connected = true; }); return '<path d="' + path + '" fill="none" stroke="' + (key === 'sales' ? '#198775' : '#9daeb8') + '" stroke-width="3"' + (key === 'previous' ? ' stroke-dasharray="6 5"' : '') + '/>'; }).join('');
+    const points = rows.map((row, i) => row.sales == null && row.previous == null ? '' : '<g id="sd-point-' + row.date + '" tabindex="0" role="button" data-sd-date="' + row.date + '" aria-label="' + row.date + ' 매출 ' + money(row.sales) + ', 비교 ' + row.previousDate + ' ' + money(row.previous) + ', 해석 보기"><title>' + row.date + ': ' + money(row.sales) + '\n비교 ' + row.previousDate + ': ' + money(row.previous) + '</title><rect x="' + (x(i) - Math.max(5, Math.min(18, 290 / rows.length))) + '" y="25" width="' + Math.max(10, Math.min(36, 580 / rows.length)) + '" height="165" fill="transparent"/>' + (row.sales == null ? '' : '<circle cx="' + x(i) + '" cy="' + y(row.sales) + '" r="4" fill="#198775"/>') + '</g>').join('');
     const labels = [...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1])].map(i => '<text x="' + x(i) + '" y="210" text-anchor="middle">' + rows[i].date.slice(5) + '</text>').join('');
-    return '<div class="sd-legend"><span><i></i>분석 기간</span><span><i class="old"></i>비교 기간</span><small>원 · 기간 내 순서로 나란히 비교</small></div><svg class="sd-trend" viewBox="0 0 710 228" role="group" aria-label="일별 순매출 비교. 점을 선택하면 해당 날짜의 집계를 확인합니다.">' + ticks + lines + points + labels + '</svg>';
+    return '<div class="sd-legend"><span><i></i>분석 기간</span><span><i class="old"></i>비교 기간</span><small>원 · 같은 요일끼리 비교</small></div><svg class="sd-trend" viewBox="0 0 710 228" role="group" aria-label="일별 매출 비교. 날짜를 선택하면 두 기간의 금액과 해석을 확인합니다.">' + ticks + lines + points + labels + '</svg>';
+  }
+  function dateInsight() {
+    const row = result.daily.find(item => item.date === state.selectedDate);
+    if (!row) return '<p class="sd-selection-hint">차트의 날짜를 선택하면 금액과 변화를 자세히 볼 수 있습니다.</p>';
+    return '<div class="sd-inline-insight" aria-live="polite"><h4>' + row.date + ' 매출</h4><p>현재 <b>' + money(row.sales) + '</b> · 비교 ' + row.previousDate + ' <b>' + money(row.previous) + '</b></p><p class="' + tone(row.sales == null || row.previous == null ? 0 : row.sales - row.previous) + '">' + (row.sales == null ? '선택한 날짜의 자료가 없습니다.' : row.previous == null ? '완전한 비교 자료가 없어 변화 해석을 생략합니다.' : amountChange(row.sales - row.previous) + '. 판매 수량과 취소 내역을 함께 확인하세요.') + '</p>' + button('이 날짜 판매 근거 보기', 'data-sd-detail="date" data-value="' + row.date + '"') + '</div>';
   }
   function movement() {
-    const e = result.effects;
-    const max = e ? Math.max(1, Math.abs(e.quantity), Math.abs(e.amount), Math.abs(e.total)) : 1;
-    return wrap('movement', heading('02', '매출이 얼마나, 어떻게 달라졌나요?', '수치로 확인되는 변화와 원인 추정을 구분합니다.') + scopeLine() + '<div class="sd-grid">' + card('<h3>일별 순매출 비교</h3>' + trendChart() + '<p class="v-metadata">점을 선택하면 날짜별 집계를 볼 수 있습니다. 필터에서 제외한 날짜는 선을 연결하지 않습니다.</p><details class="sd-definitions"><summary>일별 비교 수치 보기</summary><div class="v-table-wrap"><table class="v-table"><thead><tr><th>분석 날짜</th><th>비교 날짜</th><th>순매출</th><th>비교 순매출</th></tr></thead><tbody>' + result.daily.map(row => '<tr><td>' + button(row.date, 'data-sd-detail="date" data-value="' + row.date + '"') + '</td><td>' + row.previousDate + '</td><td>' + money(row.sales) + '</td><td>' + money(row.previous) + '</td></tr>').join('') + '</tbody></table></div></details>') +
-      card('<h3>매출 증감액의 구성</h3><p class="v-subtitle">수량 변화 → 개당 평균 금액 변화 순서로 계산</p>' + (e ? '<div class="sd-effects">' + [['판매 수량 변화', e.quantity], ['개당 평균 금액 변화', e.amount], ['전체 매출 변화', e.total]].map(([label, value]) => '<div><div class="v-row v-between"><span>' + label + '</span><strong class="' + tone(value) + '">' + signed(value) + '</strong></div><div class="sd-effect-track"><span class="' + tone(value) + '" style="width:' + Math.abs(value) / max * 100 + '%"></span></div></div>').join('') + '</div>' : '<p class="sd-empty">완전한 비교 자료와 비교 기간의 판매 수량이 있어야 계산할 수 있습니다.</p>') + '<p class="sd-explanation">개당 평균 금액은 메뉴 구성·할인·가격에 따라 달라집니다. 실제 감소 원인은 품절·영업시간 등 운영 기록을 함께 확인해야 합니다.</p><details class="sd-definitions"><summary>계산식 보기</summary><p>수량 영향 = (현재 수량 − 이전 수량) × 이전 개당 평균 금액<br>개당 금액 영향 = 현재 순매출 − 현재 수량 × 이전 개당 평균 금액<br>두 영향의 합 = 현재 순매출 − 이전 순매출. 표시 금액은 원 단위 반올림으로 1원 차이가 날 수 있습니다.</p></details>') + '</div>');
+    const e = result.effects, max = e ? Math.max(1, Math.abs(e.quantity), Math.abs(e.amount), Math.abs(e.total)) : 1;
+    return wrap('movement', heading('02', '매출 변화', '수치로 확인되는 변화와 원인 추정을 구분합니다.') + scopeLine() + '<div class="sd-grid">' + card('<h3>일별 매출 비교</h3>' + trendChart() + dateInsight() + '<details class="sd-definitions"><summary>일별 비교 수치 보기</summary><div class="v-table-wrap"><table class="v-table"><thead><tr><th>분석 날짜</th><th>비교 날짜</th><th>매출</th><th>비교 매출</th></tr></thead><tbody>' + result.daily.map(row => '<tr><td>' + button(row.date, 'data-sd-date="' + row.date + '"') + '</td><td>' + row.previousDate + '</td><td>' + money(row.sales) + '</td><td>' + money(row.previous) + '</td></tr>').join('') + '</tbody></table></div></details>') + card('<h3>매출 증감액의 구성</h3><p class="v-subtitle">수량 변화 → 판매 1개당 평균 금액 변화 순서</p>' + (e ? '<div class="sd-effects">' + [['판매 수량 변화', e.quantity], ['개당 평균 금액 변화', e.amount], ['전체 매출 변화', e.total]].map(([label, value]) => '<div><div class="v-row v-between"><span>' + label + '</span><strong class="' + tone(value) + '">' + amountChange(value) + '</strong></div><div class="sd-effect-track"><span class="' + tone(value) + '" style="width:' + Math.abs(value) / max * 100 + '%"></span></div></div>').join('') + '</div>' : '<p class="sd-empty">완전한 비교 자료와 비교 기간의 판매 수량이 있어야 계산할 수 있습니다.</p>') + '<p class="sd-explanation">개당 평균 금액은 메뉴 구성과 가격에 따라 달라지며 결제 객단가와 다릅니다. 수치만으로 원인을 확정하지 않고 품절·영업시간 등의 운영 기록을 함께 확인하세요.</p><details class="sd-definitions"><summary>계산식 보기</summary><p>수량 영향 = (현재 수량 − 이전 수량) × 이전 개당 평균 금액<br>금액 영향 = 현재 매출 − 현재 수량 × 이전 개당 평균 금액<br>두 영향의 합 = 현재 매출 − 이전 매출</p></details>') + '</div>');
+  }
+  function productSentence(row) {
+    if (row.previous == null) return '현재 매출 ' + money(row.sales) + '입니다. 비교 자료가 없어 변화 해석을 생략합니다.';
+    return '비교 기간 대비 ' + amountChange(row.delta) + (row.share == null ? '.' : ', 선택 매출의 ' + percent(row.share) + '를 차지합니다.');
   }
   function products() {
-    const rows = result.products.slice().sort((a, b) => state.sort === 'delta' ? (a.delta || 0) - (b.delta || 0) : b.sales - a.sales);
-    return wrap('products', heading('03', '어떤 메뉴에서 변화가 생겼나요?', '매출 비중과 증감액을 함께 보고 점검 순서를 정하세요.') + scopeLine() + card('<div class="v-row v-between"><h3>품목별 판매 실적</h3>' + select('정렬', 'sort', [['sales', '매출 높은 순'], ['delta', '감소액 큰 순']]) + '</div><div class="v-table-wrap"><table class="v-table sd-product-table"><caption class="sd-sr-only">선택 조건의 품목별 판매 실적. 품목 이름을 누르면 집계 상세를 확인합니다.</caption><thead><tr><th>품목</th><th class="right">순매출 / 비중</th><th class="right">비교 순매출</th><th class="right">증감액 / 증감률</th><th class="right">순판매 수량</th><th class="right">취소 수량</th></tr></thead><tbody>' + rows.map(row => '<tr><td>' + button(esc(row.label) + ' ↗', 'data-sd-detail="item" data-value="' + row.id + '"') + '</td><td class="right"><strong>' + money(row.sales) + '</strong><div class="sd-share"><span style="width:' + (row.share || 0) + '%"></span></div><small>' + percent(row.share) + '</small></td><td class="right">' + money(row.previous) + '</td><td class="right ' + tone(row.delta) + '"><strong>' + signed(row.delta) + '</strong><br><small>' + delta(row.sales, row.previous) + '</small></td><td class="right">' + num(row.units) + '개</td><td class="right">' + num(row.cancelled) + '개</td></tr>').join('') + '</tbody></table></div><p class="sd-explanation">품목을 누르면 날짜·시간별 판매 집계까지 확인할 수 있습니다. 매출 비중은 현재 필터의 순매출을 기준으로 하며, 매출 순위는 이익 순위와 다릅니다.</p>'));
+    const rows = result.products.slice().sort((a, b) => { const av = a[state.sort], bv = b[state.sort]; if (av == null && bv == null) return a.label.localeCompare(b.label, 'ko'); if (av == null) return 1; if (bv == null) return -1; return (state.direction === 'asc' ? av - bv : bv - av) || a.label.localeCompare(b.label, 'ko'); });
+    const sortHead = (key, label) => '<th class="right" aria-sort="' + (state.sort === key ? state.direction === 'asc' ? 'ascending' : 'descending' : 'none') + '">' + button(label + ' ' + (state.sort === key ? state.direction === 'asc' ? '↑' : '↓' : '↕'), 'data-sd-sort="' + key + '" aria-label="' + label + ' ' + (state.sort === key && state.direction === 'asc' ? '내림차순' : '오름차순') + ' 정렬"') + '</th>';
+    return wrap('products', heading('03', '품목별 진단', '품목의 매출 변화와 점검할 조건을 함께 확인하세요.') + scopeLine() + card('<h3>품목별 판매 실적</h3><div class="v-table-wrap"><table class="v-table sd-product-table"><caption class="sd-sr-only">품목 클릭으로 행 안의 인사이트를 펼칩니다. 증감액과 증감률은 각각 정렬할 수 있습니다.</caption><thead><tr><th>품목 · 한 줄 진단</th><th class="right">매출 / 비중</th><th class="right">비교 매출</th>' + sortHead('delta', '증감액') + sortHead('rate', '증감률') + '<th class="right">순판매 / 취소</th></tr></thead><tbody>' + (rows.length ? rows.map(row => '<tr data-sd-product="' + row.id + '"><td>' + button(esc(row.label) + (state.expandedItem === row.id ? ' ▴' : ' ▾'), 'data-sd-expand="' + row.id + '" aria-expanded="' + (state.expandedItem === row.id) + '" aria-controls="sd-insight-' + row.id + '"') + '<p class="sd-product-sentence">' + productSentence(row) + '</p></td><td class="right"><strong>' + money(row.sales) + '</strong><div class="sd-share"><span style="width:' + (row.share || 0) + '%"></span></div><small>' + percent(row.share) + '</small></td><td class="right">' + money(row.previous) + '</td><td class="right ' + tone(row.delta) + '">' + amountChange(row.delta) + '</td><td class="right ' + tone(row.delta) + '">' + delta(row.sales, row.previous) + '</td><td class="right">' + num(row.units) + '개 / ' + num(row.cancelled) + '개</td></tr><tr id="sd-insight-' + row.id + '" class="sd-product-insight"' + (state.expandedItem === row.id ? '' : ' hidden') + '><td colspan="6"><div class="sd-inline-insight"><h4>' + esc(row.label) + '에서 확인할 내용</h4><p>' + productSentence(row) + '</p><p>순판매 ' + num(row.units) + '개, 취소 ' + num(row.cancelled) + '개입니다. ' + (row.delta < 0 ? '품절·메뉴 노출·가격 변경 기록을 확인해 보세요.' : '잘 팔린 시간과 준비 수량을 함께 살펴보세요.') + ' 날씨와의 관계는 자료가 없어 판단하지 않습니다.</p>' + button('원자료 근거 보기', 'data-sd-detail="item" data-value="' + row.id + '"') + '</div></td></tr>').join('') : '<tr><td colspan="6" class="sd-empty">선택한 조건의 품목이 없습니다.</td></tr>') + '</tbody></table></div><p class="sd-explanation">매출 비중은 현재 필터의 매출을 기준으로 합니다. 원가가 연결되지 않아 매출 순위를 이익 순위로 해석하지 않습니다.</p>'));
+  }
+  function weekdaySentence(row) {
+    if (!row || row.average == null) return '선택한 요일의 정상 영업 기록이 없어 진단을 생략합니다.';
+    if (row.previousAverage == null || row.previousAverage <= 0) return row.label + ' 일평균 매출은 ' + money(row.average) + '입니다. 비교 기준이 충분하지 않아 증감 해석을 생략합니다.';
+    return row.label + ' 일평균 매출은 ' + money(row.average) + '로, 같은 요일 비교 대비 ' + amountChange(row.average - row.previousAverage) + '.';
   }
   function timing() {
-    const max = Math.max(1, ...result.weekdays.flatMap(row => [row.average || 0, row.previousAverage || 0]));
-    const heatMax = Math.max(1, ...result.heatmap.flatMap(row => row.cells.map(cell => cell.average || 0)));
-    return wrap('timing', heading('04', '언제 운영을 점검해야 할까요?', '요일별 관측 일수가 달라도 비교할 수 있도록 일평균을 사용합니다.') + scopeLine() + '<div class="sd-grid sd-timing">' + card('<h3>요일별 일평균 매출</h3><div class="sd-legend"><span><i></i>분석 기간</span><span><i class="old"></i>비교 기간</span></div><div class="sd-weekdays">' + result.weekdays.map(row => '<button type="button" class="sd-weekday" data-sd-detail="day" data-value="' + row.id + '"><span>' + row.label + '<small>' + row.count + '일 관측</small></span><span class="sd-bar-pair"><i style="width:' + (row.average || 0) / max * 100 + '%"></i><i class="old" style="width:' + (row.previousAverage || 0) / max * 100 + '%"></i></span><span>' + money(row.average) + '<small>비교 ' + money(row.previousAverage) + '</small></span></button>').join('') + '</div>') + card('<h3>요일 × 시간대 매출</h3><p class="v-subtitle">색이 진할수록 해당 시간의 일평균 매출이 높습니다.</p><div class="v-table-wrap"><table class="sd-heatmap"><caption class="sd-sr-only">셀을 선택하면 해당 요일과 시간의 판매 집계를 확인합니다.</caption><thead><tr><th>요일</th>' + Array.from({ length: 12 }, (_, i) => '<th>' + (i + 8) + '시</th>').join('') + '</tr></thead><tbody>' + result.heatmap.map(row => '<tr><th>' + row.label[0] + '</th>' + row.cells.map(cell => '<td><button type="button" data-sd-detail="cell" data-value="' + cell.day + ':' + cell.hour + '"' + (cell.average == null ? ' disabled' : '') + ' style="--heat:' + (cell.average == null ? 0 : .09 + cell.average / heatMax * .85) + '" aria-label="' + row.label + ' ' + cell.hour + '~' + (cell.hour + 1) + '시, 일평균 ' + money(cell.average) + ', 상세 보기" title="' + row.label + ' ' + cell.hour + '시 · ' + money(cell.average) + '">' + (cell.average == null ? '—' : '<span class="sd-sr-only">' + money(cell.average) + '</span>') + '</button></td>').join('') + '</tr>').join('') + '</tbody></table></div><div class="sd-heat-legend"><span>낮음</span><i></i><span>높음</span><small>— 필터 제외 / 관측일 없음</small></div><p class="sd-explanation">셀을 눌러 실제 금액을 확인하세요. 색상은 현재 선택 조건 안의 상대적인 크기이며, 수익성이나 수요 예측을 뜻하지 않습니다.</p>') + '</div>');
-  }
-  function actions() {
-    const f = result.finance, max = Math.max(1, ...f.byCategory.flatMap(row => [row.amount, row.previous]));
-    const key = result.period.start + ':' + result.period.end + ':' + state.comparison + ':' + state.item + ':' + state.hour + ':' + state.dayType;
-    return wrap('actions', heading('05', '오늘 무엇부터 확인하면 좋을까요?', '확인한 근거를 작은 운영 점검으로 연결하세요.') + '<div class="sd-grid">' + card('<div class="v-row v-between"><h3>지출 구조</h3>' + tag('가게 전체 · 품목/시간 필터 제외') + '</div><div class="sd-finance-summary"><div><small>전체 지출</small><strong>' + money(f.expense) + '</strong></div><div><small>전체 매출 − 지출</small><strong>' + money(f.delta) + '</strong></div></div>' + f.byCategory.map(row => '<div class="sd-cost"><div class="v-row v-between"><span>' + row.name + '</span><strong>' + money(row.amount) + '</strong></div><div class="sd-bar-pair"><i style="width:' + row.amount / max * 100 + '%"></i><i class="old" style="width:' + (f.comparisonAvailable ? row.previous / max * 100 : 0) + '%"></i></div><small>비교 ' + money(f.comparisonAvailable ? row.previous : null) + ' · ' + signed(f.comparisonAvailable ? row.amount - row.previous : null) + '</small></div>').join('') + '<p class="sd-explanation">같은 분석 기간의 가게 전체 지출입니다. 품목별 원가 배분 자료가 없어 필터별 이익은 계산하지 않습니다. 매출·지출 차이는 영업이익·보유 현금과 다릅니다.</p>') +
-      card('<div class="v-row v-between"><h3>우선 점검할 일</h3>' + tag('규칙 기반 · 원인 후보') + '</div>' + scopeLine() + (result.actions.length ? '<div class="sd-actions">' + result.actions.map((action, i) => {
-        const checkKey = key + ':' + action.id;
-        return '<div class="sd-action"><div class="sd-action-title"><span class="v-number">0' + (i + 1) + '</span><h4>' + esc(action.title) + '</h4></div><p><b>근거</b> ' + esc(action.evidence) + '</p><p>' + esc(action.task) + '</p><small>확인 지표: ' + esc(action.measure) + '</small><div class="v-row v-between">' + button('근거 집계 보기 ↗', 'data-sd-detail="' + action.kind + '" data-value="' + action.value + '"') + '<label class="sd-check"><input type="checkbox" data-sd-check="' + esc(checkKey) + '"' + (state.checks.has(checkKey) ? ' checked' : '') + '>점검 완료</label></div></div>';
-      }).join('') + '</div>' : '<p class="sd-empty">비교 가능한 판매 자료가 없습니다. 기간 또는 필터를 조정하면 근거에 맞는 점검 항목을 확인할 수 있습니다.</p>') + '<p class="sd-explanation">점검 상태는 이 페이지를 새로고침하면 초기화됩니다. 실행 결과나 예상 매출 증가액을 생성하지 않습니다. 7일 후 같은 요일·시간대와 비교하세요.</p>') + '</div>');
-  }
-  function recordTable(rows, page, modal) {
-    const ordered = rows.slice().sort((a, b) => b.date.localeCompare(a.date) || b.hour - a.hour || a.itemId.localeCompare(b.itemId));
-    const pages = Math.max(1, Math.ceil(rows.length / 8));
-    const index = Math.max(0, Math.min(page, pages - 1));
-    return '<div class="v-table-wrap"><table class="v-table sd-record-table"><caption class="sd-sr-only">취소가 차감된 날짜·시간·품목별 판매 집계</caption><thead><tr><th>날짜</th><th>시간</th><th>품목</th><th class="right">판매 / 취소</th><th class="right">순판매</th><th class="right">순매출</th></tr></thead><tbody>' + (ordered.slice(index * 8, index * 8 + 8).map(row => '<tr><td>' + row.date + '</td><td>' + row.hour + '~' + (row.hour + 1) + '시</td><td>' + esc(D.menu.find(item => item.id === row.itemId)?.name || row.itemId) + '</td><td class="right">' + num(row.quantity) + ' / ' + num(row.cancellations) + '개</td><td class="right">' + num(row.netQuantity) + '개</td><td class="right">' + money(row.netAmount) + '</td></tr>').join('') || '<tr><td colspan="6" class="sd-empty">선택 조건에 해당하는 판매 집계가 없습니다.</td></tr>') + '</tbody></table></div><div class="sd-pagination"><span>' + num(rows.length) + '개 집계 · ' + (index + 1) + ' / ' + pages + ' 페이지</span><div>' + button('이전', 'data-sd-page="' + (index - 1) + '" data-modal="' + modal + '"' + (index === 0 ? ' disabled' : '')) + button('다음', 'data-sd-page="' + (index + 1) + '" data-modal="' + modal + '"' + (index === pages - 1 ? ' disabled' : '')) + '</div></div>';
-  }
-  function records() {
-    return wrap('records', heading('06', '진단의 근거를 직접 확인하세요', '화면에 표시한 수치는 아래 판매 집계에서 계산합니다.') + scopeLine() + card('<div class="v-row v-between"><h3>판매 집계 내역</h3>' + button('현재 조건 CSV 다운로드 ↓', 'data-sd-export', true) + '</div><p class="v-subtitle">순매출 합계 <b>' + money(result.current.sales) + '</b> · 순판매 ' + num(result.current.units) + '개 · 취소 ' + num(result.current.cancelled) + '개</p><div id="sd-records-body">' + recordTable(result.rows, state.page, false) + '</div><p class="sd-explanation">각 행은 날짜·시간·품목별 집계이며 개별 영수증이나 주문이 아닙니다. CSV에는 현재 조건의 전체 집계가 포함됩니다.</p>'));
+    const max = Math.max(1, ...result.weekdays.flatMap(row => [row.average || 0, row.previousAverage || 0])), heatMax = Math.max(1, ...result.heatmap.flatMap(row => row.cells.map(cell => cell.average || 0)));
+    const selected = result.weekdays.find(row => row.id === state.selectedDay), peak = result.weekdays.filter(row => row.average != null).slice().sort((a, b) => b.average - a.average)[0];
+    return wrap('timing', heading('04', '요일·시간대 진단', '정상 영업일 기준의 일평균 매출을 살펴보세요.') + scopeLine() + '<div class="sd-grid sd-timing">' + card('<h3>요일별 일평균 매출</h3><div class="sd-legend"><span><i></i>분석 기간</span><span><i class="old"></i>비교 기간</span></div><div class="sd-weekdays">' + result.weekdays.map(row => '<button type="button" class="sd-weekday" data-sd-weekday="' + row.id + '" aria-pressed="' + (state.selectedDay === row.id) + '"><span>' + row.label + '<small>' + row.count + '일 영업</small></span><span class="sd-bar-pair"><i style="width:' + (row.average || 0) / max * 100 + '%"></i><i class="old" style="width:' + (row.previousAverage || 0) / max * 100 + '%"></i></span><span>' + money(row.average) + '<small>비교 ' + money(row.previousAverage) + '</small></span></button>').join('') + '</div><div class="sd-inline-insight" aria-live="polite"><p>' + weekdaySentence(selected) + '</p>' + (selected?.average == null ? '' : button('선택 요일 판매 근거 보기', 'data-sd-detail="day" data-value="' + state.selectedDay + '"')) + '</div>') + card('<h3>요일 × 2시간대 매출</h3><p class="v-subtitle">색이 진할수록 해당 구간의 일평균 매출이 높습니다.</p><div class="v-table-wrap"><table class="sd-heatmap"><caption class="sd-sr-only">셀을 선택하면 해당 요일과 2시간 구간의 판매 근거를 확인합니다.</caption><thead><tr><th>요일</th>' + A.ranges.slice(1).map(slot => '<th>' + esc(slot.label) + '</th>').join('') + '</tr></thead><tbody>' + result.heatmap.map(row => '<tr><th>' + row.label + '</th>' + row.cells.map(cell => '<td><button type="button" data-sd-detail="cell" data-value="' + cell.day + ':' + cell.hour + '"' + (cell.average == null ? ' disabled' : '') + ' style="--heat:' + (cell.average == null ? 0 : .09 + cell.average / heatMax * .85) + '" aria-label="' + row.label + ' ' + cell.hour + '~' + cell.endHour + '시 일평균 ' + money(cell.average) + '" title="' + row.label + ' ' + cell.hour + '~' + cell.endHour + '시 · ' + money(cell.average) + '">' + (cell.average == null ? '—' : money(cell.average)) + '</button></td>').join('') + '</tr>').join('') + '</tbody></table></div><p class="sd-explanation">17~19시, 19~21시, 21~23시 기준입니다. 끝 시각은 다음 구간에 포함합니다. —는 선택 제외 또는 정상 영업 기록 없음입니다.</p>') + '</div><p class="sd-overall-insight">' + (peak ? '전체 진단: 선택 조건에서 ' + peak.label + '의 일평균 매출이 ' + money(peak.average) + '로 가장 높습니다.' : '전체 진단: 정상 영업 기록이 없어 요일 비교를 생략합니다.') + '</p><div id="sd-relocated-extras">' + extrasRenderer(result) + '</div>');
   }
   function render(period) {
     result = A.analyze(D, period, state);
-    return summary() + movement() + products() + timing() + actions() + records();
+    if (state.selectedDate && !result.daily.some(row => row.date === state.selectedDate)) state.selectedDate = null;
+    return summary() + movement() + products() + timing();
   }
-  function jump(index) {
-    const section = document.querySelectorAll('#viewRoot .v-screen-section')[index];
-    if (section) { section.scrollIntoView({ behavior: 'instant', block: 'start' }); section.focus({ preventScroll: true }); }
-  }
-  function refresh(focusId) {
-    const root = document.getElementById('viewRoot');
-    const scrollTop = root.scrollTop, pageY = window.scrollY;
-    const offsets = Array.from(root.querySelectorAll('.v-screen-inner')).map(el => el.scrollTop);
-    redraw();
-    root.scrollTop = scrollTop;
-    root.querySelectorAll('.v-screen-inner').forEach((el, i) => { el.scrollTop = offsets[i] || 0; });
-    window.scrollTo({ top: pageY, behavior: 'instant' });
-    if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+  function refresh(focusSelector) {
+    const root = document.getElementById('viewRoot'), top = root.scrollTop, pageY = window.scrollY;
+    redraw(); root.scrollTop = top; window.scrollTo({ top: pageY, behavior: 'instant' });
+    if (focusSelector) document.querySelector(focusSelector)?.focus({ preventScroll: true });
   }
   function getDetail(kind, value) {
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     let title = '현재 조건 전체', predicate = () => true, previousPredicate;
     if (kind === 'item') { title = D.menu.find(item => item.id === value)?.name || value; predicate = row => row.itemId === value; }
-    if (kind === 'slot') { const slot = A.ranges.find(row => row.id === value); title = slot.label; predicate = row => row.hour >= slot.start && row.hour < slot.end; }
     if (kind === 'date') { title = value; predicate = row => row.date === value; const previousDate = result.daily.find(row => row.date === value)?.previousDate; previousPredicate = row => row.date === previousDate; }
     if (kind === 'day') { title = dayNames[Number(value)] + '요일'; predicate = row => A.weekday(row.date) === Number(value); }
-    if (kind === 'cell') { const [day, hour] = value.split(':').map(Number); title = dayNames[day] + '요일 ' + hour + '~' + (hour + 1) + '시'; predicate = row => A.weekday(row.date) === day && row.hour === hour; }
+    if (kind === 'cell') { const [day, hour] = value.split(':').map(Number); const endHour = A.ranges.find(row => row.start === hour)?.end || hour + 2; title = dayNames[day] + '요일 ' + hour + '~' + endHour + '시'; predicate = row => A.weekday(row.date) === day && row.hour >= hour && row.hour < endHour; }
     return { title, rows: result.rows.filter(predicate), oldRows: result.oldRows.filter(previousPredicate || predicate) };
+  }
+  const recordTime = row => String(row.hour).padStart(2, '0') + ':' + String(row.minute || 0).padStart(2, '0');
+  function recordTable(rows) {
+    const ordered = rows.slice().sort((a, b) => b.date.localeCompare(a.date) || b.hour - a.hour || (b.minute || 0) - (a.minute || 0) || a.itemId.localeCompare(b.itemId));
+    const pages = Math.max(1, Math.ceil(ordered.length / 8)); detailPage = Math.max(0, Math.min(detailPage, pages - 1));
+    return '<div class="v-table-wrap"><table class="v-table sd-record-table"><caption>선택 조건의 판매 기록</caption><thead><tr><th>날짜</th><th>시간</th><th>품목</th><th>판매 / 취소</th><th>순판매</th><th>매출</th></tr></thead><tbody>' + (ordered.slice(detailPage * 8, detailPage * 8 + 8).map(row => '<tr><td>' + row.date + '</td><td>' + recordTime(row) + '</td><td>' + esc(D.menu.find(item => item.id === row.itemId)?.name || row.itemId) + '</td><td>' + num(row.quantity) + ' / ' + num(row.cancellations) + '개</td><td>' + num(row.netQuantity) + '개</td><td>' + money(row.netAmount) + '</td></tr>').join('') || '<tr><td colspan="6" class="sd-empty">해당 판매 기록이 없습니다.</td></tr>') + '</tbody></table></div><div class="sd-pagination"><span>' + num(rows.length) + '개 기록 · ' + (detailPage + 1) + ' / ' + pages + ' 페이지</span><div>' + button('이전', 'data-sd-page="' + (detailPage - 1) + '"' + (!detailPage ? ' disabled' : '')) + button('다음', 'data-sd-page="' + (detailPage + 1) + '"' + (detailPage === pages - 1 ? ' disabled' : '')) + '</div></div>';
   }
   function showDetail(kind, value) {
     detail = getDetail(kind, value); detailPage = 0;
-    const total = rows => rows.reduce((sum, row) => sum + row.netAmount, 0);
-    const current = total(detail.rows), previous = result.previous ? total(detail.oldRows) : null;
-    document.getElementById('sd-dialog-title').textContent = detail.title + ' · 판매 집계';
-    document.getElementById('sd-dialog-content').innerHTML = scopeLine() + '<div class="sd-detail-totals"><span>현재 <b>' + money(current) + '</b></span><span>비교 <b>' + money(previous) + '</b></span><span>증감 <b class="' + tone(previous == null ? 0 : current - previous) + '">' + signed(previous == null ? null : current - previous) + '</b></span></div><p class="v-metadata">분석 ' + result.period.start + '~' + result.period.end + ' · 비교 ' + result.previousStart + '~' + result.previousEnd + '</p><p class="v-metadata">아래 표는 분석 기간의 집계입니다. 현재 품목·시간대·요일 필터가 함께 적용됩니다.</p><div id="sd-detail-records">' + recordTable(detail.rows, detailPage, true) + '</div>';
+    const total = rows => rows.reduce((sum, row) => sum + row.netAmount, 0), current = total(detail.rows), previous = result.previous ? total(detail.oldRows) : null;
+    document.getElementById('sd-dialog-title').textContent = detail.title + ' · 판매 근거';
+    document.getElementById('sd-dialog-content').innerHTML = scopeLine() + '<div class="sd-detail-totals"><span>현재 <b>' + money(current) + '</b></span><span>비교 <b>' + money(previous) + '</b></span><span class="' + tone(previous == null ? 0 : current - previous) + '">' + amountChange(previous == null ? null : current - previous) + '</span></div><p class="v-metadata">분석 ' + result.period.start + '~' + result.period.end + ' · 비교 ' + result.previousStart + '~' + result.previousEnd + '<br>아래 표는 현재 선택 조건의 10분 단위 판매 기록입니다.</p><div id="sd-detail-records">' + recordTable(detail.rows) + '</div>';
     dialog.showModal();
   }
   function exportCsv() {
     const header = ['자료유형', '분석시작', '분석종료', '비교시작', '비교종료', '품목필터', '시간필터', '요일필터', '집계ID', '일자', '시간', '품목', '판매수량', '취소수량', '순판매수량', '순매출(원)'];
     const escapeCsv = value => '"' + String(value).replace(/^[=+@-]/, "'$&").replace(/"/g, '""') + '"';
-    const lines = [header, ...result.rows.map(row => ['생성 데이터', result.period.start, result.period.end, result.previousStart, result.previousEnd, state.item, state.hour, state.dayType, row.id, row.date, row.hour, D.menu.find(item => item.id === row.itemId)?.name || row.itemId, row.quantity, row.cancellations, row.netQuantity, row.netAmount])];
+    const itemFilter = state.item !== 'all' ? state.item : [state.category, state.subcategory].join('/');
+    const lines = [header, ...result.rows.map(row => ['생성 데이터', result.period.start, result.period.end, result.previousStart, result.previousEnd, itemFilter, result.range.label, daysText(), row.id, row.date, recordTime(row), D.menu.find(item => item.id === row.itemId)?.name || row.itemId, row.quantity, row.cancellations, row.netQuantity, row.netAmount])];
     const blob = new Blob(['\uFEFF' + lines.map(row => row.map(escapeCsv).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url; link.download = 'iM파트너_매출진단_생성자료_' + result.period.start + '_' + result.period.end + '.csv';
@@ -132,32 +123,23 @@
   function bind(callback) {
     redraw = callback;
     dialog = document.createElement('dialog'); dialog.className = 'v-modal sd-modal'; dialog.id = 'sd-dialog'; dialog.setAttribute('aria-labelledby', 'sd-dialog-title'); dialog.setAttribute('data-lenis-prevent', '');
-    dialog.innerHTML = '<div class="v-row v-between">' + tag('생성 POS · 집계 상세') + button('닫기', 'data-sd-close aria-label="판매 집계 상세 닫기"') + '</div><h2 id="sd-dialog-title"></h2><div id="sd-dialog-content"></div>';
-    document.body.append(dialog);
-    document.addEventListener('change', event => {
-      const key = event.target.dataset.sdFilter;
-      if (key) { state[key] = event.target.value; state.page = 0; refresh(event.target.id); }
-      if (event.target.hasAttribute('data-sd-check')) { const value = event.target.dataset.sdCheck; if (event.target.checked) state.checks.add(value); else state.checks.delete(value); }
-    });
+    dialog.innerHTML = '<div class="v-row v-between"><span class="v-tag neutral">생성 POS · 판매 근거</span>' + button('닫기', 'data-sd-close aria-label="판매 근거 닫기"') + '</div><h2 id="sd-dialog-title"></h2><div id="sd-dialog-content"></div>'; document.body.append(dialog);
+    document.addEventListener('change', event => { const key = event.target.dataset.sdFilter; if (!['category', 'subcategory', 'item', 'hour'].includes(key)) return; state[key] = event.target.value; if (key === 'category') state.subcategory = 'all'; if (key === 'category' || key === 'subcategory') state.item = 'all'; state.expandedItem = null; refresh('#sd-' + key); });
     document.addEventListener('click', event => {
-      const el = event.target.closest('[data-sd-jump], [data-sd-reset], [data-sd-detail], [data-sd-close], [data-sd-page], [data-sd-export]');
-      if (!el) return;
-      if (el.hasAttribute('data-sd-jump')) jump(Number(el.dataset.sdJump));
-      if (el.hasAttribute('data-sd-reset')) { Object.assign(state, { comparison: 'previous', item: 'all', hour: 'all', dayType: 'all', sort: 'sales', page: 0 }); refresh('sd-comparison'); }
+      const el = event.target.closest('[data-sd-reset], [data-sd-detail], [data-sd-close], [data-sd-page], [data-sd-export], [data-sd-day], [data-sd-sort], [data-sd-expand], [data-sd-weekday], [data-sd-date], [data-sd-toggle]'); if (!el) return;
+      if (el.hasAttribute('data-sd-reset')) { Object.assign(state, { category: 'all', subcategory: 'all', item: 'all', hour: 'all', days: [], comparison: 'weekday', sort: 'sales', direction: 'desc', expandedItem: null, selectedDate: null }); refresh('[data-sd-reset]'); }
+      if (el.hasAttribute('data-sd-day')) { const day = Number(el.dataset.sdDay); state.days = el.dataset.sdDay === 'all' ? [] : state.days.includes(day) ? state.days.filter(value => value !== day) : [...state.days, day]; state.expandedItem = null; refresh('[data-sd-day="' + el.dataset.sdDay + '"]'); }
+      if (el.hasAttribute('data-sd-toggle')) { state.collapsed = !state.collapsed; refresh('[data-sd-toggle]'); }
+      if (el.hasAttribute('data-sd-sort')) { state.direction = state.sort === el.dataset.sdSort && state.direction === 'asc' ? 'desc' : 'asc'; state.sort = el.dataset.sdSort; refresh('[data-sd-sort="' + state.sort + '"]'); }
+      if (el.hasAttribute('data-sd-expand')) { state.expandedItem = state.expandedItem === el.dataset.sdExpand ? null : el.dataset.sdExpand; refresh('[data-sd-expand="' + el.dataset.sdExpand + '"]'); }
+      if (el.hasAttribute('data-sd-weekday')) { state.selectedDay = el.dataset.sdWeekday; refresh('[data-sd-weekday="' + state.selectedDay + '"]'); }
+      if (el.hasAttribute('data-sd-date')) { state.selectedDate = el.dataset.sdDate; refresh('#sd-point-' + state.selectedDate); }
       if (el.hasAttribute('data-sd-detail')) showDetail(el.dataset.sdDetail, el.dataset.value);
       if (el.hasAttribute('data-sd-close')) dialog.close();
       if (el.hasAttribute('data-sd-export')) exportCsv();
-      if (el.hasAttribute('data-sd-page')) {
-        const modal = el.dataset.modal === 'true', page = Number(el.dataset.sdPage);
-        if (modal) detailPage = page; else state.page = page;
-        const target = document.getElementById(modal ? 'sd-detail-records' : 'sd-records-body');
-        target.innerHTML = recordTable(modal ? detail.rows : result.rows, page, modal);
-        target.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
-      }
+      if (el.hasAttribute('data-sd-page')) { detailPage = Number(el.dataset.sdPage); document.getElementById('sd-detail-records').innerHTML = recordTable(detail.rows); document.querySelector('#sd-detail-records button:not(:disabled)')?.focus({ preventScroll: true }); }
     });
-    document.addEventListener('keydown', event => {
-      if (event.target.matches('g[data-sd-detail]') && ['Enter', ' '].includes(event.key)) { event.preventDefault(); showDetail(event.target.dataset.sdDetail, event.target.dataset.value); }
-    });
+    document.addEventListener('keydown', event => { if (event.target.matches('g[data-sd-date]') && ['Enter', ' '].includes(event.key)) { event.preventDefault(); state.selectedDate = event.target.dataset.sdDate; refresh('#sd-point-' + state.selectedDate); } });
   }
-  window.IM_SALES_DIAGNOSIS = { render, bind };
+  window.IM_SALES_DIAGNOSIS = { render, bind, setExtrasRenderer: fn => { extrasRenderer = typeof fn === 'function' ? fn : () => ''; } };
 })();

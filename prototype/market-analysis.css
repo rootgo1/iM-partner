@@ -59,7 +59,7 @@
 .ma-legend i { width: 15px; height: 5px; background: #43997d; border-radius: 3px; }
 .ma-legend i.old { background: #b6c3bd; }
 .ma-bars { display: grid; gap: 6px; margin-top: 15px; }
-.ma-bar-row { display: grid; grid-template-columns: 76px minmax(20px, 1fr) 90px; align-items: center; gap: 12px; min-height: 58px; text-align: left; border: 0; border-radius: 8px; padding: 8px; background: transparent; color: #55765f; cursor: pointer; font-size: 12px; }
+.ma-bar-row { display: grid; grid-template-columns: 100px minmax(20px, 1fr) 90px; align-items: center; gap: 12px; min-height: 58px; text-align: left; border: 0; border-radius: 8px; padding: 8px; background: transparent; color: #55765f; cursor: pointer; font-size: 12px; }
 .ma-bar-row:hover:not(:disabled) { background: #f4f8f4; }
 .ma-bar-row > span:last-child { text-align: right; }
 .ma-bar-row small { display: block; font-size: 10px; color: #809184; margin-top: 5px; }
@@ -146,4 +146,27 @@
   .ma-flow-branches strong { font-size: 24px; }
   .ma-quality-facts { grid-template-columns: 1fr; }
   .ma-modal { padding: 18px; }
+}
+
+/* Approved meeting layout: a fixed storefront and ten-minute observations. */
+.ma-fixed-camera { display: grid; gap: 8px; min-width: 108px; color: #657f70; font-size: 12px; }
+.ma-fixed-camera strong { color: #2a634d; font-size: 16px; font-weight: 700; }
+.ma-day-field { display: grid; gap: 9px; flex: 1 1 340px; color: #526f5d; font-size: 12px; }
+.ma-day-field small { color: #748a7b; font-weight: 400; margin-left: 8px; }
+.ma-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.ma-days .v-button { min-width: 39px; min-height: 40px; padding: 8px 10px; }
+.ma-ten-minute-scroll { max-height: 442px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; margin-top: 12px; padding-right: 5px; }
+.ma-ten-minute-scroll .ma-bars { margin-top: 0; }
+.ma-ten-minute-scroll:focus-visible { outline: 2px solid #4b9e90; outline-offset: 3px; border-radius: 6px; }
+.ma-change { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ma-change.is-up { color: #bd403e; }
+.ma-change.is-down { color: #267765; }
+.ma-change.is-neutral { color: #708079; }
+.ma-relocated-extras { min-width: 0; display: grid; gap: 20px; }
+@media (max-width: 760px) {
+  .ma-day-field { flex-basis: 100%; }
+  .ma-days { gap: 5px; }
+  .ma-days .v-button { min-width: 32px; min-height: 44px; padding: 7px 9px; }
+  .ma-ten-minute-scroll .ma-bar-row { grid-template-columns: 86px minmax(16px, 1fr) 68px; gap: 6px; font-size: 11px; }
+  .ma-card .ma-row .ma-field { width: 100%; }
 }

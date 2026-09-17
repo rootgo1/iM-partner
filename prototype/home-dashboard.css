@@ -1,0 +1,216 @@
+/* Home: generous feature banner, compact guidance and a shared narrow widget column. */
+.sidebar .demo-label { font-size: 12px; line-height: 1.65; font-weight: 600; }
+#profileStoreName, #profileMenuStore { white-space: normal; overflow-wrap: anywhere; }
+.v-home-board { display: grid; grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 390px); gap: 22px; min-width: 0; }
+.v-home-primary, .v-home-secondary { display: grid; min-width: 0; min-height: 0; gap: 22px; }
+.v-home-primary { grid-template-rows: minmax(0, 1fr) auto; }
+.v-home-secondary { grid-template-rows: minmax(0, 1.6fr) minmax(0, 1fr); }
+.v-screen-section--dashboard-1 .v-feature-banner,
+.v-screen-section--dashboard-1 .v-finance-thermo-card { min-height: 0; height: auto; }
+.v-home-board .v-feature-banner { background: linear-gradient(120deg, #477b6a, #69a784 65%, #a6cd77); }
+.v-home-board .v-feature-banner[data-banner-theme="market"] { background: linear-gradient(120deg, #356e70, #62a794 65%, #9bc995); }
+.v-home-board .v-feature-banner[data-banner-theme="support"] { background: linear-gradient(120deg, #557559, #84a676 65%, #b8cb7d); }
+.v-home-board .v-feature-banner[data-banner-theme="secretary"] { background: linear-gradient(120deg, #496a75, #719e9b 65%, #9ac6ac); }
+.v-home-board .v-feature-banner[data-banner-theme="aftercare"] { background: linear-gradient(120deg, #436e60, #72a17b 65%, #a8c97a); }
+.v-home-board .v-feature-banner-copy { width: 66%; padding: clamp(28px, 3vw, 48px) 0 65px clamp(28px, 3vw, 48px); }
+.v-home-board .v-feature-banner h1 { margin-top: 24px; font-size: clamp(32px, 2.9vw, 55px); line-height: 1.34; }
+.v-home-board .v-feature-banner-copy > p { font-size: clamp(14px, 1.05vw, 18px); line-height: 1.8; margin-top: 20px; }
+.v-home-board .v-feature-banner-action { margin-top: 24px; min-height: 44px; padding: 0 19px; font-size: 14px; }
+.v-home-board .v-feature-banner-image { top: 54px; bottom: 64px; right: 10px; width: 37%; }
+.v-home-board .v-feature-banner-image img { width: 100%; max-width: 430px; }
+.v-home-board .v-feature-banner-image::before { width: 94%; }
+.v-home-board .v-feature-banner-image span { width: 78%; }
+.v-home-board .v-feature-banner-footer { left: clamp(28px, 3vw, 48px); right: 28px; bottom: 24px; }
+.v-home-board .v-finance-thermo-card { padding: 24px 22px; background: linear-gradient(150deg, #213c41, #31544a 60%, #557e61); }
+.v-home-board .v-finance-thermo-head { position: relative; display: block; }
+.v-home-board .v-finance-thermo-head p { font-size: 11px; padding-right: 82px; }
+.v-home-board .v-finance-thermo-head h2 { font-size: 23px; margin-top: 12px; }
+.v-home-board .v-finance-thermo-head > span { position: absolute; top: -2px; right: 0; font-size: 10px; padding: 5px 7px; }
+.v-home-board .v-finance-thermo-main { flex: 1; min-height: 0; grid-template-columns: minmax(82px, .85fr) minmax(0, 1.15fr); grid-template-rows: minmax(0, 1fr); gap: 15px; margin: 18px 0; }
+.v-home-board .v-finance-thermo-gauge { min-height: 0; height: auto; align-self: stretch; grid-template-rows: minmax(0, 1fr) auto auto; align-content: stretch; padding: 14px 6px; gap: 9px; }
+.v-home-board .v-finance-thermometer { height: 100%; max-height: 320px; min-height: 0; }
+.v-home-board .v-finance-thermometer-tube { height: calc(100% - 32px); }
+.v-home-board .v-finance-thermometer-marks { height: calc(100% - 65px); }
+.v-home-board .v-finance-thermo-gauge-label { flex-wrap: wrap; column-gap: 4px; row-gap: 0; }
+.v-home-board .v-finance-thermo-gauge-label small { font-size: 10px; }
+.v-home-board .v-finance-thermo-basis { font-size: 11px; }
+.v-home-board .v-finance-thermo-summary > span:first-child { font-size: 11px; }
+.v-home-board .v-finance-thermo-summary h3 { font-size: 14px; line-height: 1.6; }
+.v-home-board .v-finance-thermo-summary h3 strong { font-size: clamp(34px, 2.8vw, 49px); line-height: 1.2; margin-top: 6px; }
+.v-home-board .v-finance-thermo-compare { width: fit-content; grid-template-columns: max-content 14px max-content; gap: 9px; margin-top: 14px; padding: 9px 10px; }
+.v-home-board .v-finance-thermo-compare small { font-size: 10px; }
+.v-home-board .v-finance-thermo-compare strong { font-size: 14px; margin-top: 3px; }
+.v-home-board .v-finance-thermo-change { margin-top: 10px; font-size: 11px; }
+.v-home-board .v-finance-thermo-notice { margin-top: 0; font-size: 11px; line-height: 1.6; }
+.v-home-guidance.v-card { margin: 0; padding: 17px 26px; border: 1px solid #dce8e5; border-radius: 22px; color: #344f46; background: #fff; box-shadow: 0 8px 24px #22483b07; overflow: visible; }
+.v-home-guidance::after { display: none; }
+.v-home-guidance .v-guidance-content { display: flex; flex: 0 0 auto; flex-direction: column; min-height: auto; margin-top: 0; }
+.v-home-action-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.v-home-action-list article { min-width: 0; padding: 0 26px 0 0; }
+.v-home-action-list article + article { padding: 0 0 0 26px; border-left: 1px solid #e3ebe7; }
+.v-home-action-list article > span { display: block; font-size: 17px; line-height: 1.5; font-weight: 700; letter-spacing: -.025em; color: #00836b; }
+.v-home-action-list article + article > span { color: #537a2c; }
+.v-home-guidance .v-home-action-list h3 { font-size: clamp(18px, 1.2vw, 22px); line-height: 1.45; word-break: keep-all; text-wrap: pretty; margin: 6px 0 0; font-weight: 700; letter-spacing: -.04em; color: #344f46; }
+.v-home-guidance-bottom { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 14px; row-gap: 4px; margin-top: 10px; padding-top: 6px; border-top: 1px solid #edf1ef; }
+.v-home-guide-meta { display: contents; }
+.v-home-guide-facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; column-gap: 24px; row-gap: 5px; }
+.v-home-guide-facts > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 12px; color: #6b8076; }
+.v-home-guide-facts strong { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: #344f46; }
+.v-home-guidance .v-guidance-action { width: auto; min-height: 28px; padding: 4px 11px; margin: 0; border-radius: 8px; font-size: 12px; line-height: 1.4; font-weight: 500; color: #496c5d !important; background: #f4f7f5 !important; border-color: #dce6df !important; }
+.v-home-guidance .v-guidance-action:hover { color: #294c3b !important; background: #eaf1ec !important; border-color: #c4d7ca !important; }
+.v-home-guidance-note { min-width: 0; margin: 0; color: #78877f; font-size: 11px; line-height: 1.5; word-break: keep-all; }
+.v-home-guidance .v-guidance-empty { color: #294b3e; background: #f5f8f5; }
+.v-home-guidance .v-guidance-empty h3 { color: #294b3e; }
+.v-home-guidance .v-guidance-empty p { color: #607369; }
+.v-weather-widget { min-width: 0; min-height: 0; border-radius: 22px; padding: 24px 22px; color: white; background: radial-gradient(ellipse at 86% 8%, #8ccbd699, transparent 50%), linear-gradient(150deg, #387694, #649cb0 75%, #91b8bd); display: flex; flex-direction: column; box-shadow: 0 10px 24px #26576212; }
+.v-weather-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.v-weather-heading h2 { font-size: 20px; color: #fff; }
+.v-weather-heading > span { font-size: 10px; color: #effaff; border: 1px solid #ffffff40; background: #ffffff10; border-radius: 8px; padding: 4px 7px; }
+.v-weather-current { display: flex; align-items: center; justify-content: space-between; margin: auto 0; padding: 8px 0; }
+.v-weather-current strong { display: block; font-size: clamp(50px, 3.2vw, 62px); font-weight: 300; line-height: 1.1; letter-spacing: -.05em; }
+.v-weather-current p { margin-top: 4px; font-size: 12px; color: white; }
+.v-weather-current small { display: block; margin-top: 4px; color: #f0f8fa; font-size: 11px; }
+.v-weather-sun { width: 78px; filter: drop-shadow(0 0 15px #fbe6a359); }
+.v-weather-sun svg { display: block; width: 100%; }
+.v-weather-forecast { background: #ffffff12; border: 1px solid #ffffff24; border-radius: 14px; padding: 9px 12px; }
+.v-weather-forecast-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.v-weather-forecast-head > span { font-size: 11px; color: #f3fafc; }
+.v-weather-forecast-head > div { display: flex; gap: 5px; }
+.v-weather-forecast-head button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid #ffffff45; border-radius: 8px; background: #ffffff16; color: white; font-size: 20px; line-height: 1; }
+.v-weather-forecast-head button:hover { background: #ffffff35; }
+.v-weather-hourly { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.v-weather-hourly > div { display: grid; justify-items: center; gap: 5px; }
+.v-weather-hourly span { font-size: 12px; color: #f3fafc; }
+.v-weather-hourly svg { width: 26px; height: 26px; }
+.v-weather-hourly strong { font-size: 16px; font-weight: 500; }
+.v-weather-note { font-size: 10px; line-height: 1.5; margin-top: 10px; color: #ecf5f9; }
+@media (prefers-reduced-motion: reduce) {
+  .v-home-board .v-feature-banner, .v-home-board .v-feature-banner-copy,
+  .v-home-board .v-feature-banner-image img { animation: none !important; transition: none !important; }
+}
+@media (min-width: 1101px) and (min-height: 680px) {
+  .app-shell.home-view { height: 100dvh; min-height: 0; overflow: hidden; }
+  .home-view .main { height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .home-view .topbar { flex: 0 0 80px; min-height: 80px; }
+  .home-view .content.dashboard-view { flex: 1; min-height: 0; padding: 0; margin: 0; max-width: none; overflow: hidden; }
+  .dashboard-view #viewRoot { height: 100%; overflow: clip; scrollbar-gutter: auto; }
+  .dashboard-view .v-screen-section { height: 100%; min-height: 0; padding: 22px 24px 14px; }
+  .dashboard-view .v-screen-inner { height: 100%; min-height: 0; max-width: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .v-home-board { flex: 1; min-height: 0; width: 100%; }
+  .dashboard-view .v-footer { flex: 0 0 auto; font-size: 10px; line-height: 1.6; margin: 0; }
+  .home-view.chat-open .ai-panel { position: fixed; top: 0; right: 0; z-index: 50; height: 100dvh; box-shadow: -12px 0 35px #234b4025; }
+}
+@media (min-width: 1101px) and (max-height: 950px) and (min-height: 680px) {
+  .home-view .topbar { flex-basis: 64px; min-height: 64px; height: 64px; }
+  .dashboard-view .v-screen-section { padding: 16px 20px 10px; }
+  .v-home-board, .v-home-primary, .v-home-secondary { gap: 14px; }
+  .v-home-primary { grid-template-rows: minmax(0, 1fr) auto; }
+  .v-home-board .v-feature-banner-copy { padding: 26px 0 54px 30px; }
+  .v-home-board .v-feature-banner-kicker { font-size: 11px; padding: 6px 9px; }
+  .v-home-board .v-feature-banner h1 { margin-top: 18px; font-size: clamp(30px, 2.65vw, 40px); }
+  .v-home-board .v-feature-banner-copy > p { font-size: 13px; margin-top: 14px; }
+  .v-home-board .v-feature-banner-action { margin-top: 18px; min-height: 38px; font-size: 12px; }
+  .v-home-board .v-feature-banner-footer { left: 30px; right: 22px; bottom: 18px; }
+  .v-home-board .v-feature-banner-controls button { width: 32px; height: 32px; }
+  .v-home-board .v-finance-thermo-card { padding: 17px 16px; }
+  .v-home-board .v-finance-thermo-head h2 { font-size: 21px; margin-top: 9px; }
+  .v-home-board .v-finance-thermo-head p { font-size: 10px; }
+  .v-home-board .v-finance-thermo-main { margin: 12px 0; gap: 10px; }
+  .v-home-board .v-finance-thermo-gauge { padding: 10px 5px; gap: 5px; }
+  .v-home-board .v-finance-thermometer { height: 100%; max-height: 260px; }
+  .v-home-board .v-finance-thermo-compare { gap: 6px; padding: 8px; margin-top: 10px; }
+  .v-home-board .v-finance-thermo-compare strong { font-size: 13px; }
+  .v-home-board .v-finance-thermo-summary h3 strong { font-size: 35px; }
+  .v-home-board .v-finance-thermo-notice { font-size: 10px; }
+  .v-home-board .v-finance-thermo-basis { font-size: 10px; }
+  .v-home-board .v-finance-thermo-summary > span:first-child { font-size: 10px; }
+  .v-home-guidance.v-card { padding: 12px 22px; }
+  .v-home-action-list article { padding-right: 20px; }
+  .v-home-action-list article + article { padding-left: 20px; }
+  .v-home-action-list article > span { font-size: 16px; }
+  .v-home-guidance .v-home-action-list h3 { font-size: 18px; line-height: 1.4; margin-top: 5px; }
+  .v-home-guidance-bottom { margin-top: 8px; padding-top: 6px; column-gap: 8px; }
+  .v-home-guide-facts { column-gap: 15px; }
+  .v-home-guide-facts > span { font-size: 11px; gap: 6px; }
+  .v-home-guide-facts strong { font-size: 14px; }
+  .v-home-guidance .v-guidance-action { min-height: 26px; padding: 4px 10px; font-size: 11px; }
+  .v-home-guidance-note { font-size: 10px; }
+  .v-weather-widget { padding: 17px 16px; }
+  .v-weather-heading h2 { font-size: 18px; }
+  .v-weather-current { padding: 8px 0; gap: 8px; }
+  .v-weather-current > div:first-child { display: grid; grid-template-columns: auto auto; column-gap: 10px; align-items: center; }
+  .v-weather-current strong { grid-row: 1 / 3; }
+  .v-weather-current p { align-self: end; }
+  .v-weather-current small { align-self: start; }
+  .v-weather-current strong { font-size: 44px; }
+  .v-weather-current p { font-size: 12px; margin-top: 3px; }
+  .v-weather-current small { font-size: 10px; margin-top: 3px; }
+  .v-weather-sun { width: 43px; flex-shrink: 0; }
+  .v-weather-forecast { padding: 7px 10px; }
+  .v-weather-forecast-head button { width: 25px; height: 25px; }
+  .v-weather-hourly { margin-top: 5px; }
+  .v-weather-hourly > div { gap: 3px; }
+  .v-weather-hourly svg { width: 21px; height: 21px; }
+  .v-weather-hourly strong { font-size: 14px; }
+  .v-weather-note { font-size: 9px; margin-top: 8px; }
+  .v-weather-note br { display: none; }
+}
+@media (min-width: 1101px) and (min-height: 680px) and (max-height: 720px) {
+  .v-home-guidance.v-card { padding-top: 9px; padding-bottom: 9px; }
+  .v-home-action-list article { padding-top: 0; padding-bottom: 0; }
+  .v-home-guidance-bottom { margin-top: 8px; padding-top: 6px; }
+  .v-home-board .v-finance-thermo-gauge { padding: 6px 4px; gap: 3px; }
+  .v-home-board .v-finance-thermo-basis { font-size: 9px; line-height: 1.4; }
+  .v-home-board .v-finance-thermo-gauge-label strong { font-size: 13px; }
+  .v-home-board .v-finance-thermo-gauge-label small { font-size: 9px; }
+  .v-home-board .v-finance-thermo-summary > span:first-child { display: none; }
+  .v-home-board .v-finance-thermo-summary h3 { font-size: 12px; line-height: 1.4; }
+  .v-home-board .v-finance-thermo-summary h3 strong { font-size: 34px; margin-top: 4px; }
+  .v-home-board .v-finance-thermo-compare { margin-top: 8px; padding: 6px 8px; }
+  .v-home-board .v-finance-thermo-change { margin-top: 6px; font-size: 10px; }
+  .v-weather-widget { padding-top: 12px; padding-bottom: 12px; }
+  .v-weather-current strong { font-size: 40px; }
+  .v-weather-current { padding: 4px 0; }
+  .v-weather-note { margin-top: 6px; }
+  .v-weather-forecast { padding-top: 4px; padding-bottom: 4px; }
+  .v-weather-hourly svg { width: 19px; height: 19px; }
+}
+@media (min-width: 1101px) and (max-width: 1200px) and (min-height: 680px) {
+  .v-home-primary { grid-template-rows: minmax(0, 1fr) auto; }
+  .v-home-secondary { grid-template-rows: minmax(0, 1.45fr) minmax(0, 1fr); }
+  .v-home-board .v-feature-banner-copy { padding: 22px 0 50px 24px; }
+  .v-home-board .v-feature-banner h1 { font-size: 26px; margin-top: 14px; }
+  .v-home-board .v-feature-banner-copy > p { font-size: 12px; margin-top: 10px; }
+  .v-home-board .v-feature-banner-action { margin-top: 12px; min-height: 34px; }
+}
+@media (max-width: 1100px), (max-height: 679px) {
+  .v-home-board { grid-template-columns: 1fr; }
+  .v-home-primary, .v-home-secondary { grid-template-rows: auto; }
+  .v-home-secondary { grid-template-columns: 1fr 1fr; }
+  .v-screen-section--dashboard-1 .v-feature-banner { min-height: 440px; }
+  .v-home-board .v-finance-thermo-main { min-height: 250px; }
+  .v-home-guidance .v-guidance-content { flex: 0 0 auto; min-height: auto; justify-content: flex-start; }
+  .v-home-guidance-bottom { margin-top: 12px; }
+}
+@media (max-width: 760px) {
+  .v-home-primary, .v-home-secondary, .v-home-board { gap: 16px; }
+  .v-home-secondary { grid-template-columns: 1fr; }
+  .v-screen-section--dashboard-1 .v-feature-banner { min-height: 495px; }
+  .v-home-board .v-feature-banner-copy { width: 100%; padding: 24px 22px 190px; }
+  .v-home-board .v-feature-banner h1 { font-size: 29px; margin-top: 17px; }
+  .v-home-board .v-feature-banner-copy > p { font-size: 12px; margin-top: 14px; }
+  .v-home-board .v-feature-banner-action { font-size: 12px; margin-top: 18px; }
+  .v-home-board .v-feature-banner-image { top: auto; bottom: 48px; width: 43%; height: 155px; right: 12px; }
+  .v-home-board .v-feature-banner-footer { left: 22px; right: 22px; bottom: 18px; }
+  .v-home-guidance.v-card { padding: 16px; }
+  .v-home-action-list { grid-template-columns: 1fr; gap: 13px; }
+  .v-home-action-list article { padding: 0; }
+  .v-home-action-list article + article { padding: 13px 0 0; border-left: 0; border-top: 1px solid #e3ebe7; }
+  .v-home-guidance .v-home-action-list h3 { font-size: 18px; }
+  .v-home-guide-facts { row-gap: 6px; }
+  .v-home-guidance-bottom { grid-template-columns: minmax(0, 1fr) auto; }
+  .v-home-guidance .v-guidance-action { width: auto; min-height: 32px; font-size: 12px; }
+  .v-home-guidance-note { font-size: 10px; }
+  .v-weather-widget { min-height: 330px; }
+  .v-weather-forecast-head button { width: 36px; height: 36px; }
+}

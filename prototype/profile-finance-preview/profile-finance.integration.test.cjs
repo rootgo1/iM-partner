@@ -36,7 +36,7 @@ assert.match(ui, /navigate\('dashboard'\)/);
 assert.match(ui, /#financeThermoTitle/);
 assert.match(ui, /profileMenuItems\(\)/);
 assert.match(ui, /event\.key === 'Home' \|\| event\.key === 'End'/);
-assert.match(ui, /state\.profile\.name \+ ' 프로필 메뉴, 나의 금융 온도 '/);
+assert.match(ui, /state\.profile\.name \+ ' 프로필 메뉴, 나의 가게 온도 '/);
 assert.match(ui, /100 - value/);
 assert.match(ui, /나의 금융 체온계/);
 assert.match(ui, /연결 데이터 /);
@@ -59,10 +59,10 @@ assert.match(menuCss, /\.sidebar-account-name-row\s*\{/);
 assert.match(component, /if \(settings\.buttonRole === 'menuitem'\) host\.setAttribute\('role', 'none'\);/);
 
 const current = D.financialIndex(new Date('2026-09-12T12:00:00+09:00'));
-assert.equal(current.value.toFixed(1), '51.2');
-assert.equal(current.previousValue.toFixed(1), '59.9');
-assert.equal((current.value - current.previousValue).toFixed(1), '-8.7');
-assert.equal(current.asOf, '2026-09-02');
-assert.equal(current.stale, true);
+assert.equal(current.value.toFixed(1), '45.4');
+assert.equal(current.previousValue.toFixed(1), '46.1');
+assert.equal((current.value - current.previousValue).toFixed(1), '-0.7');
+assert.equal(current.asOf, '2026-09-12');
+assert.equal(current.stale, false);
 
 console.log('PASS profile finance is integrated with verified demo metrics, guarded navigation, and accessible menu behavior');

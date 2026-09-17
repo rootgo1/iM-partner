@@ -81,10 +81,11 @@
     section('01  매출과 지출', '매출 ' + money(a.sales) + ' (' + pct(a.salesRate) + ')  /  지출 ' + money(a.expense) + ' (' + pct(a.expenseRate) + ')\n매출·지출 차이 ' + money(a.delta) + ' - 영업이익·현금잔액이 아닙니다.');
     section('02  데이터에서 찾은 요인 후보', options.cause);
     section('03  비용 점검', options.cost);
-    section('04  다음 실행', a.action + '\n매입금액 상위 품목의 재고·폐기를 확인하고, 같은 요일·시간의 판매 기록을 비교해 보세요.');
+    const actions = (options.actions || []).map((action, index) => (index + 1) + '. ' + action.title + '\n' + action.evidence);
+    section('04  다음 실행', (actions.length ? actions.join('\n') : a.action) + '\n직접 수행한 뒤 실행 기록을 남기면 실행일을 제외한 전후 각각 7일의 같은 영업시간 매출을 비교할 수 있습니다. 실제 성과가 아닌 시연 자료입니다.');
     const questions = (options.discussion || []).slice(-3).map(q => String(q).length > 85 ? String(q).slice(0, 85) + '…' : String(q));
     if (questions.length) section('05  요청한 분석 질문', questions.map((q, i) => (i + 1) + '. ' + q.replace(/\s+/g, ' ')).join('\n'));
-    section('출처 및 해석 범위', '로컬 생성 POS·지출·매입·상권 비교 자료입니다. 실제 DB·카드사·통신사·외부 AI와 연결되지 않았습니다. 유동인구·카드소비는 각각 시간대 최댓값을 100으로 환산한 상대 지수이며 개인의 구매전환율이 아닙니다. 고객층·방문자·재고·금융 효과·체온계 점수는 근거가 없어 계산하지 않습니다. 프로필 수정은 가상 자료의 대상을 변경하지 않습니다.');
+    section('출처 및 해석 범위', '같은 가상 고깃집의 생성 POS·지출·매입·CCTV와 별도 상권 표본을 사용합니다. 실제 DB·카드사·통신사·외부 AI는 연결하지 않았습니다. 유동인구·카드소비의 상대 지수 차이는 개인의 구매전환율이 아닙니다. 실제 고객층·재고·금융 효과는 판단하지 않습니다. 매출과 지출의 차이는 순이익·현금잔액이 아니며, 기록 전후의 변화가 행동의 효과임을 입증하지 않습니다. 프로필 수정은 가상 자료의 대상을 변경하지 않습니다.');
     pages.forEach((page, index) => {
       const c = page.getContext('2d');
       c.strokeStyle = '#dfe9e3'; c.beginPath(); c.moveTo(margin, 1657); c.lineTo(width - margin, 1657); c.stroke();

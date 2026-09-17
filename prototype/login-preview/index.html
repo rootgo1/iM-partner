@@ -62,6 +62,11 @@
 
           <p class="login-status" id="loginStatus" role="status" aria-live="polite"></p>
           <button class="login-button" id="loginButton" type="button"><span>로그인</span></button>
+          <nav class="account-help" aria-label="계정 도움말">
+            <button type="button" data-account-demo="signup">회원가입</button>
+            <button type="button" data-account-demo="find-id">아이디 찾기</button>
+            <button type="button" data-account-demo="reset-password">비밀번호 찾기</button>
+          </nav>
           <noscript><p class="login-status error">로그인 화면을 이용하려면 JavaScript를 켜 주세요.</p></noscript>
         </div>
 
@@ -69,6 +74,18 @@
     </section>
   </main>
 
+  <dialog class="account-demo" id="accountDemoDialog" aria-labelledby="accountDemoTitle" aria-describedby="accountDemoNotice">
+    <div class="account-demo-header"><span class="account-demo-badge">계정 기능 시연</span><button class="account-demo-close" id="accountDemoClose" type="button" aria-label="계정 시연 닫기">닫기</button></div>
+    <h2 id="accountDemoTitle"></h2>
+    <p class="account-demo-notice" id="accountDemoNotice">입력 화면을 체험하는 시연입니다. 실제 계정이나 개인정보 대신 예시 값을 입력해 주세요. 입력값은 전송하거나 저장하지 않습니다.</p>
+    <div id="accountDemoFields" role="form" aria-labelledby="accountDemoTitle"></div>
+    <p class="login-status" id="accountDemoStatus" role="status" aria-live="polite"></p>
+    <button class="login-button" id="accountDemoContinue" type="button">입력 내용 확인하기</button>
+    <div class="account-demo-result" id="accountDemoResult" hidden tabindex="-1">
+      <h3>화면 시연이 끝났습니다.</h3><p id="accountDemoResultText"></p>
+      <a class="account-demo-start" href="../main-screen.html#dashboard">데모 서비스 살펴보기</a>
+    </div>
+  </dialog>
   <script src="./login.js"></script>
 </body>
 </html>
