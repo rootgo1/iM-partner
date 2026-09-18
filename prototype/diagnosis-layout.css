@@ -1,0 +1,170 @@
+/* Compact, consistent section rhythm for monthly sales and market diagnosis. */
+.sd-panel, .ma-panel { gap: 12px; }
+.sd-day-label, .ma-day-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sd-multi-toggle, .ma-day-multiple { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: #526f5d; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.sd-multi-toggle input, .ma-day-multiple input { width: 15px; height: 15px; margin: 0; accent-color: #258575; }
+.sd-filter-dock { position: static; padding: 10px 12px; box-shadow: none; }
+.sd-filter-dock .sd-filters { gap: 9px; }
+.sd-insight, .ma-lead { padding: 16px 18px; gap: 16px; }
+.sd-insight p { margin-top: 5px; }
+.sd-section-heading h2, .ma-heading h2 { margin-top: 2px; }
+.sd-panel .v-subtitle, .ma-panel .v-subtitle { margin-top: 3px; }
+.sd-period-line, .sd-scope, .ma-scope { margin: 0; }
+.sd-metrics .metric-card, .ma-metrics .metric-card { padding: 14px 16px; min-height: 0; }
+.sd-metrics .metric-value, .ma-metrics .metric-value { margin-top: 7px; }
+.sd-metrics .metric-foot, .ma-metrics p { margin-top: 5px; }
+.sd-finance-context { padding: 8px 12px; gap: 5px 18px; }
+.sd-finance-context small { flex-basis: auto; }
+.sd-card, .ma-card, .ma-insight-grid .ma-card { padding: 16px; }
+.sd-grid, .sd-timing, .ma-grid, .ma-insight-grid { gap: 14px; }
+.sd-trend { max-height: 220px; margin: 8px 0; }
+.sd-panel .v-table td, .sd-panel .v-table th { padding: 7px 8px; }
+.sd-product-sentence { margin-top: 4px; line-height: 1.45; }
+.sd-share { margin-top: 4px; margin-bottom: 3px; }
+.sd-explanation, .ma-explanation { margin-top: 10px; padding-top: 10px; }
+.sd-effects > div:last-child { padding-top: 10px; }
+.sd-overall-insight { padding: 8px 12px; }
+.ma-filters { gap: 10px; padding: 10px 12px; }
+.ma-day-field { gap: 6px; }
+.ma-day-label { display: flex; align-items: center; gap: 10px; }
+.ma-time-filter { min-width: 170px; }
+.ma-time-hint, .ma-time-summary { color: #71867c; font-size: 11px; margin: 0; }
+.ma-filters .ma-field { flex: 0 1 200px; }
+.ma-days { gap: 4px; }
+.ma-days .v-button { min-width: 32px; padding: 6px 8px; }
+.ma-lead h3 { margin-top: 8px; margin-bottom: 5px; }
+.ma-panel .ma-reading { padding: 10px 12px; margin: 10px 0; }
+.ma-flow-origin { padding: 12px; margin: 12px 0 8px; }
+.ma-flow-branches > div { padding: 12px 10px; }
+.ma-flow-branches strong { margin: 6px 0; }
+.ma-duration { gap: 14px; margin: 16px 0; }
+.ma-directions { margin-top: 14px; padding-top: 14px; }
+.ma-direction-track { margin-top: 12px; margin-bottom: 8px; }
+.ma-insight-grid h3 { margin-top: 10px; }
+.ma-insight-text { margin: 8px 0; }
+.ma-definitions summary { min-height: 40px; padding: 10px 14px; }
+.ma-handoff { padding: 10px 14px; }
+.ma-handoff p { margin-top: 4px; }
+.ma-bars { gap: 3px; margin-top: 10px; }
+.ma-bar-row { min-height: 44px; padding: 5px 8px; }
+.ma-ten-minute-scroll { max-height: clamp(220px, 34dvh, 370px); margin-top: 8px; }
+.ma-relocated-extras .v-related-analysis { margin-top: 0; padding: 12px 16px; }
+
+@media (min-width: 761px) and (min-height: 720px) {
+  :is([class*="v-screen-section--analysis-"], [class*="v-screen-section--market-"]) {
+    align-items: flex-start;
+    padding: 16px clamp(20px, 2.2vw, 36px);
+  }
+  :is([class*="v-screen-section--analysis-"], [class*="v-screen-section--market-"]) > .v-screen-inner {
+    margin: 0 auto;
+    padding-bottom: 0;
+  }
+  #sd-panel-products .v-table-wrap { max-height: calc(100dvh - 382px); overflow: auto; overscroll-behavior: contain; }
+  #sd-panel-products .v-table thead { position: sticky; top: 0; z-index: 1; background: #fff; }
+  .sd-timing .v-table-wrap { max-height: calc(100dvh - 480px); overflow: auto; overscroll-behavior: contain; }
+  .sd-timing .sd-weekdays { max-height: calc(100dvh - 490px); overflow: auto; overscroll-behavior: contain; }
+  .sd-weekdays { gap: 2px; margin-top: 8px; }
+  .sd-weekday { padding-block: 3px; line-height: 1.25; }
+  .sd-weekday small { margin-top: 0; line-height: 1.2; }
+  .sd-heatmap { margin-block: 4px; border-spacing: 2px; }
+  .sd-heatmap button { min-height: 26px; padding: 3px; line-height: 1.4; }
+  .sd-weekday-detail { margin-top: 8px; padding: 8px 10px; }
+  .sd-weekday-detail summary { cursor: pointer; font-size: 12px; }
+  .ma-ten-minute-scroll { max-height: clamp(160px, calc(100dvh - 485px), 370px); }
+  .ma-bar-row { min-height: 38px; padding-block: 3px; }
+  .ma-bar-row small { margin-top: 2px; }
+  .ma-grid > .ma-card > .ma-bars { max-height: max(180px, calc(100dvh - 470px)); overflow: auto; overscroll-behavior: contain; }
+  .ma-bar-row[data-ma-detail="weekday"] { min-height: 32px; padding-block: 2px; line-height: 1.15; }
+  .ma-bar-row[data-ma-detail="weekday"] small { margin-top: 1px; }
+  .ma-insight-index { font-size: 24px; }
+  .ma-insight-grid .ma-card { padding: 12px; }
+  .ma-insight-text { line-height: 1.65; }
+}
+@media (min-width: 1100px) and (max-height: 800px) {
+  :is([class*="v-screen-section--analysis-"], [class*="v-screen-section--market-"]) { padding-block: 10px; }
+  .sd-panel, .ma-panel { gap: 8px; }
+  .ma-card { padding: 12px; }
+  .ma-explanation, .ma-reading p { line-height: 1.65; }
+  .ma-duration { gap: 10px; margin-block: 12px; }
+  .ma-flow-origin { margin-top: 8px; padding: 8px; }
+  .ma-flow-branches > div { padding: 8px; }
+  .ma-section-links .v-button { min-height: 36px; }
+  .ma-lead { padding: 12px 14px; }
+}
+@media (max-width: 760px) {
+  :is([class*="v-screen-section--analysis-"], [class*="v-screen-section--market-"]) { margin-bottom: 18px; padding-bottom: 18px; }
+  .sd-panel, .ma-panel { gap: 10px; }
+  .sd-insight, .ma-lead { padding: 14px; }
+  .sd-metrics .metric-card, .ma-metrics .metric-card { padding: 12px; }
+  .ma-filters .ma-field { flex: 1 1 160px; }
+  .ma-day-label { justify-content: space-between; }
+  .ma-days { flex-wrap: nowrap; }
+  .ma-days .v-button { min-width: 0; flex: 1; padding-inline: 4px; }
+  .ma-fixed-camera { gap: 3px; }
+}
+
+/* Completed-month diagnosis and the separate latest-ten-minute overview. */
+.sd-wide-card { width: 100%; }
+.sd-wide-card .sd-trend { max-height: none; width: 100%; height: auto; }
+.sd-weekday-card .sd-weekdays { max-height: none; }
+.sd-weekday-card .sd-weekday { grid-template-columns: 75px minmax(70px, 1fr) 165px; gap: 20px; padding: 6px 10px; }
+.sd-cost { margin: 8px 0; gap: 3px; line-height: 1.4; }
+.sd-cost > .v-row { gap: 10px; font-size: 13px; }
+.sd-cost .v-progress { margin: 0; height: 6px; }
+.sd-cost small { color: #718477; font-size: 11px; }
+.sd-purchase-table { margin-top: 12px; }
+.ma-live-metrics .ma-metric { display: flex; flex-direction: column; }
+.ma-live-metrics .metric-value { margin-block: auto; padding-block: 14px; }
+.ma-weekday-mini { display: grid; gap: 4px; margin-top: 9px; }
+.ma-weekday-mini-row { display: grid; grid-template-columns: 15px minmax(20px, 1fr) 55px; gap: 7px; align-items: center; color: #5c7b70; font-size: 11px; line-height: 1.4; }
+.ma-weekday-mini-row > i { display: block; height: 5px; border-radius: 3px; background: #edf3ef; }
+.ma-weekday-mini-row b { display: block; height: 100%; border-radius: inherit; background: #589e89; }
+.ma-weekday-mini-row strong { text-align: right; font-weight: 500; }
+.ma-monthly-filters .ma-day-field { flex-grow: 0; flex-basis: auto; }
+.ma-monthly-filters .ma-day-label { justify-content: flex-start; gap: 16px; }
+.ma-live-lead h3 { margin-bottom: 8px; }
+.v-neighborhood-full { padding: 20px; }
+.v-neighborhood-scroll { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 8px; }
+.v-neighborhood-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.v-neighborhood-layout > * { min-width: 0; margin: 0; }
+.v-context-bars.v-context-bars-observed { grid-template-columns: repeat(var(--observed-hours), minmax(42px, 1fr)); gap: 8px; margin-top: 14px; }
+.v-context-bars-observed .v-context-bar-track { height: clamp(130px, 20vh, 180px); }
+.v-context-bars-observed .v-context-bar-track i { width: 62%; max-width: 42px; }
+.v-context-bars-observed strong { font-size: 12px; }
+.v-context-bars-observed small { font-size: 10px; white-space: nowrap; }
+.v-neighborhood-empty { padding: 42px 18px; color: #718477; text-align: center; font-size: 13px; }
+@container (max-width: 840px) { .v-neighborhood-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .v-neighborhood-layout { grid-template-columns: minmax(0, 1fr); } }
+.v-policy-list-only { grid-template-columns: minmax(0, 1fr); }
+.v-policy-list-only .v-policy-criteria { margin-bottom: 18px; }
+.v-policy-list-only [data-action="open-policy-guide"] { margin-top: 4px; }
+#policyModalContent .v-plan-list { margin-block: 18px; }
+#policyModalContent .v-plan-start { margin-bottom: 14px; }
+#ma-behavior .v-conversion-summary { padding: 18px; }
+#ma-behavior .v-conversion-metrics { padding-block: 12px; }
+#ma-behavior .v-transfer-kpis { margin-block: 12px; }
+#ma-behavior .v-transfer-kpis .metric-card { padding: 16px; }
+#ma-behavior .v-transfer-kpis .metric-value { font-size: 30px; }
+#ma-insights .ma-insight-grid { grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); }
+@media (min-width: 1100px) and (max-height: 800px) {
+  .ma-live-metrics .metric-card { padding: 12px; }
+  .ma-weekday-mini { gap: 3px; }
+  .ma-live-metrics .metric-value { font-size: 30px; }
+  .sd-cost { margin-top: 8px; }
+  .sd-expense-grid .sd-card { padding: 14px; }
+  #ma-insights .ma-insight-text, #ma-insights .ma-reading p { line-height: 1.55; }
+  #ma-insights .ma-insight-grid h3 { margin-top: 6px; line-height: 1.4; }
+  #ma-insights .ma-reading { padding: 8px 10px; }
+  #ma-insights .ma-insight-text { margin-block: 6px; }
+}
+@media (max-width: 760px) {
+  .sd-weekday-card .sd-weekday { grid-template-columns: 53px minmax(30px, 1fr) 102px; gap: 8px; padding-inline: 0; }
+  .ma-monthly-filters .ma-day-field { flex-basis: 100%; }
+  .ma-days .v-button { white-space: nowrap; padding-inline: 3px; }
+  .ma-live-metrics .metric-value { font-size: 25px; }
+  .ma-live-metrics .metric-card { padding: 10px; }
+  .ma-weekday-mini-row { gap: 4px; grid-template-columns: 12px minmax(12px, 1fr) 43px; font-size: 10px; }
+  .ma-live-lead .v-button { width: 100%; }
+  .v-neighborhood-full { padding: 14px; }
+  #ma-insights .ma-insight-grid { grid-template-columns: 1fr; }
+}

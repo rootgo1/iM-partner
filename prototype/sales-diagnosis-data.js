@@ -7,8 +7,16 @@
   const shift = (date, offset) => new Date(Date.parse(date + 'T00:00:00Z') + offset * DAY).toISOString().slice(0, 10);
   const weekday = date => new Date(date + 'T00:00:00Z').getUTCDay();
   const dates = (start, end) => Array.from({ length: Math.max(0, Math.round((Date.parse(end) - Date.parse(start)) / DAY) + 1) }, (_, index) => shift(start, index));
-  const ranges = [{ id: 'all', label: '모든 시간', start: 17, end: 23 },
-    ...[17, 19, 21].map(hour => ({ id: String(hour), label: hour + '~' + (hour + 2) + '시', start: hour, end: hour + 2 }))];
+  const ranges = [{ id: 'all', label: '전체', start: 12, end: 24 },
+    ...Array.from({ length: 12 }, (_, index) => {
+      const hour = index + 12;
+      return { id: String(hour), label: hour + '시~' + (hour + 1) + '시', start: hour, end: hour + 1 };
+    })];
+  function currentRange(date = new Date()) {
+    // Select the viewing hour in Korea, independent of the device time zone.
+    const hour = new Date(date.getTime() + 9 * 60 * 60 * 1000).getUTCHours();
+    return ranges.find(row => row.id !== 'all' && hour >= row.start && hour < row.end)?.id || 'all';
+  }
   function analyze(source, period, filters = {}) {
     const days = dates(period.start, period.end);
     const offset = filters.comparison === 'previous' ? days.length : Math.ceil(days.length / 7) * 7;
@@ -85,20 +93,44 @@
       amount: current.sales - current.units * previous.unitAmount, total: current.sales - previous.sales
     } : null;
     const finance = source.analyze({ ...period, previousStart, previousEnd });
+    // Expenses belong to the whole store; POS product/day/time filters never allocate costs.
+    const inPeriod = (row, start, end) => row.date >= start && row.date <= end;
+    const costs = (source.expenses || []).filter(row => inPeriod(row, period.start, period.end));
+    const oldCosts = (source.expenses || []).filter(row => inPeriod(row, previousStart, previousEnd));
+    const purchases = (source.purchases || []).filter(row => inPeriod(row, period.start, period.end));
+    const oldPurchases = (source.purchases || []).filter(row => inPeriod(row, previousStart, previousEnd));
+    const expenseTotal = sum(costs, 'amount');
+    const expenseBreakdown = {
+      total: expenseTotal, previous: finance.comparisonAvailable ? sum(oldCosts, 'amount') : null,
+      ratio: finance.sales > 0 ? expenseTotal / finance.sales * 100 : null,
+      categories: (source.categories || []).map(([id, name]) => {
+        const amount = sum(costs.filter(row => row.category === id), 'amount');
+        return { id, name, amount, share: expenseTotal > 0 ? amount / expenseTotal * 100 : null,
+          previous: finance.comparisonAvailable ? sum(oldCosts.filter(row => row.category === id), 'amount') : null };
+      }).sort((a, b) => b.amount - a.amount),
+      purchases: (source.materials || []).map(item => ({ id: item.id, name: item.name, unit: item.unit,
+        amount: sum(purchases.filter(row => row.itemId === item.id), 'amount'),
+        quantity: sum(purchases.filter(row => row.itemId === item.id), 'quantity'),
+        previous: finance.comparisonAvailable ? sum(oldPurchases.filter(row => row.itemId === item.id), 'amount') : null
+      })).sort((a, b) => b.amount - a.amount)
+    };
     const actions = [];
     if (previous && rows.length) {
       const declining = products.filter(row => row.delta < 0).sort((a, b) => a.delta - b.delta)[0];
       const weak = slots.filter(row => row.delta < 0).sort((a, b) => a.delta - b.delta)[0];
       if (declining) actions.push({ id: 'product-' + declining.id, title: declining.label + ' 판매 조건 점검', evidence: declining.label + ' 매출이 비교 기간보다 ' + Math.round(Math.abs(declining.delta)).toLocaleString('ko-KR') + '원 적습니다.', task: '품절 기록·메뉴 노출·가격 변경 여부를 확인하세요.', measure: '같은 품목의 판매 수량과 순매출', kind: 'item', value: declining.id });
       if (weak) actions.push({ id: 'slot-' + weak.id, title: weak.label + ' 운영 점검', evidence: '해당 시간대 매출 증감액은 ' + Math.round(weak.delta).toLocaleString('ko-KR') + '원입니다.', task: '주문 대기와 운영 기록을 함께 확인하세요.', measure: '같은 요일·시간대의 일평균 매출', kind: 'slot', value: weak.id });
-      if (!declining && !weak) actions.push({ id: 'maintain', title: '이어지는 판매 흐름 확인', evidence: '현재 선택 조건에서 감소한 품목·시간대가 없습니다.', task: '잘 팔린 구이류의 재고와 준비 수량을 점검하세요.', measure: '판매 수량과 취소 수량', kind: 'all', value: '' });
+      if (!declining && !weak) {
+        const leading = products.find(row => row.sales > 0);
+        if (leading) actions.push({ id: 'maintain-' + leading.id, title: leading.label + ' 판매 흐름 유지 검토', evidence: '현재 선택 조건에서 감소한 품목·시간대가 없으며, ' + leading.label + '의 매출이 가장 높습니다.', task: leading.label + '의 재고와 준비 수량을 실제 판매·취소 기록에 맞춰 점검하세요.', measure: '판매 수량과 취소 수량', kind: 'item', value: leading.id });
+      }
     }
     return { period, filters, previousStart, previousEnd, rows, oldRows: previous ? oldRows : [], current, previous,
       currentComplete, previousComplete, comparisonAvailable, selectedDays, completeDays,
       excludedDates: selectedDays.filter(date => !collected(date)), dayCount: completeDays.length, previousDayCount: completeOldDays.length,
-      products, slots, weekdays, heatmap, daily, effects, finance, actions, range, sourceType: 'synthetic_demo' };
+      products, slots, weekdays, heatmap, daily, effects, finance, expenseBreakdown, actions, range, sourceType: 'synthetic_demo' };
   }
-  const api = { analyze, change, ranges, weekday };
+  const api = { analyze, change, ranges, weekday, currentRange };
   root.IM_SALES_DATA = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

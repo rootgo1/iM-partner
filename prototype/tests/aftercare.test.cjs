@@ -29,4 +29,34 @@ A.save(record,storage); assert.deepEqual(A.read(storage),[record]);
 assert.throws(()=>A.save(record,{getItem:()=>null,setItem:()=>{throw Error('denied');}}),/저장/);
 cache.set(A.KEY,'bad json'); assert.deepEqual(A.read(storage),[]);
 cache.set(A.KEY,JSON.stringify([{...record,date:'invalid'},record])); assert.equal(A.read(storage).length,1);
-console.log('aftercare: before/after periods, hour scope, zero/missing distinction, validation and storage passed');
+const originalStorage=global.localStorage;
+try {
+  global.localStorage=storage;
+  cache.clear();
+  const empty=A.render(D);
+  assert.match(empty,/월간 매출 비교/,'브라우저 실행 기록 없이도 월간 비교를 표시');
+  assert.match(empty,/42,538,000원/,'전전월 전체 매출 표시');
+  assert.match(empty,/43,085,000원/,'전월 전체 매출 표시');
+  assert.match(empty,/2026\.07\.01 ~ 2026\.07\.31/,'전전월 1일부터 말일까지 명시');
+  assert.match(empty,/2026\.08\.01 ~ 2026\.08\.31/,'전월 1일부터 말일까지 명시');
+  assert.equal((empty.match(/class="card v-card v-aftercare v-aftercare-monthly"/g)||[]).length,1,'사후관리 주 컨텐츠는 하나');
+  const longRecord={...record,id:'long',actions:Array.from({length:10},(_,i)=>({id:'action-'+i,title:String(i)+'<img src=x onerror=alert(1)>'+ '행'.repeat(120),evidence:'<script>근거</script>',caveat:'해석 범위 <제한>'})),note:'<iframe>메모</iframe>'+ '기'.repeat(450)};
+  A.save(longRecord,storage);
+  const compact=A.render(D), details=A.renderDetails(longRecord);
+  assert.equal((compact.match(/class="v-month-track"/g)||[]).length,2,'월간 전체 매출 막대 2개');
+  assert.match(compact,/data-aftercare-detail="long"/,'긴 실행 기록을 열 수 있음');
+  assert.doesNotMatch(compact,/onerror|iframe|script>/,'전체 기록은 주 컨텐츠를 늘리지 않음');
+  assert.equal((details.match(/class="v-aftercare-detail-action"/g)||[]).length,10,'실행한 모든 행동 보존');
+  assert.ok(details.includes('행'.repeat(120))&&details.includes('기'.repeat(450)),'긴 행동명과 메모 전체 보존');
+  assert.match(details,/&lt;script&gt;근거&lt;\/script&gt;/,'근거 HTML을 이스케이프');
+  assert.match(details,/해석 범위 &lt;제한&gt;/,'해석 범위 HTML을 이스케이프');
+  assert.doesNotMatch(details,/<img|<iframe|<script/,'기록에서 HTML이 실행되지 않음');
+  assert.match(details,/이 실행의 전후 7일 비교/,'기존 실행의 전후 성과는 상세 안에 보존');
+  A.save(record,storage);
+  const selectable=A.renderDetails(record,D,A.read(storage));
+  assert.match(selectable,/id="aftercareSelection"/,'여러 실행 기록을 상세에서 선택');
+  assert.equal((selectable.match(/<option value=/g)||[]).length,2);
+} finally {
+  if(originalStorage===undefined)delete global.localStorage;else global.localStorage=originalStorage;
+}
+console.log('aftercare: comparison periods, missing data, storage, monthly overview and escaped full record detail passed');

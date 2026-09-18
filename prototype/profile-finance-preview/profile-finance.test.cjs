@@ -36,12 +36,13 @@ const { chromium } = require('playwright');
     assert.equal(await page.locator('#previewTemperatureBadge').evaluate(node => node.tagName), 'SPAN');
     assert.equal(await page.locator('#previewTemperatureBadge').getAttribute('role'), null);
     const compactSummaryText = await page.locator('.ipf-profile-finance__button').innerText();
-    assert.match(compactSummaryText, /금융 체온계/);
-    assert.match(compactSummaryText, /매출·지출 기반 참고 온도/);
+    assert.match(compactSummaryText, /나의 가게 온도/);
+    assert.doesNotMatch(compactSummaryText, /매출·지출 기반 참고 온도|최근 1개월 일별 이동평균 지수/);
+    assert.equal(await page.locator('.ipf-profile-finance__basis').count(), 0);
     assert.match(compactSummaryText, /연결 데이터 2\/4/);
     assert.match(compactSummaryText, /전월보다 8\.8° 낮음/);
     assert.doesNotMatch(compactSummaryText, /현금잔액|2026년|경영 참고용/);
-    assert.match(await page.locator('.ipf-profile-finance__button').getAttribute('aria-label'), /금융 체온계로 이동/);
+    assert.match(await page.locator('.ipf-profile-finance__button').getAttribute('aria-label'), /나의 가게 온도로 이동/);
     assert.match(await page.locator('.ipf-profile-finance__button').getAttribute('aria-label'), /4개 중 2개 연결/);
     assert.match(await page.locator('.ipf-profile-finance__button').getAttribute('aria-label'), /8\.8도 낮음/);
 
@@ -59,7 +60,7 @@ const { chromium } = require('playwright');
         return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
       };
       const button = getComputedStyle(document.querySelector('.ipf-profile-finance__button'));
-      return ['.ipf-profile-finance__heading strong', '.ipf-profile-finance__basis', '.ipf-profile-finance__status', '.ipf-profile-finance__trend']
+      return ['.ipf-profile-finance__heading strong', '.ipf-profile-finance__status', '.ipf-profile-finance__trend']
         .map(selector => {
           const style = getComputedStyle(document.querySelector(selector));
           const background = style.backgroundColor === 'rgba(0, 0, 0, 0)' ? button.backgroundColor : style.backgroundColor;

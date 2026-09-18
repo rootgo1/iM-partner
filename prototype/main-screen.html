@@ -136,18 +136,6 @@
       height: auto;
     }
 
-    .demo-label {
-      margin: 0 11px 22px;
-      padding: 9px 11px;
-      border: 1px solid #d9ece8;
-      border-radius: 10px;
-      color: #317f78;
-      background: #eff9f6;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1.45;
-    }
-
     .nav-title {
       padding: 0 12px 9px;
       color: #7d9995;
@@ -225,7 +213,6 @@
     }
 
     .app-shell.sidebar-collapsed .brand > span,
-    .app-shell.sidebar-collapsed .demo-label,
     .app-shell.sidebar-collapsed .nav-title,
     .app-shell.sidebar-collapsed .nav-label,
     .app-shell.sidebar-collapsed .sidebar-footer {
@@ -1217,11 +1204,22 @@
   </style>
   <link rel="stylesheet" href="./vendor/lenis/lenis.css">
   <link rel="stylesheet" href="./meeting-preview.css">
+  <link rel="stylesheet" href="./recovery-strategy.css">
   <link rel="stylesheet" href="./sales-diagnosis.css">
   <link rel="stylesheet" href="./market-analysis.css">
   <link rel="stylesheet" href="./frontend-revision.css">
   <link rel="stylesheet" href="./home-dashboard.css">
+  <link rel="stylesheet" href="./diagnosis-layout.css">
+  <link rel="stylesheet" href="./nearby-events.css">
   <link rel="stylesheet" href="./profile-finance-preview/profile-finance.css">
+  <link rel="stylesheet" href="./final-polish.css">
+  <link rel="stylesheet" href="./diagnosis-filters.css">
+  <link rel="stylesheet" href="./recovery-single.css">
+  <link rel="stylesheet" href="./policies-polish.css">
+  <link rel="stylesheet" href="./disclosure-polish.css">
+  <link rel="stylesheet" href="./policies-fixed.css">
+  <link rel="stylesheet" href="./aftercare-monthly.css">
+  <link rel="stylesheet" href="./service-footer.css">
 </head>
 <body>
   <a class="v-skip" href="#viewRoot">본문으로 이동</a>
@@ -1233,7 +1231,6 @@
           <span class="toggle-icon" aria-hidden="true"></span>
         </button>
       </div>
-      <div class="demo-label">생성 데이터 기반<br>프로토타입</div>
       <div class="nav-title">MY BUSINESS</div>
       <nav class="nav-list" id="mainNavigation" aria-label="파트너 메뉴"></nav>
       <div class="sidebar-bottom">
@@ -1242,7 +1239,7 @@
           <div class="sidebar-account-menu" id="profileMenu" role="menu" aria-labelledby="profileMenuButton" hidden>
             <div class="sidebar-account-summary" role="none">
               <span class="sidebar-account-avatar" id="profileMenuInitials" aria-hidden="true">소현</span>
-              <span class="sidebar-account-summary-copy"><span class="sidebar-account-name-row"><strong id="profileMenuName">이소현</strong><span class="ipf-profile-finance-badge" id="profileMenuTemperatureBadge" data-status="partial" aria-label="나의 금융 온도 51.9도">51.9°</span></span><small id="profileMenuStore">소현이네 고기굽는집</small></span>
+              <span class="sidebar-account-summary-copy"><span class="sidebar-account-name-row"><strong id="profileMenuName">이소현</strong><span class="ipf-profile-finance-badge" id="profileMenuTemperatureBadge" data-status="partial" aria-label="나의 가게 온도 51.9도">51.9°</span></span><small id="profileMenuStore">소현이네 고기굽는집</small></span>
             </div>
             <div id="profileMenuFinanceMount" role="none"></div>
             <button class="sidebar-account-action" type="button" data-view="profile" role="menuitem">
@@ -1270,7 +1267,7 @@
           <a class="topbar-brand" href="#dashboard" data-view="dashboard" aria-label="iM파트너 홈으로 이동"><span class="topbar-brand-mark" aria-hidden="true"><img src="./assets/brand/im-bank-symbol.png" alt=""></span><span class="topbar-brand-name"><span>iM</span><span class="brand-korean">파트너</span></span></a>
         </div>
         <div class="topbar-actions">
-          <button class="ai-toggle" id="aiToggle" type="button" aria-label="AI챗봇" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span class="im-product-name"><span>AI</span><span class="im-product-korean">챗봇</span></span></button>
+          <button class="ai-toggle" id="aiToggle" type="button" aria-label="iM비서" aria-controls="aiPanel" aria-expanded="false"><span class="ai-toggle-icon" aria-hidden="true">✦</span><span class="im-product-name"><span>iM</span><span class="im-product-korean">비서</span></span></button>
         </div>
       </header>
       <div class="content" id="mainContent">
@@ -1293,47 +1290,49 @@
         </form>
         <div class="v-data-notice" id="dataNotice"><span class="v-tag">생성 데이터 기반 시연</span><span>소현이네 고기굽는집 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
         <div id="viewRoot" tabindex="-1"></div>
-        <noscript><p class="v-note">이 시안의 메뉴·분석·AI챗봇을 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
+        <noscript><p class="v-note">이 시안의 메뉴·분석·iM비서를 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
       </div>
     </main>
-    <aside class="ai-panel" id="aiPanel" aria-label="서비스 질문 AI챗봇" aria-hidden="true" inert>
-      <div id="chatResizeHandle" class="v-resize-handle" role="separator" tabindex="0" aria-label="AI챗봇 너비 조절: 드래그 또는 좌우 방향키" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="560" aria-valuenow="380"></div>
+    <aside class="ai-panel" id="aiPanel" aria-label="서비스 질문 iM비서" aria-hidden="true" inert>
+      <div id="chatResizeHandle" class="v-resize-handle" role="separator" tabindex="0" aria-label="iM비서 너비 조절: 드래그 또는 좌우 방향키" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="560" aria-valuenow="380"></div>
       <div class="ai-panel-inner">
         <header class="ai-header">
-          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong class="im-product-name"><span>AI</span><span class="im-product-korean">챗봇</span></strong><p>간단한 서비스에 대한 질문을 답변드립니다.</p></div></div>
-          <button class="ai-close" id="aiClose" type="button" aria-label="AI챗봇 접기">×</button>
+          <div class="ai-title"><span class="ai-orb" aria-hidden="true">✦</span><div><strong class="im-product-name"><span>iM</span><span class="im-product-korean">비서</span></strong><p>메뉴와 서비스 이용 방법을 안내합니다.</p></div></div>
+          <button class="ai-close" id="aiClose" type="button" aria-label="iM비서 접기">×</button>
         </header>
         <div class="ai-context" id="aiContext"></div>
-        <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="AI챗봇 대화">
-          <div class="ai-message bot">안녕하세요. 선택한 기간의 생성 데이터를 바탕으로 간단한 질문에 답합니다.<br>매출·지출, 시간대, 회복전략에 관해 물어보세요.</div>
+        <div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="iM비서 대화">
+          <div class="ai-message bot">iM비서입니다. 메뉴와 서비스 이용 방법을 간단히 안내해 드립니다.<br>궁금한 기능을 물어보세요.</div>
         </div>
         <div class="ai-suggestions" aria-label="추천 질문">
-          <button class="ai-suggestion" type="button" data-question="현재 매출이 어떻게 변했나요?">현재 매출이 어떻게 변했나요?</button>
-          <button class="ai-suggestion" type="button" data-question="어느 시간대를 공략해야 하나요?">어느 시간대를 공략해야 하나요?</button>
-          <button class="ai-suggestion" type="button" data-question="어떤 고객층을 노려야 하나요?">어떤 고객층을 노려야 하나요?</button>
-          <button class="ai-suggestion" type="button" data-question="당장 실행할 수 있는 방법은 무엇인가요?">당장 실행할 수 있는 방법은 무엇인가요?</button>
-          <button class="ai-suggestion" type="button" data-question="자금 흐름에서 무엇을 확인해야 하나요?">자금 흐름에서 무엇을 확인해야 하나요?</button>
+          <button class="ai-suggestion" type="button" data-question="매출진단에서는 무엇을 볼 수 있나요?">매출진단에서는 무엇을 볼 수 있나요?</button>
+          <button class="ai-suggestion" type="button" data-question="상권분석은 무엇인가요?">상권분석은 무엇인가요?</button>
+          <button class="ai-suggestion" type="button" data-question="회복전략은 어떤 기능인가요?">회복전략은 어떤 기능인가요?</button>
         </div>
         <form class="ai-form" id="aiForm">
-          <input class="ai-input" id="aiInput" type="text" required maxlength="500" placeholder="서비스에 대해 질문해 주세요." aria-label="AI챗봇 질문" autocomplete="off">
-          <button class="ai-send" type="submit" aria-label="AI챗봇 질문 보내기">↑</button>
+          <input class="ai-input" id="aiInput" type="text" required maxlength="500" placeholder="서비스에 대해 질문해 주세요." aria-label="iM비서 질문" autocomplete="off">
+          <button class="ai-send" type="submit" aria-label="iM비서 질문 보내기">↑</button>
         </form>
 
       </div>
     </aside>
   </div>
   <dialog class="v-modal" id="policyModal" aria-labelledby="policyModalTitle">
-    <div class="v-row v-between"><span class="v-tag neutral">가상 공고 · 실제 신청 불가</span><button type="button" class="v-button small" data-action="close-modal" aria-label="공고 예시 닫기">닫기</button></div>
+    <div class="v-row v-between"><span class="v-tag neutral">공고 상세</span><button type="button" class="v-button small" data-action="close-modal" aria-label="공고 상세 닫기">닫기</button></div>
     <h2 id="policyModalTitle"></h2><div id="policyModalContent"></div>
   </dialog>
   <dialog class="v-modal" id="documentGuideModal" aria-labelledby="documentGuideTitle"><div class="v-row v-between"><h2 id="documentGuideTitle">분석에서 문서까지</h2><button class="v-button" data-action="close-document-guide">닫기</button></div><ol class="v-document-steps"><li><strong>질문하기</strong><p>추천 질문을 선택하고 내용을 확인한 뒤 분석합니다.</p></li><li><strong>근거와 행동 확인</strong><p>같은 매장·기간의 시연 자료를 읽고 점검할 일을 정리합니다.</p></li><li><strong>PDF 보관</strong><p>분석 후 PDF 만들기로 매출·지출과 다음 행동을 내려받습니다. 서버에는 저장하지 않습니다.</p></li></ol><p class="v-note">현재는 프론트 시연입니다. 실제 AI·인증·외부 API를 호출하지 않습니다.</p></dialog>
   <dialog class="v-modal" id="executionModal" aria-labelledby="executionTitle"><form id="executionForm"><div class="v-row v-between"><h2 id="executionTitle">실행 기록하기</h2><button type="button" class="v-button" data-action="close-execution">닫기</button></div><p class="v-subtitle">실제로 수행한 행동을 기록하는 시연입니다. 선택한 행동은 하나의 실행 묶음으로 저장합니다.</p><fieldset><legend>수행한 행동지침</legend><div id="executionActionOptions"></div></fieldset><div class="v-form-grid"><label class="v-field">실행일<input id="executionDate" name="date" type="date" min="2026-06-01" max="2026-09-30" required></label><label class="v-field">대상 시작 시간<select name="startHour"><option value="17">17시</option><option value="19">19시</option><option value="21">21시</option></select></label><label class="v-field">대상 종료 시간<select name="endHour"><option value="23">23시</option><option value="21">21시</option><option value="19">19시</option></select></label></div><label class="v-field">메모 (선택)<textarea id="executionNote" name="note" maxlength="500" placeholder="예: 19시 전 대표 메뉴 가격 안내를 정리했습니다."></textarea></label><p class="v-note">2026년 고깃집 시연 자료로 전후 7일을 비교합니다. 기록은 이 브라우저에만 보관합니다.</p><p id="executionError" role="alert"></p><button class="v-button primary" type="submit">실행 기록 저장</button></form></dialog>
   <div class="demo-notice" id="demoNotice" role="status" aria-live="polite"></div>
   <script src="./meeting-data.js"></script>
+  <script src="./policy-data.js"></script>
+  <script src="./policy-matching.js"></script>
   <script src="./sales-diagnosis-data.js"></script>
   <script src="./sales-diagnosis.js"></script>
   <script src="./market-analysis-data.js"></script>
   <script src="./market-analysis.js"></script>
+  <script src="./map-config.js"></script>
+  <script src="./nearby-events.js"></script>
   <script src="./report-pdf.js"></script>
   <script src="./vendor/lenis/lenis.min.js"></script>
   <script src="./smooth-scroll.js"></script>

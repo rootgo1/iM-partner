@@ -9,6 +9,8 @@
   const money = n => Math.round(n).toLocaleString('ko-KR') + '원';
   let storageMessage = '';
   let selectedId = '';
+  let bound = false;
+  let renderedSource = null;
   function validate(record) {
     return record && typeof record.id === 'string' && validDate(record.date) && Number.isInteger(record.startHour) && Number.isInteger(record.endHour) && record.startHour >= 17 && record.endHour <= 23 && record.startHour < record.endHour && Array.isArray(record.actions) && record.actions.length > 0 && record.actions.length <= 10 && record.actions.every(a => typeof a.id === 'string' && typeof a.title === 'string' && a.title.length <= 160) && typeof record.note === 'string' && record.note.length <= 500;
   }
@@ -54,21 +56,99 @@
     const complete = before.complete && after.complete;
     return {before, after, complete, delta:complete ? after.sales - before.sales : null, rate:complete && before.sales > 0 ? (after.sales-before.sales)/before.sales*100 : null};
   }
+  // Calendar-month totals share the diagnostic's generated receipt rows, without
+  // applying its current product, weekday, or hour filters.
+  function monthlyComparison(source, previousMonth = '2026-07', currentMonth = '2026-08') {
+    if (![previousMonth, currentMonth].every(month => /^\d{4}-(0[1-9]|1[0-2])$/.test(month))) throw new Error('올바른 비교 월이 필요합니다.');
+    const rowsByDate = new Map(), transactionsByDate = new Map();
+    (source.records || []).forEach(row => {
+      if (!rowsByDate.has(row.date)) rowsByDate.set(row.date, []);
+      rowsByDate.get(row.date).push(row);
+    });
+    (source.transactions || []).forEach(row => transactionsByDate.set(row.date, (transactionsByDate.get(row.date) || 0) + 1));
+    const coverage = new Map((source.coverage || []).map(row => [row.date, row]));
+    function total(month) {
+      const days = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
+      const daily = Array.from({length:days}, (_, index) => {
+        const date = month + '-' + String(index + 1).padStart(2, '0');
+        const rows = rowsByDate.get(date) || [], collected = coverage.get(date);
+        const complete = source.coverage ? !!collected && collected.open === true && collected.status === 'valid' &&
+          collected.analyzedMinutes === collected.plannedMinutes &&
+          (collected.expectedRecords == null || collected.expectedRecords === rows.length) &&
+          (!source.transactions || collected.expectedTransactions == null || collected.expectedTransactions === (transactionsByDate.get(date) || 0)) : rows.length > 0;
+        return {date, complete, sales:complete ? rows.reduce((value, row) => value + row.netAmount, 0) : null,
+          units:complete ? rows.reduce((value, row) => value + row.netQuantity, 0) : null};
+      });
+      const missing = daily.filter(day => !day.complete).map(day => day.date), complete = missing.length === 0;
+      return {month, start:daily[0].date, end:daily[days - 1].date, days, daily, missing, complete,
+        sales:complete ? daily.reduce((value, day) => value + day.sales, 0) : null,
+        units:complete ? daily.reduce((value, day) => value + day.units, 0) : null};
+    }
+    const previous = total(previousMonth), current = total(currentMonth), complete = previous.complete && current.complete;
+    const maximum = Math.max(previous.sales || 0, current.sales || 0);
+    const step = maximum ? 10 ** Math.floor(Math.log10(maximum)) : 1;
+    const axisMax = Math.max(step, Math.ceil(maximum / step) * step);
+    return {previous, current, complete, axisMax, delta:complete ? current.sales - previous.sales : null,
+      rate:complete && previous.sales > 0 ? (current.sales - previous.sales) / previous.sales * 100 : null};
+  }
   function render(source) {
+    renderedSource = source;
     const records = read();
     const chosen = records.find(r => r.id === selectedId) || records[0];
     selectedId = chosen ? chosen.id : '';
-    const result = chosen && compare(source, chosen);
-    const summary = result ? '<div class="v-aftercare-metrics">' + [ ['실행 전 7일',result.before], ['실행 후 7일',result.after] ].map(([label, value]) => '<article><span>'+label+'</span><strong>'+(value.complete ? money(value.sales) : '자료 부족')+'</strong><small>'+value.start+' ~ '+value.end+'</small><small>판매수량 '+(value.complete ? value.units.toLocaleString('ko-KR')+'개' : '집계 불가')+'</small></article>').join('') + '<article><span>매출 변화</span><strong class="'+(result.delta > 0 ? 'trend-up' : result.delta < 0 ? 'trend-down' : '')+'">'+(result.rate == null ? (result.complete ? '증감률 계산 불가' : '비교 자료 부족') : (result.rate > 0 ? '▲ ' : result.rate < 0 ? '▼ ' : '')+Math.abs(result.rate).toFixed(1)+'%')+'</strong><small>'+(result.complete ? '금액 차이 '+money(result.delta) : '전후 7일의 자료가 모두 필요합니다.')+'</small></article></div>' : '';
-    return '<article class="card v-card v-aftercare"><div class="v-row v-between"><div><span class="v-tag">브라우저 시연 기록</span><h1>실행을 기록하고, 변화를 살펴보세요</h1></div><button class="v-button" data-view="secretary">iM비서 행동지침 보기 →</button></div><p class="v-subtitle">직접 수행한 행동을 기록하는 흐름입니다. 아래 금액은 고깃집 시연 자료로 계산하며, 실제 매장 성과가 아닙니다.</p>'+(storageMessage ? '<p class="v-note amber" role="status">'+esc(storageMessage)+'</p>' : '') +
-      (records.length ? '<label class="v-aftercare-select">실행 기록 선택<select id="aftercareSelection">'+records.map(record=>'<option value="'+esc(record.id)+'"'+(record.id===selectedId?' selected':'')+'>'+esc(record.date+' · '+record.actions.map(a=>a.title).join(' + '))+'</option>').join('')+'</select></label><div class="v-aftercare-record"><h2>'+esc(chosen.actions.map(a=>a.title).join(' + '))+'</h2><p>'+esc(chosen.date)+' 실행 · '+chosen.startHour+'~'+chosen.endHour+'시 · '+chosen.actions.length+'개 행동 '+(chosen.actions.length>1?'묶음':'')+'</p>'+chosen.actions.map(a=>'<p class="v-metadata">근거: '+esc(a.evidence || '직접 기록한 운영 점검')+'</p>').join('')+(chosen.note?'<p class="v-note">'+esc(chosen.note)+'</p>':'')+'</div>'+summary+'<p class="v-note">실행일은 제외하고 전후 각각 7일, 같은 영업시간을 비교합니다. 요일 구성과 기간 길이는 같습니다. 여러 행동을 함께 기록한 경우 묶음의 변화이며, 특정 행동의 효과나 인과관계를 입증하지 않습니다.</p>' : '<div class="v-aftercare-empty"><h2>아직 기록한 행동이 없습니다</h2><p>iM비서에서 분석한 뒤 행동지침의 ‘실행 기록하기’를 선택하세요.</p><button class="v-button primary" data-view="secretary">행동지침 확인하기 →</button></div>')+
-      '<p class="v-metadata">기록은 이 기기의 같은 브라우저에만 보관됩니다. 서버 전송·다른 기기 동기화는 없습니다. 브라우저 사이트 데이터를 지우면 기록도 삭제됩니다.</p></article>';
+    const result = monthlyComparison(source);
+    const direction = result.delta > 0 ? '증가' : result.delta < 0 ? '감소' : '동일';
+    const rate = result.rate == null ? (result.complete ? '증감률 계산 불가' : '비교 자료 부족') : (result.rate > 0 ? '+' : '') + result.rate.toFixed(1) + '%';
+    const axisLabel = amount => amount === 0 ? '0원' : (amount / 10000).toLocaleString('ko-KR', {maximumFractionDigits:1}) + '만원';
+    const bars = [['전전월', result.previous, 'previous'], ['전월', result.current, 'current']].map(([label, month, kind]) => {
+      const value = month.complete ? money(month.sales) : '자료 부족';
+      return '<div class="v-month-row is-' + kind + '"><div class="v-month-row-head"><div><strong>' + Number(month.month.slice(5, 7)) + '월</strong><span>' + label + ' · ' + month.days + '일 전체</span></div><b>' + value + '</b></div><div class="v-month-track" role="img" aria-label="2026년 ' + Number(month.month.slice(5, 7)) + '월 전체 매출 ' + value + '"><span class="v-month-bar" style="width:' + (month.complete ? month.sales / result.axisMax * 100 : 0).toFixed(4) + '%"></span></div><small>' + month.start.replaceAll('-', '.') + ' ~ ' + month.end.replaceAll('-', '.') + '</small></div>';
+    }).join('');
+    return '<article class="card v-card v-aftercare v-aftercare-monthly"><header class="v-aftercare-head"><div><span class="v-tag">월간 사후관리</span><h2>월간 매출 비교</h2></div><p class="v-subtitle">전월과 전전월의 한 달 전체 매출을 살펴보세요.</p></header>' +
+      '<div class="v-aftercare-monthly-body"><div class="v-month-change"><div><span>7월 대비 8월 매출</span><strong class="' + (result.delta > 0 ? 'is-up' : result.delta < 0 ? 'is-down' : '') + '">' + rate + '</strong></div><p>' + (result.complete ? (result.delta ? money(Math.abs(result.delta)) + ' ' + direction : '매출 변동 없음') : '두 달의 전체 자료가 필요합니다.') + '</p></div>' +
+      '<figure class="v-month-chart" aria-labelledby="aftercareChartTitle"><figcaption id="aftercareChartTitle">월별 전체 매출<span>같은 눈금으로 비교</span></figcaption><div class="v-month-bars">' + bars + '</div><div class="v-month-axis" aria-hidden="true"><span>0원</span><span>' + axisLabel(result.axisMax / 2) + '</span><span>' + axisLabel(result.axisMax) + '</span></div></figure></div>' +
+      '<div class="v-month-bottom"><p>전체 품목 · 모든 요일 · 전체 영업시간 합산</p>' + (records.length ? '<button type="button" class="v-button" data-aftercare-detail="' + esc(chosen.id) + '" aria-haspopup="dialog">실행 기록 ' + records.length + '개 보기</button>' : '<button type="button" class="v-button" data-view="secretary">회복전략 보기 →</button>') + '</div></article>';
+  }
+  function renderDetails(record, source = renderedSource, records = []) {
+    const result = source ? compare(source, record) : null;
+    const picker = records.length > 1 ? '<label class="v-aftercare-select">실행 기록 선택<select id="aftercareSelection">' + records.map(item => '<option value="' + esc(item.id) + '"' + (item.id === record.id ? ' selected' : '') + '>' + esc(item.date + ' · ' + item.startHour + '~' + item.endHour + '시 · 행동 ' + item.actions.length + '개') + '</option>').join('') + '</select></label>' : '';
+    const summary = result ? '<section class="v-aftercare-detail-note"><h3>이 실행의 전후 7일 비교</h3><p>실행 전: ' + result.before.start + ' ~ ' + result.before.end + ' · ' + (result.before.complete ? money(result.before.sales) : '자료 부족') + '</p><p>실행 후: ' + result.after.start + ' ~ ' + result.after.end + ' · ' + (result.after.complete ? money(result.after.sales) : '자료 부족') + '</p><p>매출 변화: ' + (result.complete ? money(result.delta) + (result.rate == null ? ' · 증감률 계산 불가' : ' (' + (result.rate > 0 ? '+' : '') + result.rate.toFixed(1) + '%)') : '비교 자료 부족') + '</p></section>' : '';
+    return '<div class="v-row v-between"><h2 id="aftercareRecordTitle">실행 기록 상세</h2><button type="button" class="v-button" data-aftercare-close aria-label="실행 기록 상세 닫기" autofocus>닫기</button></div>'+picker+'<p class="v-metadata">'+esc(record.date)+' 실행 · '+record.startHour+'~'+record.endHour+'시 · 행동 '+record.actions.length+'개</p><div class="v-aftercare-detail-actions">'+record.actions.map((action,index)=>'<section class="v-aftercare-detail-action"><h3>'+(index+1)+'. '+esc(action.title)+'</h3><p><strong>근거</strong><br>'+esc(action.evidence || '직접 기록한 운영 점검')+'</p>'+(action.caveat?'<p><strong>해석 범위</strong><br>'+esc(action.caveat)+'</p>':'')+'</section>').join('')+'</div>'+(record.note?'<section class="v-aftercare-detail-note"><h3>실행 메모</h3><p>'+esc(record.note)+'</p></section>':'')+summary+'<section class="v-aftercare-detail-note"><h3>비교·해석 기준</h3><p>이 실행의 비교는 실행일을 제외한 전후 각각 7일, 선택 영업시간의 매장 전체 매출입니다. 기본 화면의 월간 비교와는 기간이 다르며 진단에서 선택한 품목·요일 필터는 적용하지 않습니다.</p><p>여러 행동을 함께 기록한 경우 묶음의 변화이며, 특정 행동의 효과나 인과관계를 입증하지 않습니다. 화면의 금액은 고깃집 시연 자료로 계산하며, 실제 매장 성과가 아닙니다.</p></section><p class="v-metadata">기록은 이 기기의 같은 브라우저에만 보관됩니다. 서버 전송·다른 기기 동기화는 없습니다. 브라우저 사이트 데이터를 지우면 기록도 삭제됩니다.</p>';
   }
   function bind(rerender) {
-    if (!root.document) return;
-    document.addEventListener('change', event => { if (event.target.id === 'aftercareSelection') { selectedId = event.target.value; rerender(); } });
+    if (!root.document || bound) return;
+    bound = true;
+    const document = root.document;
+    let dialog = document.getElementById('aftercareRecordDialog');
+    if (!dialog) {
+      dialog = document.createElement('dialog');
+      dialog.id = 'aftercareRecordDialog';
+      dialog.className = 'v-modal v-aftercare-dialog';
+      dialog.setAttribute('aria-labelledby', 'aftercareRecordTitle');
+      document.body.appendChild(dialog);
+    }
+    document.addEventListener('change', event => {
+      if (event.target.id !== 'aftercareSelection') return;
+      selectedId = event.target.value;
+      const records = read(), record = records.find(item => item.id === selectedId);
+      if (record && dialog.open) {
+        dialog.innerHTML = renderDetails(record, renderedSource, records);
+        dialog.querySelector('#aftercareSelection')?.focus({preventScroll:true});
+      } else rerender();
+    });
+    document.addEventListener('click', event => {
+      const trigger = event.target.closest('[data-aftercare-detail]');
+      if (trigger) {
+        const records = read(), record = records.find(item => item.id === selectedId) || records.find(item => item.id === trigger.dataset.aftercareDetail);
+        if (!record) return;
+        selectedId = record.id;
+        dialog.innerHTML = renderDetails(record, renderedSource, records);
+        dialog.showModal();
+      }
+      if (event.target.closest('[data-aftercare-close]')) dialog.close();
+    });
   }
-  const api = {KEY, read, save, compare, validate, validDate, render, bind};
+  const api = {KEY, read, save, compare, monthlyComparison, validate, validDate, render, renderDetails, bind};
   root.IM_AFTERCARE = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

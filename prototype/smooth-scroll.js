@@ -21,6 +21,7 @@
   let gestureHasCoarseWheel = false;
 
   function usesContinuousScroll() {
+    if (root?.dataset.currentView && root.dataset.currentView !== 'dashboard') return true;
     return sections.some(section => section.getBoundingClientRect().height > viewportHeight + 2);
   }
 
@@ -181,7 +182,7 @@
     destroy();
     root = nextRoot;
     sections = root ? Array.from(root.querySelectorAll('.v-screen-section')) : [];
-    if (!root || !sections.length || !supportsEnhancedScroll()) return;
+    if (!root || !sections.length || ['secretary', 'policies'].includes(root.dataset.currentView) || !supportsEnhancedScroll()) return;
 
     viewportHeight = Math.max(1, root.clientHeight);
     lastSettledIndex = clampIndex(Math.round(root.scrollTop / viewportHeight));

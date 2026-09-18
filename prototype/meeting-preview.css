@@ -17,9 +17,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 #bannerTitle:focus, .v-screen-section:focus { outline: none; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 .sidebar { position: sticky; z-index: 20; top: 0; height: 100dvh; min-height: 0; width: 238px; flex-basis: 238px; padding: 25px 14px; overflow-y: auto; }
-.brand { padding-bottom: 24px; font-size: 17px; }
+.brand { padding-bottom: 28px; font-size: 17px; }
 .sidebar-toggle { width: 32px; min-width: 32px; }
-.demo-label { font-size: 12px; }
 .nav-item {
   position: relative;
   min-height: 52px;

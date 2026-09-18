@@ -1,0 +1,81 @@
+'use strict';
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require('playwright');
+const url = process.env.IM_PREVIEW_URL ? new URL('prototype/main-screen.html', process.env.IM_PREVIEW_URL).href : pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href;
+(async () => {
+  const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+    const errors = []; page.on('pageerror', e => errors.push(e.message));
+    await page.goto(url); await page.evaluate(() => document.fonts.ready);
+    assert.deepEqual(await page.locator('#mainNavigation .nav-label').allTextContents(), ['홈', '매출진단', '상권분석', '지원사업', '회복전략']);
+    assert.equal(await page.locator('.demo-label').count(), 0);
+    assert.equal(await page.locator('#aiToggle').getAttribute('aria-label'), 'iM비서');
+    await page.locator('#mainNavigation [data-view="secretary"]').click();
+    assert.ok(page.url().endsWith('#recovery'));
+    assert.deepEqual(await page.locator('.v-recovery-tabs [role="tab"]').allTextContents(), ['회복전략', '사후관리']);
+    assert.equal(await page.locator('.v-recovery-panel:not([hidden]) > article').count(), 1, 'one content card per tab');
+    assert.equal(await page.locator('[data-recovery-source], [data-recovery-record], .v-recovery-timing, .v-recovery-period').count(), 0, 'former diagnosis and operating-reference blocks are removed');
+    assert.equal(await page.locator('.v-secretary-main').count(), 1);
+    await page.locator('#reportInput').fill('선택한 매출을 더 살펴보고 싶습니다.');
+    await page.locator('#recoveryTab-aftercare').click();
+    assert.ok(page.url().endsWith('#recovery/aftercare'));
+    assert.equal(await page.locator('#mainNavigation [aria-current="page"]').innerText(), '회복전략');
+    await page.locator('#recoveryTab-aftercare').press('ArrowLeft');
+    assert.equal(await page.locator('#reportInput').inputValue(), '선택한 매출을 더 살펴보고 싶습니다.');
+    await page.locator('#reportForm button[type="submit"]').click();
+    assert.ok(await page.locator('#reportResult').isVisible());
+    await page.locator('[data-action="record-execution"]').click();
+    assert.equal(await page.locator('#executionModal').evaluate(n => n.open), true);
+    assert.ok(await page.locator('#executionActionOptions input:checked').count() >= 1);
+    await page.locator('#executionNote').fill('새 회복전략 화면에서 실행 기록 검증');
+    await page.locator('#executionForm button[type="submit"]').click();
+    assert.ok(page.url().endsWith('#recovery/aftercare'));
+    assert.equal(await page.locator('.v-recovery-panel:not([hidden]) > article').count(), 1, 'aftercare stays one content card');
+    assert.equal(await page.evaluate(() => window.IM_AFTERCARE.read().length), 1);
+    assert.equal(await page.locator('.v-month-chart .v-month-bar').count(), 2);
+    assert.match(await page.locator('.v-month-row.is-current').innerText(), /43,085,000원/);
+    await page.reload();
+    assert.equal(await page.locator('#recoveryTab-aftercare').getAttribute('aria-selected'), 'true');
+    assert.match(await page.evaluate(() => window.IM_AFTERCARE.read()[0].note), /실행 기록 검증/);
+    await page.locator('#recoveryTab-strategy').click();
+    await page.locator('#reportInput').fill('매출과 지출을 분석해 주세요.');
+    await page.locator('#reportForm button').click();
+    assert.ok(await page.locator('#reportResult').isVisible());
+    await page.locator('#makePdfButton').click();
+    await page.locator('#pdfLink[href^="blob:"]').waitFor();
+    const pdfBytes = await page.locator('#pdfLink').evaluate(async a => (await (await fetch(a.href)).arrayBuffer()).byteLength);
+    assert.ok(pdfBytes > 1000);
+    await page.locator('#mainNavigation [data-view="market"]').click();
+    await page.locator('[data-ma-day="1"]').click();
+    assert.equal(await page.locator('.v-dashboard-guidance').count(), 0);
+    assert.ok(!(await page.locator('#viewRoot').innerText()).includes('메뉴·가격 안내를 점검하세요'));
+    await page.locator('#mainNavigation [data-view="secretary"]').click();
+    assert.equal(await page.locator('#pdfLink[href]').count(), 0, 'changing analysis conditions invalidates PDF');
+    assert.equal(await page.locator('#reportMessages .ai-message.user').count(), 0, 'old analysis answers are cleared when diagnosis conditions change');
+    await page.locator('#mainNavigation [data-view="analysis"]').click();
+    assert.equal(await page.locator('html.recovery-fixed-layout, .app-shell.recovery-fixed-view').count(), 0, 'fixed workspace styles do not leak into other views');
+    assert.ok(await page.locator('#viewRoot').evaluate(node => node.scrollHeight > node.clientHeight), 'diagnosis retains its page scrolling');
+    assert.equal(await page.locator('.v-dashboard-guidance').count(), 0, 'operating guidance moved out of diagnosis');
+    assert.ok(!(await page.locator('#viewRoot').innerText()).includes('지금 무엇을 하면 좋을까요'));
+    await page.goto(url + '#aftercare');
+    await page.waitForFunction(() => location.hash === '#recovery/aftercare');
+    assert.ok(page.url().endsWith('#recovery/aftercare'));
+    await page.goto(url + '#secretary');
+    await page.waitForFunction(() => location.hash === '#recovery');
+    assert.ok(page.url().endsWith('#recovery'));
+    for (const [width, height] of [[360,800],[768,900],[1440,1000]]) {
+      await page.setViewportSize({width,height});
+      for (const route of ['dashboard','recovery','recovery/aftercare']) {
+        await page.goto(url + '#' + route); await page.evaluate(() => document.fonts.ready);
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${width}/${route}: horizontal overflow`);
+        assert.equal(await page.locator('#viewRoot').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${width}/${route}: content overflow`);
+      }
+    }
+    assert.deepEqual(errors, []);
+    console.log('PASS recovery: single-card tabs, navigation, keyboard tabs, drafts, question-to-action record, persistent aftercare, PDF, filter invalidation, legacy links and 3 responsive widths');
+  } finally { await browser.close(); }
+})().catch(e => { console.error(e); process.exitCode = 1; });

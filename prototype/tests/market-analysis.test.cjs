@@ -40,6 +40,45 @@ assert.equal(august.current.netSales, 43085000);
 assert.equal(august.current.validPayments, 867);
 assert.equal(august.observedHours, 31 * 6);
 assert.equal(august.comparable, true);
+assert.equal(august.byHour.length, 6);
+assert.equal(sum(august.byHour, 'passers'), august.current.passers);
+for (const row of august.byHour) {
+  const expected = august.current.records.filter(record => Number(record.slotId.slice(0, 2)) === Number(row.id));
+  assert.equal(row.days, 31);
+  assert.equal(row.averagePassers, sum(expected, 'passers') / 31);
+  assert.equal(row.entryRate, D.ratio(sum(expected, 'entrants'), sum(expected, 'passers')));
+  assert.equal(row.count, 31 * 6);
+}
+const currentMonth = D.analyze({ start: '2026-09-01', end: '2026-09-18' }, { timeWindow: '19-21' });
+assert.equal(currentMonth.current.count, 18 * 12);
+assert.equal(currentMonth.expected, 18 * 12);
+assert.ok(currentMonth.complete && currentMonth.comparable);
+assert.match(D.recoveryContext(currentMonth).scope, /2026-09-01~2026-09-18.*19:00~21:00/);
+for (const [stamp, expectedWindow] of [['2026-09-18T07:59:00Z', 'all'], ['2026-09-18T08:00:00Z', '17-19'], ['2026-09-18T09:59:00Z', '17-19'], ['2026-09-18T10:00:00Z', '19-21'], ['2026-09-18T12:00:00Z', '21-23'], ['2026-09-18T14:00:00Z', 'all']]) {
+  assert.equal(D.defaultTimeWindow(new Date(stamp)), expectedWindow, 'KST two-hour boundary ' + stamp);
+}
+for (const window of D.timeWindows) {
+  const selected = D.analyze(S.periods.month, { days: [1, 3], timeWindow: window.id });
+  assert.equal(selected.bySlot.length, window.id === 'all' ? 36 : 12);
+  assert.equal(selected.expected, selected.dates.length * selected.bySlot.length);
+  assert.ok(selected.selected.every(row => row.hour >= window.start && row.hour < window.end || selected.selectedSlots.some(slot => slot.id === row.slotId && slot.hour >= window.start && slot.hour < window.end)));
+  assert.equal(sum(selected.bySlot, 'passers'), selected.current.passers);
+  assert.equal(sum(selected.byWeekday, 'passers'), selected.current.passers);
+  assert.equal(selected.current.netSales, sum(selected.current.records, 'netSales'));
+  assert.match(D.recoveryContext(selected).scope, new RegExp(window.start + ':00~' + window.end + ':00'));
+  assert.ok(selected.complete && selected.comparable);
+}
+const earlyOnlySource = D.rows.filter(row => row.date !== '2026-08-10' || row.slotId !== '22:00');
+assert.equal(D.analyze(S.periods.month, { timeWindow: '17-19' }, earlyOnlySource).complete, true, 'missing data outside the selected window do not invalidate it');
+const lateIncomplete = D.analyze(S.periods.month, { timeWindow: '21-23' }, earlyOnlySource);
+assert.equal(lateIncomplete.unavailable.length, 1);
+assert.equal(lateIncomplete.complete, false);
+assert.equal(lateIncomplete.comparison, null);
+assert.equal(lateIncomplete.byWeekday.find(row => row.id === '1').days, 4);
+assert.equal(lateIncomplete.byHour.find(row => row.id === '22').days, 30, 'one missing ten-minute record excludes that date from the hour average');
+assert.equal(lateIncomplete.byHour.find(row => row.id === '21').days, 31, 'complete other hours retain all dates');
+assert.ok(lateIncomplete.byHour.every(row => row.previous === null), 'incomplete coverage withholds period comparisons');
+assert.ok(D.recoveryContext(lateIncomplete).findings.every(item => item.status === 'insufficient' && item.action === ''));
 const removeDate = '2026-08-10';
 const missing = D.analyze(S.periods.month, {}, D.rows.filter(row => row.date !== removeDate));
 assert.equal(missing.unavailable.length, 36);
@@ -60,6 +99,33 @@ assert.equal(zero.current.purchaseRate, null);
 assert.equal(zero.current.customerAverage, null);
 assert.equal(zero.peak, null);
 assert.equal(zero.insights.length, 0);
+const marketRecovery = D.recoveryContext(august);
+assert.equal(marketRecovery.source, 'market');
+assert.equal(marketRecovery.title, '상권분석');
+assert.match(marketRecovery.scope, /2026-08-01~2026-08-31 · 모든 요일/);
+assert.deepEqual(marketRecovery.findings.map(item => item.id), august.insights.map(item => 'market-' + item.id));
+for (const [index, finding] of marketRecovery.findings.entries()) {
+  assert.equal(finding.title, august.insights[index].title);
+  assert.ok(finding.evidence.includes(august.insights[index].text), 'actions retain the exact diagnostic numbers');
+  assert.equal(finding.status, 'ready');
+  assert.ok(finding.action.length > 0);
+  assert.match(finding.caveat, /생성한 CCTV/);
+}
+const selectedRecovery = D.recoveryContext(D.analyze(S.periods.month, { days: [3, 1] }));
+assert.match(selectedRecovery.scope, /월·수/);
+assert.notDeepEqual(selectedRecovery.findings.map(item => item.evidence), marketRecovery.findings.map(item => item.evidence), 'selected weekdays change recovery evidence');
+const missingRecovery = D.recoveryContext(missing);
+assert.ok(missingRecovery.findings.length > 0);
+assert.ok(missingRecovery.findings.every(item => item.status === 'insufficient' && item.action === '' && item.caveat.includes('관측 누락')));
+assert.ok(!missingRecovery.findings.some(item => item.id === 'market-entry-change'), 'incomplete periods never claim a decline');
+const missingPreviousRecovery = D.recoveryContext(D.analyze(S.periods.month, {}, D.rows.filter(row => row.date !== august.previousStart)));
+assert.ok(missingPreviousRecovery.findings.every(item => item.status === 'ready' && item.caveat.includes('증감 비교는 보류')));
+assert.ok(!missingPreviousRecovery.findings.some(item => item.id === 'market-entry-change'));
+const noObservationRecovery = D.recoveryContext(D.analyze({ start: '2030-01-01', end: '2030-01-02' }));
+assert.deepEqual(noObservationRecovery.findings, []);
+assert.match(noObservationRecovery.reason, /관측 자료가 없습니다/);
+assert.deepEqual(D.recoveryContext(zero).findings, []);
+assert.match(D.recoveryContext(zero).reason, /통행이 0건/);
 const linesByReceipt = new Map(), paidBySlot = new Map(), entriesBySlot = new Map();
 for (const row of S.records) linesByReceipt.set(row.transactionId, (linesByReceipt.get(row.transactionId) || 0) + row.netAmount);
 for (const transaction of S.transactions) {

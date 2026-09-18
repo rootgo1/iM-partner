@@ -92,7 +92,7 @@
     const text = temperature ? temperature.value.toFixed(1) + '°' : '측정 전';
     temperatureBadge.textContent = text;
     temperatureBadge.dataset.status = summary.status;
-    temperatureBadge.setAttribute('aria-label', '나의 금융 온도 ' + (temperature ? temperature.value.toFixed(1) + '도' : '측정 전'));
+    temperatureBadge.setAttribute('aria-label', '나의 가게 온도 ' + (temperature ? temperature.value.toFixed(1) + '도' : '측정 전'));
   }
 
   updateTemperatureBadge(summaries.partial);
@@ -134,7 +134,7 @@
     window.__lastProfileFinanceEvent = event.detail;
     window.__profileFinanceEventCount = (window.__profileFinanceEventCount || 0) + 1;
     notice.classList.add('is-received');
-    notice.textContent = '금융 체온계 이동 요청이 전달되었습니다. 홈 통합 시 최신 대시보드 위치로 연결합니다.';
+    notice.textContent = '나의 가게 온도 이동 요청이 전달되었습니다. 홈 통합 시 최신 대시보드 위치로 연결합니다.';
   });
 
   document.addEventListener('keydown', function (event) {

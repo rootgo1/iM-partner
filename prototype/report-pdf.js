@@ -81,8 +81,8 @@
     section('01  매출과 지출', '매출 ' + money(a.sales) + ' (' + pct(a.salesRate) + ')  /  지출 ' + money(a.expense) + ' (' + pct(a.expenseRate) + ')\n매출·지출 차이 ' + money(a.delta) + ' - 영업이익·현금잔액이 아닙니다.');
     section('02  데이터에서 찾은 요인 후보', options.cause);
     section('03  비용 점검', options.cost);
-    const actions = (options.actions || []).map((action, index) => (index + 1) + '. ' + action.title + '\n' + action.evidence);
-    section('04  다음 실행', (actions.length ? actions.join('\n') : a.action) + '\n직접 수행한 뒤 실행 기록을 남기면 실행일을 제외한 전후 각각 7일의 같은 영업시간 매출을 비교할 수 있습니다. 실제 성과가 아닌 시연 자료입니다.');
+    const actions = (options.actions || []).map((action, index) => (index + 1) + '. ' + action.title + '\n' + action.evidence + (action.caveat ? '\n해석 범위: ' + action.caveat : ''));
+    section('04  다음 실행', (actions.length ? actions.join('\n') : a.action) + '\n직접 수행한 뒤 실행 기록을 남기면 실행일을 제외한 전후 각각 7일의 선택 영업시간 매장 전체 매출을 비교할 수 있습니다. 진단의 품목·요일 필터는 이 전후 비교에 적용하지 않습니다. 실제 성과가 아닌 시연 자료입니다.');
     const questions = (options.discussion || []).slice(-3).map(q => String(q).length > 85 ? String(q).slice(0, 85) + '…' : String(q));
     if (questions.length) section('05  요청한 분석 질문', questions.map((q, i) => (i + 1) + '. ' + q.replace(/\s+/g, ' ')).join('\n'));
     section('출처 및 해석 범위', '같은 가상 고깃집의 생성 POS·지출·매입·CCTV와 별도 상권 표본을 사용합니다. 실제 DB·카드사·통신사·외부 AI는 연결하지 않았습니다. 유동인구·카드소비의 상대 지수 차이는 개인의 구매전환율이 아닙니다. 실제 고객층·재고·금융 효과는 판단하지 않습니다. 매출과 지출의 차이는 순이익·현금잔액이 아니며, 기록 전후의 변화가 행동의 효과임을 입증하지 않습니다. 프로필 수정은 가상 자료의 대상을 변경하지 않습니다.');

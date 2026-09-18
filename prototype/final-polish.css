@@ -1,0 +1,111 @@
+/* Final presentation rhythm. Home keeps its existing layout and palette. */
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) {
+  --section-space: 32px;
+  --card-space: 24px;
+  --content-gap: 20px;
+  --chart-current: #137c78;
+  --chart-previous: #78869b;
+  --chart-grid: #dce5e7;
+  --chart-text: #526777;
+  scroll-snap-type: none;
+}
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) .v-screen-section {
+  display: block;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: var(--section-space);
+  scroll-snap-align: none;
+  scroll-margin-top: 0;
+}
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) .v-screen-section + .v-screen-section {
+  padding-top: 0;
+}
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) .v-screen-inner {
+  width: 100%;
+  max-width: 1440px;
+  max-height: none;
+  margin: 0 auto;
+  padding: 0;
+  overflow: visible;
+}
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-panel, .ma-panel) { gap: var(--content-gap); }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.v-card, .sd-card, .ma-card, .v-policy) {
+  padding: var(--card-space);
+}
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-insight, .ma-lead) { padding: var(--card-space); }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-filters, .ma-filters) { padding: 16px 20px; gap: 12px; }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-metrics, .ma-metrics, .v-policy-grid, .v-grid2, .v-transfer-kpis, .v-aftercare-metrics) { gap: var(--content-gap); }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) .metric-card { padding: 20px; }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-section-heading, .ma-heading) h2 { margin-top: 0; line-height: 1.45; }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-panel, .ma-panel) .v-subtitle { margin-top: 6px; line-height: 1.65; }
+#viewRoot[data-current-view]:not([data-current-view="dashboard"]) .v-footer { margin-top: 24px; line-height: 1.7; }
+
+/* A matched chart/map pair, with descriptions anchored to each card's bottom. */
+#viewRoot[data-current-view="market"] .v-neighborhood-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--content-gap);
+}
+#viewRoot[data-current-view="market"] .v-neighborhood-layout > .v-card { display: flex; flex-direction: column; }
+#viewRoot[data-current-view="market"] .v-neighborhood-scroll { margin-block: auto; }
+#viewRoot[data-current-view="market"] .v-context-bars-observed .v-context-bar-track { height: 220px; }
+#viewRoot[data-current-view="market"] .v-context-bar-track i { background: var(--chart-current); }
+#viewRoot[data-current-view="market"] .v-context-bars strong { color: var(--chart-current); }
+#viewRoot[data-current-view="market"] .v-context-source { margin-top: 20px; margin-bottom: 0; color: var(--chart-text); }
+#viewRoot[data-current-view="market"] .ne-source { margin-top: auto; color: var(--chart-text); }
+#viewRoot[data-current-view="market"] .ne-map-wrap { height: 220px; }
+#viewRoot[data-current-view="market"] .v-conversion-summary { padding: var(--card-space); }
+#viewRoot[data-current-view="market"] .v-conversion-metrics { align-items: stretch; padding-block: 20px; }
+#viewRoot[data-current-view="market"] .v-conversion-metrics i { align-self: center; }
+#viewRoot[data-current-view="market"] .v-conversion-metrics > div { display: flex; flex-direction: column; justify-content: center; }
+#viewRoot[data-current-view="market"] .v-transfer-kpis { margin-block: 20px; }
+
+/* Support recommendations form one continuous page. */
+#viewRoot[data-current-view="policies"] .v-policy-decision > .v-card { min-height: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-overview { margin-top: 20px; }
+#viewRoot[data-current-view="policies"] #policyResults { margin-top: 24px; }
+#viewRoot[data-current-view="policies"] .v-policy { gap: 16px; }
+#viewRoot[data-current-view="policies"] .v-policy h3 { min-height: 3.2em; }
+
+/* Recovery and aftercare use the same inset and spacing as the diagnostics. */
+#viewRoot[data-current-view="secretary"] .v-recovery-workspace { max-width: none; }
+#viewRoot[data-current-view="secretary"] .v-recovery-header { padding: 0 0 24px; }
+#viewRoot[data-current-view="secretary"] .v-recovery-sequence { gap: 24px; }
+#viewRoot[data-current-view="secretary"] :is(.v-recovery-evidence, .v-recovery-proposal) { padding: var(--card-space); }
+#viewRoot[data-current-view="secretary"] :is(.v-secretary-main, .v-aftercare) { padding: var(--card-space) !important; }
+#viewRoot[data-current-view="secretary"] .v-recovery-timing { margin-block: 24px; padding: var(--card-space); }
+#viewRoot[data-current-view="secretary"] .v-recovery-timing > .v-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+#viewRoot[data-current-view="secretary"] .v-recovery-timing :is(.v-dashboard-guidance, .v-dashboard-insight) { padding: var(--card-space); }
+#viewRoot[data-current-view="secretary"] .v-aftercare-metrics article { padding: 20px; grid-template-rows: auto auto 1fr; }
+
+/* Equivalent profile forms share widths and aligned label/input rows. */
+#viewRoot[data-current-view="profile"] #profileForm > .v-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; align-items: stretch; }
+#viewRoot[data-current-view="profile"] .v-form-grid { gap: 20px 16px; }
+#viewRoot[data-current-view="profile"] .v-field { align-content: start; gap: 8px; }
+#viewRoot[data-current-view="profile"] .v-field :is(input, select) { height: 44px; padding: 10px 12px; }
+#viewRoot[data-current-view="profile"] .v-note { margin-top: 0; padding: 16px 20px; font-size: 13px; line-height: 1.7; }
+
+@media (max-width: 1279px) {
+  #viewRoot[data-current-view]:not([data-current-view="dashboard"]) { --section-space: 24px; }
+}
+@container (max-width: 840px) {
+  #viewRoot[data-current-view="market"] .v-neighborhood-layout,
+  #viewRoot[data-current-view="secretary"] .v-recovery-timing > .v-grid2,
+  #viewRoot[data-current-view="profile"] #profileForm > .v-grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px), (max-height: 719px) {
+  #mainContent:not(.dashboard-view) { padding: 0; }
+  #viewRoot[data-current-view]:not([data-current-view="dashboard"]) .v-screen-section { scroll-margin-top: var(--im-topbar-height, 80px); }
+}
+@media (max-width: 760px) {
+  #viewRoot[data-current-view]:not([data-current-view="dashboard"]) { --section-space: 16px; --card-space: 18px; --content-gap: 16px; }
+  #viewRoot[data-current-view]:not([data-current-view="dashboard"]) :is(.sd-filters, .ma-filters) { padding: 16px; }
+  #viewRoot[data-current-view]:not([data-current-view="dashboard"]) .metric-card { padding: 16px; }
+  #viewRoot[data-current-view="market"] .v-neighborhood-layout,
+  #viewRoot[data-current-view="secretary"] .v-recovery-timing > .v-grid2,
+  #viewRoot[data-current-view="profile"] #profileForm > .v-grid2 { grid-template-columns: minmax(0, 1fr); }
+  #viewRoot[data-current-view="market"] .v-context-bars-observed .v-context-bar-track { height: 180px; }
+  #viewRoot[data-current-view="policies"] .v-policy h3 { min-height: 0; }
+  #viewRoot[data-current-view="profile"] .v-note { padding: 16px; }
+}

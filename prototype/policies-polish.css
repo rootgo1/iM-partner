@@ -1,0 +1,155 @@
+/* Official notices: ten selected recommendations and the complete collected list. */
+#viewRoot[data-current-view="policies"] .v-policy-workspace { display: grid; gap: 24px; min-width: 0; }
+#viewRoot[data-current-view="policies"] :is(.v-policy-heading, .v-policy-controls, .v-policy-results-head, .v-policy-help) { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-heading h1 { margin: 0; color: #243e3b; font-size: 28px; line-height: 1.4; }
+#viewRoot[data-current-view="policies"] .v-policy-heading p { margin: 6px 0 0; color: #647570; font-size: 14px; line-height: 1.7; }
+#viewRoot[data-current-view="policies"] .v-policy-heading > .v-tag { flex-shrink: 0; background: #edf1f2; color: #52616e; }
+#viewRoot[data-current-view="policies"] .v-policy-controls { padding: 16px 20px; border: 1px solid #dce7e2; border-radius: 16px; background: #f8fbf9; }
+#viewRoot[data-current-view="policies"] .v-policy-controls .v-tabs { flex-shrink: 0; flex-wrap: nowrap; border: 0; padding: 0; gap: 4px; }
+#viewRoot[data-current-view="policies"] .v-policy-controls .v-tabs button { min-height: 42px; padding: 10px 18px; white-space: nowrap; color: #566c65; }
+#viewRoot[data-current-view="policies"] .v-policy-controls .v-tabs button.active { background: #deeee6; color: #235e50; }
+#viewRoot[data-current-view="policies"] .v-policy-search { display: flex; gap: 10px; min-width: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-search .v-search { min-width: 0; width: 240px; background: #fff; }
+#viewRoot[data-current-view="policies"] .v-policy-search .v-select { min-width: 112px; width: 112px; background: #fff; }
+#viewRoot[data-current-view="policies"] #policyResults { margin: 0; min-width: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-results-head { align-items: flex-start; margin-bottom: 20px; }
+#viewRoot[data-current-view="policies"] .v-policy-results-head h2 { margin: 0; color: #243e3b; font-size: 21px; line-height: 1.5; }
+#viewRoot[data-current-view="policies"] .v-policy-results-head h2 > span { margin-left: 6px; color: #197465; font-variant-numeric: tabular-nums; }
+#viewRoot[data-current-view="policies"] .v-policy-results-head p { margin: 6px 0 0; color: #647570; font-size: 13px; line-height: 1.7; }
+#viewRoot[data-current-view="policies"] .v-policy-range { padding-top: 6px; color: #5c7069; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#viewRoot[data-current-view="policies"] .v-policy-carousel { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 14px; align-items: center; }
+#viewRoot[data-current-view="policies"] .v-policy-arrow { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid #cbdbd5; border-radius: 50%; color: #296d5e; background: #fff; box-shadow: 0 3px 10px #153d2b08; cursor: pointer; }
+#viewRoot[data-current-view="policies"] .v-policy-arrow svg { width: 20px; height: 20px; }
+#viewRoot[data-current-view="policies"] .v-policy-arrow:hover:not(:disabled) { color: #fff; background: #397e6d; border-color: #397e6d; }
+#viewRoot[data-current-view="policies"] .v-policy-arrow:disabled { opacity: .36; cursor: default; box-shadow: none; }
+#viewRoot[data-current-view="policies"] .v-policy-grid { grid-template-columns: repeat(var(--policy-columns), minmax(0, 1fr)); gap: 20px; align-items: stretch; min-width: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-grid > :last-child:nth-child(3) { grid-column: auto; }
+#viewRoot[data-current-view="policies"] .v-policy { display: flex; flex-direction: column; min-width: 0; height: 100%; gap: 16px; padding: 24px; border-radius: 18px; box-shadow: 0 5px 16px #183f3010; }
+#viewRoot[data-current-view="policies"] .v-policy-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#viewRoot[data-current-view="policies"] .v-policy-card-top > span:last-child { color: #82918b; font-size: 13px; font-variant-numeric: tabular-nums; }
+#viewRoot[data-current-view="policies"] .v-policy-title { min-height: 112px; }
+#viewRoot[data-current-view="policies"] .v-policy-title h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-height: 4.65em; max-height: 4.65em; margin: 0; color: #29463e; font-size: 17px; line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
+#viewRoot[data-current-view="policies"] .v-policy-title p { margin: 8px 0 0; color: #6a7b75; font-size: 13px; line-height: 1.65; }
+#viewRoot[data-current-view="policies"] .v-policy-match { padding: 10px 12px; border-radius: 9px; background: #edf6f0; color: #286b54; font-size: 12px; line-height: 1.5; }
+#viewRoot[data-current-view="policies"] .v-policy-match.is-review { background: #fbf4e5; color: #855b1c; }
+#viewRoot[data-current-view="policies"] .v-policy-match.is-mismatch { background: #f9edef; color: #a4424d; }
+#viewRoot[data-current-view="policies"] .v-policy-checks { display: grid; gap: 10px; margin: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-checks > div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 1.5; }
+#viewRoot[data-current-view="policies"] .v-policy-checks dt { color: #6c7b75; }
+#viewRoot[data-current-view="policies"] .v-policy-checks dd { margin: 0; color: #697578; text-align: right; }
+#viewRoot[data-current-view="policies"] .v-policy-checks dd.is-match { color: #287258; }
+#viewRoot[data-current-view="policies"] .v-policy-checks dd.is-mismatch { color: #a4424d; }
+#viewRoot[data-current-view="policies"] .v-policy > .v-button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; margin-top: auto; background: #f7fbf8; color: #286954; }
+#viewRoot[data-current-view="policies"] .v-policy-pagination { display: flex; justify-content: center; gap: 2px; margin-top: 12px; }
+#viewRoot[data-current-view="policies"] .v-policy-pagination button { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+#viewRoot[data-current-view="policies"] .v-policy-pagination button span { width: 6px; height: 6px; border-radius: 4px; background: #c4d2cc; }
+#viewRoot[data-current-view="policies"] .v-policy-pagination button[aria-current="page"] span { width: 20px; background: #377d6b; }
+#viewRoot[data-current-view="policies"] .v-policy-basis { border: 1px solid #dce7e2; border-radius: 14px; background: #f8fbf9; }
+#viewRoot[data-current-view="policies"] .v-policy-basis summary { display: flex; align-items: center; gap: 16px; min-height: 54px; padding: 16px 20px; cursor: pointer; list-style: none; font-size: 13px; }
+#viewRoot[data-current-view="policies"] .v-policy-basis summary::-webkit-details-marker { display: none; }
+#viewRoot[data-current-view="policies"] .v-policy-basis summary > :first-child { color: #345d50; font-weight: 700; }
+#viewRoot[data-current-view="policies"] .v-policy-basis summary > :nth-child(2) { margin-left: auto; color: #647970; }
+#viewRoot[data-current-view="policies"] .v-policy-basis summary > :last-child { color: #5b7b6b; font-size: 18px; transition: transform .15s; }
+#viewRoot[data-current-view="policies"] .v-policy-basis[open] summary > :last-child { transform: rotate(180deg); }
+#viewRoot[data-current-view="policies"] .v-policy-basis-body { padding: 0 20px 20px; }
+#viewRoot[data-current-view="policies"] .v-policy-criteria { margin: 0; padding-top: 16px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#viewRoot[data-current-view="policies"] .v-policy-basis-body > p { margin: 16px 0; color: #68786e; font-size: 13px; line-height: 1.8; }
+#viewRoot[data-current-view="policies"] .v-policy-help { gap: 12px; }
+#viewRoot[data-current-view="policies"] .v-policy-help > p { margin: 0; color: #68766f; font-size: 12px; line-height: 1.7; }
+#viewRoot[data-current-view="policies"] .v-policy-help .v-button { padding: 8px 12px; font-size: 12px; min-height: 38px; white-space: nowrap; }
+#viewRoot[data-current-view="policies"] :is(button, summary, input, select):focus-visible { outline: 3px solid #86baa9; outline-offset: 3px; }
+.v-policy-status { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 6px; background: #edf2f4; color: #5a6771; font-size: 12px; line-height: 1.5; white-space: nowrap; }
+.v-policy-status.open { background: #e8f3ee; color: #246a51; }
+.v-policy-status.review { background: #fbf2df; color: #876017; }
+.v-policy-status.upcoming { background: #edf0fa; color: #586da0; }
+.v-policy-status.closed { background: #eff1f2; color: #747d82; }
+#viewRoot[data-current-view="policies"] .v-policy-card-top > .v-policy-status { font-size: 12px; color: #876017; }
+#viewRoot[data-current-view="policies"] .v-policy-card-top > .v-policy-status.open { color: #246a51; }
+#viewRoot[data-current-view="policies"] .v-policy-card-top > .v-policy-status.upcoming { color: #586da0; }
+#viewRoot[data-current-view="policies"] .v-policy-benefit { min-height: 3.2em; margin: 0; color: #314b42; font-size: 14px; font-weight: 600; line-height: 1.65; overflow-wrap: anywhere; }
+#viewRoot[data-current-view="policies"] .v-policy-facts { display: grid; gap: 10px; margin: 0; padding-top: 14px; border-top: 1px solid #e8eeeb; }
+#viewRoot[data-current-view="policies"] .v-policy-facts > div { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.65; }
+#viewRoot[data-current-view="policies"] .v-policy-facts dt { color: #718078; }
+#viewRoot[data-current-view="policies"] .v-policy-facts dd { margin: 0; color: #455c52; overflow-wrap: anywhere; }
+#viewRoot[data-current-view="policies"] .v-policy-match { margin-top: auto; padding: 12px; }
+#viewRoot[data-current-view="policies"] .v-policy-match > span { font-weight: 700; }
+#viewRoot[data-current-view="policies"] .v-policy-match p { margin: 5px 0; font-size: 12px; line-height: 1.6; }
+#viewRoot[data-current-view="policies"] .v-policy-match small { color: #677b70; font-size: 11px; line-height: 1.6; }
+#viewRoot[data-current-view="policies"] .v-policy-actions { display: flex; gap: 8px; }
+#viewRoot[data-current-view="policies"] .v-policy-actions > .v-button { display: flex; justify-content: center; align-items: center; flex: 1; min-width: 0; min-height: 42px; padding: 10px 8px; font-size: 12px; white-space: nowrap; text-decoration: none; }
+#viewRoot[data-current-view="policies"] .v-policy-source { background: #397e6d; color: #fff; border-color: #397e6d; }
+#viewRoot[data-current-view="policies"] .v-policy-list { display: grid; gap: 0; border: 1px solid #dce7e2; border-radius: 16px; overflow: hidden; background: #fff; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item { display: flex; align-items: center; gap: 28px; padding: 24px; border-bottom: 1px solid #e3ebe6; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item:last-child { border-bottom: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-list-content { flex: 1; min-width: 0; }
+#viewRoot[data-current-view="policies"] .v-policy-list-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: #687970; font-size: 12px; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item h3 { margin: 10px 0 8px; color: #2d483e; font-size: 17px; line-height: 1.65; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item h3 button { padding: 0; border: 0; background: transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item h3 button:hover { text-decoration: underline; text-underline-offset: 4px; }
+#viewRoot[data-current-view="policies"] .v-policy-list-item p { margin: 0; color: #62766a; font-size: 13px; line-height: 1.7; }
+#viewRoot[data-current-view="policies"] .v-policy-list-period { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; color: #728077; font-size: 12px; line-height: 1.7; }
+#viewRoot[data-current-view="policies"] .v-policy-list-actions { display: flex; flex-direction: column; gap: 8px; flex: 0 0 112px; }
+#viewRoot[data-current-view="policies"] .v-policy-list-actions .v-button { text-align: center; white-space: nowrap; text-decoration: none; font-size: 12px; min-height: 40px; }
+.v-policy-detail-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.v-policy-detail-meta > span:last-child { margin-left: auto; color: #758179; font-size: 12px; }
+.v-policy-detail-facts { display: grid; gap: 14px; margin: 0; padding: 20px; border-radius: 12px; background: #f4f8f5; }
+.v-policy-detail-facts > div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 14px; font-size: 14px; line-height: 1.7; }
+.v-policy-detail-facts dt { color: #748276; }
+.v-policy-detail-facts dd { margin: 0; color: #3d574a; overflow-wrap: anywhere; }
+.v-policy-detail-heading { margin: 24px 0 12px; font-size: 17px; color: #345545; }
+.v-policy-detail-checks { display: grid; margin: 0; }
+.v-policy-detail-checks > div { display: grid; grid-template-columns: 95px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #e7eee9; font-size: 13px; line-height: 1.7; }
+.v-policy-detail-checks dt { color: #66796d; }
+.v-policy-detail-checks dd { display: grid; gap: 2px; margin: 0; color: #748276; }
+.v-policy-detail-checks strong { color: #3c6d54; font-weight: 600; }
+.v-policy-detail-checks strong.is-mismatch { color: #a4494d; }
+.v-policy-detail-note { margin-top: 20px; padding: 16px 20px; border-radius: 12px; background: #fbf7ee; font-size: 13px; line-height: 1.8; color: #755e34; }
+.v-policy-detail-note ul { margin: 8px 0 0; padding-left: 18px; }
+.v-policy-detail-note li + li { margin-top: 5px; }
+.v-policy-detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; }
+.v-policy-detail-footer p { margin: 0; color: #748276; font-size: 12px; line-height: 1.7; }
+.v-policy-detail-footer .v-button { flex-shrink: 0; background: #397e6d; color: #fff; text-decoration: none; font-size: 13px; }
+@media (max-width: 1200px) {
+  #viewRoot[data-current-view="policies"] .v-policy-carousel { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 10px; }
+  #viewRoot[data-current-view="policies"] .v-policy-arrow { width: 36px; height: 42px; }
+  #viewRoot[data-current-view="policies"] .v-policy { padding: 18px; }
+  #viewRoot[data-current-view="policies"] .v-policy-grid { gap: 14px; }
+}
+@media (max-width: 1050px) {
+  #viewRoot[data-current-view="policies"] .v-policy-controls { align-items: stretch; flex-direction: column; gap: 14px; }
+  #viewRoot[data-current-view="policies"] .v-policy-search .v-search { flex: 1; width: 0; }
+  #viewRoot[data-current-view="policies"] .v-policy-title { min-height: 0; }
+  #viewRoot[data-current-view="policies"] .v-policy-title h3 { min-height: 0; }
+  #viewRoot[data-current-view="policies"] .v-policy-carousel { max-width: 670px; margin-inline: auto; }
+}
+@media (max-width: 760px) {
+  #viewRoot[data-current-view="policies"] .v-policy-workspace { gap: 20px; }
+  #viewRoot[data-current-view="policies"] .v-policy-heading { flex-direction: column; align-items: flex-start; gap: 10px; }
+  #viewRoot[data-current-view="policies"] .v-policy-heading h1 { font-size: 24px; }
+  #viewRoot[data-current-view="policies"] .v-policy-controls { padding: 14px; }
+  #viewRoot[data-current-view="policies"] .v-policy-controls .v-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #viewRoot[data-current-view="policies"] .v-policy-controls .v-tabs button { padding-inline: 12px; }
+  #viewRoot[data-current-view="policies"] .v-policy-results-head { gap: 12px; }
+  #viewRoot[data-current-view="policies"] .v-policy-results-head h2 { font-size: 19px; }
+  #viewRoot[data-current-view="policies"] .v-policy-results-head p { font-size: 12px; }
+  #viewRoot[data-current-view="policies"] .v-policy-carousel { grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 8px; }
+  #viewRoot[data-current-view="policies"] .v-policy-arrow { width: 32px; }
+  #viewRoot[data-current-view="policies"] .v-policy { padding: 18px 16px; gap: 16px; }
+  #viewRoot[data-current-view="policies"] .v-policy-title h3 { font-size: 17px; }
+  #viewRoot[data-current-view="policies"] .v-policy-criteria { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #viewRoot[data-current-view="policies"] .v-policy-basis summary { padding: 14px 16px; gap: 10px; }
+  #viewRoot[data-current-view="policies"] .v-policy-basis-body { padding: 0 16px 16px; }
+  #viewRoot[data-current-view="policies"] .v-policy-help { flex-direction: column; align-items: flex-start; }
+  #viewRoot[data-current-view="policies"] .v-policy-card-top { gap: 6px; flex-wrap: wrap; }
+  #viewRoot[data-current-view="policies"] .v-policy-benefit { min-height: 0; }
+  #viewRoot[data-current-view="policies"] .v-policy-facts > div { display: block; }
+  #viewRoot[data-current-view="policies"] .v-policy-facts dt { margin-bottom: 3px; }
+  #viewRoot[data-current-view="policies"] .v-policy-list-item { align-items: stretch; flex-direction: column; padding: 20px 16px; gap: 16px; }
+  #viewRoot[data-current-view="policies"] .v-policy-list-actions { flex-basis: auto; flex-direction: row; }
+  #viewRoot[data-current-view="policies"] .v-policy-list-actions .v-button { flex: 1; }
+  .v-policy-detail-facts { padding: 16px; }
+  .v-policy-detail-facts > div { grid-template-columns: 58px minmax(0, 1fr); gap: 10px; font-size: 13px; }
+  .v-policy-detail-checks > div { grid-template-columns: 78px minmax(0, 1fr); gap: 10px; }
+  .v-policy-detail-footer { align-items: stretch; flex-direction: column; gap: 12px; }
+  .v-policy-detail-footer .v-button { text-align: center; }
+}

@@ -164,12 +164,12 @@
     const temperature = displayedTemperature(summary);
     if (temperature) {
       return {
-        label: '나의 금융 온도',
+        label: '나의 가게 온도',
         value: formatMetric(temperature.value, temperature.unit)
       };
     }
     return {
-      label: '나의 금융 온도',
+      label: '나의 가게 온도',
       value: '측정 전'
     };
   }
@@ -201,13 +201,13 @@
     const temperature = displayedTemperature(summary);
     const coverage = '연결 데이터, ' + summary.totalCount + '개 중 ' + summary.measuredCount + '개 연결';
     const parts = [
-      '금융 체온계',
+      '나의 가게 온도',
       coverage,
       primary.label + ' ' + (temperature
         ? accessibleValue(temperature.value, temperature.unit)
         : '측정 전'),
       accessibleDeltaText(summary),
-      '금융 체온계로 이동',
+      '나의 가게 온도로 이동',
       '경영 참고용 지표입니다. 종합 온도가 아니며, 신용평가와 대출심사 결과와도 무관합니다'
     ];
     return parts.join(', ');
@@ -228,19 +228,15 @@
     const heading = element('span', 'ipf-profile-finance__heading');
     const chevron = element('span', 'ipf-profile-finance__chevron');
     chevron.setAttribute('aria-hidden', 'true');
-    heading.append(element('strong', '', '금융 체온계'), chevron);
+    heading.append(element('strong', '', '나의 가게 온도'), chevron);
 
-    const basisText = summary.referenceTemperature
-      ? summary.referenceTemperature.basisLabel
-      : activeTemperature ? '연결 데이터 기반 금융 온도' : '데이터 연결 후 온도 표시';
-    const basis = element('span', 'ipf-profile-finance__basis', basisText);
     const details = element('span', 'ipf-profile-finance__details');
     const status = element('span', 'ipf-profile-finance__status', statusText(summary));
     const trend = element('span', 'ipf-profile-finance__trend', deltaText(summary));
     trend.dataset.direction = activeTemperature ? activeTemperature.direction : 'unknown';
     details.append(status, trend);
 
-    button.append(heading, basis, details);
+    button.append(heading, details);
     wrapper.append(button);
     container.replaceChildren(wrapper);
 

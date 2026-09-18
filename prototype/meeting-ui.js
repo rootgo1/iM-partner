@@ -25,30 +25,29 @@
     if (characters.length === 2) return characters[1];
     return characters.slice(-2).join('');
   };
-  const views = { dashboard: '홈', analysis: '매출진단', market: '상권분석', policies: '지원사업', aftercare: '사후관리', secretary: 'iM비서', profile: '내 프로필' };
-  const navigationViews = ['dashboard', 'analysis', 'market', 'policies', 'secretary', 'aftercare'];
-  const legacyViews = { recovery: 'market', finance: 'analysis' };
+  const views = { dashboard: '홈', analysis: '매출진단', market: '상권분석', policies: '지원사업', secretary: '회복전략', profile: '내 프로필' };
+  const navigationViews = ['dashboard', 'analysis', 'market', 'policies', 'secretary'];
+  const legacyViews = { recovery: 'secretary', aftercare: 'secretary', 'recovery/aftercare': 'secretary', 'secretary/aftercare': 'secretary', finance: 'analysis' };
   const normalizeView = view => legacyViews[view] || view;
   const captions = {
     dashboard: '가게의 오늘을 살펴보세요.',
-    analysis: '상권의 기회와 가게의 매출을 함께 보세요.',
+    analysis: '가게의 매출 변화와 진단 근거를 살펴보세요.',
     market: 'CCTV 관측에서 상권의 흐름을 읽으세요.',
     policies: '내 가게에 맞는 지원을 찾아보세요.',
-    secretary: '질문으로 분석하고, 문서로 남기세요.',
-    aftercare: '실행을 기록하고 변화를 살펴보세요.',
+    secretary: '진단 결과를 실행으로, 실행을 사후관리로 연결하세요.',
     profile: '내 가게의 기준 정보를 확인하세요.'
   };
   const state = {
     view: 'dashboard', periodMode: 'month', period: Object.assign({}, D.periods.month), profile: Object.assign({}, D.profile),
     policyView: 'recommended', keyword: '', category: 'all', offset: 0,
-    reportMessages: [], secretaryActions: [], reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
+    reportMessages: [], secretaryActions: [], recoveryTab: 'strategy', reportDraft: '', reportBlobUrl: null, reportReady: false, reportRevision: 0, pdfBusy: false,
     guideHour: null, contextMode: 'traffic', chartMode: 'hour', chartSeries: [], bannerIndex: 0, bannerPaused: false, weatherPage: 5, chatOpen: false, radius: 500
   };
   let analysis = D.analyze(state.period);
   const recoveryData = D.analyzeRecovery();
   let financeIndex = D.financialIndex();
   let clockKey = "";
-  const sourceFoot = '<p class="v-footer">생성 데이터 기반 시연 · 실제 POS·카드사·통신사 원자료가 아닙니다. 이 화면에는 DB·외부 API·실제 AI가 연결되어 있지 않습니다.</p>';
+  const sourceFoot = '<p class="v-footer">시연용 생성 데이터 기반 · iM파트너 서비스 프로토타입 화면입니다.</p>';
   function icon(name) {
     const paths = {
       dashboard: '<path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9"/>',
@@ -64,7 +63,7 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
   }
   $('#mainNavigation').innerHTML = navigationViews.map(id =>
-    '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '" aria-label="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + (id === 'secretary' ? productName('비서') : views[id]) + '</span></button>'
+    '<button type="button" class="nav-item" data-view="' + id + '" title="' + views[id] + '" aria-label="' + views[id] + '"><span class="nav-icon">' + icon(id) + '</span><span class="nav-label">' + views[id] + '</span></button>'
   ).join('');
   function metricTrend(delta) {
     if (delta === undefined) return '';
@@ -83,7 +82,15 @@
   function marketMetric(label, value, scope) {
     return '<article class="card metric-card v-market-metric"><div class="metric-label">' + label + '</div><div class="metric-value">' + indexChange(value) + '</div><div class="v-metric-meta"><span>' + esc(state.period.comparison) + '</span><span>' + esc(scope) + '</span></div></article>';
   }
+  function diagnosisPeriod() {
+    const end = D.shift(D.seoulClock().date.slice(0, 7) + '-01', -1), start = end.slice(0, 7) + '-01';
+    const offset = Math.ceil(Number(end.slice(8)) / 7) * 7;
+    return { start, end, previousStart: D.shift(start, -offset), previousEnd: D.shift(end, -offset),
+      label: Number(end.slice(0, 4)) + '년 ' + Number(end.slice(5, 7)) + '월', comparison: '이전 같은 요일 구성 대비' };
+  }
   function comparisonChart() {
+    const period = state.view === 'market' ? diagnosisPeriod() : state.period;
+    const analysis = D.analyze(period);
     const rows = state.chartMode === 'weekday' ? analysis.weekdaySlots : analysis.slots;
     const series = [
       { key: 'traffic', label: '상권 유동인구', color: '#278a77', dash: '', unit: '명' },
@@ -110,7 +117,7 @@
     });
     rows.forEach((row,i) => { svg += '<rect class="v-chart-hit" data-chart-index="'+i+'" x="'+(x(i)-Math.min(60,245/Math.max(1,rows.length-1)))+'" y="36" width="'+Math.min(120,490/Math.max(1,rows.length-1))+'" height="180" fill="transparent" tabindex="0" role="button" aria-label="'+esc(row.label+' 모든 지표 보기')+'"/>'; });
     rows.forEach((row, i) => { svg += '<text x="' + x(i) + '" y="241" text-anchor="middle">' + row.label + '</text>'; });
-    return '<div class="v-comparison-chart"><div class="v-chart-mode" aria-label="그래프 집계 단위">' + ['hour', 'weekday'].map(mode => '<button type="button" data-chart-mode="' + mode + '" aria-pressed="' + (state.chartMode === mode) + '">' + (mode === 'hour' ? '시간대별' : '요일별') + '</button>').join('') + '</div><p class="v-chart-selection-note">비교할 지표를 여러 개 선택하세요. 선택을 모두 해제하면 전체를 표시합니다.</p><div class="v-legend v-series-legend">' + series.map(item => '<button type="button" data-series="' + item.key + '" aria-pressed="false"><svg width="24" height="10" aria-hidden="true"><line x1="0" x2="24" y1="5" y2="5" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '"/></svg>' + item.label + '</button>').join('') + '</div>' + svg + '</svg><div class="v-chart-tooltip" role="status" hidden></div><p class="v-metadata">' + esc(state.period.start + ' ~ ' + state.period.end) + ' · 생성 자료<br>각 지표의 최댓값 = 100 · ' + (state.chartMode === 'weekday' ? '관측일 수로 나눈 요일별 일평균' : '선택 기간의 시간대별 합계') + ' · 점 위에서 실제 수치 확인<br>카드소비는 별도 상권 표본이며, 서비스 이용 가게 소비 흐름과 표본 범위가 다릅니다.</p></div>';
+    return '<div class="v-comparison-chart"><div class="v-chart-mode" aria-label="그래프 집계 단위">' + ['hour', 'weekday'].map(mode => '<button type="button" data-chart-mode="' + mode + '" aria-pressed="' + (state.chartMode === mode) + '">' + (mode === 'hour' ? '시간대별' : '요일별') + '</button>').join('') + '</div><p class="v-chart-selection-note">비교할 지표를 여러 개 선택하세요. 선택을 모두 해제하면 전체를 표시합니다.</p><div class="v-legend v-series-legend">' + series.map(item => '<button type="button" data-series="' + item.key + '" aria-pressed="false"><svg width="24" height="10" aria-hidden="true"><line x1="0" x2="24" y1="5" y2="5" stroke="' + item.color + '" stroke-width="3" stroke-dasharray="' + item.dash + '"/></svg>' + item.label + '</button>').join('') + '</div>' + svg + '</svg><div class="v-chart-tooltip" role="status" hidden></div><p class="v-metadata">' + esc(period.start + ' ~ ' + period.end) + ' · 생성 자료<br>각 지표의 최댓값 = 100 · ' + (state.chartMode === 'weekday' ? '관측일 수로 나눈 요일별 일평균' : '선택 기간의 시간대별 합계') + ' · 점 위에서 실제 수치 확인<br>카드소비는 별도 상권 표본이며, 서비스 이용 가게 소비 흐름과 표본 범위가 다릅니다.</p></div>';
   }
   function syncChartSelection() {
     document.querySelectorAll('[data-series]').forEach(node => {
@@ -138,16 +145,17 @@
     if (analysis.salesRate == null) return '비교 기간 자료가 부족합니다. 현재 기간의 시간대별 지표부터 확인해 보세요.';
     return '내 가게 매출 ' + pct(analysis.salesRate) + ', 상권 카드소비 ' + pct(analysis.cardRate) + ', 유동인구 ' + pct(analysis.trafficRate) + '입니다. ' + analysis.focus.label + ' 상대 지수 차이를 운영 점검의 요인 후보로 살펴보세요.';
   }
-  function dashboardInsight() {
+  function dashboardInsight(withActions = false) {
     const insight = D.salesInsight(state.period), clock = insight.clock;
     const available = insight.status === 'available';
     const stamp = String(clock.hour).padStart(2, '0') + ':' + String(clock.minute).padStart(2, '0') + ' 현재';
-    const title = insight.status === 'off_hours' ? '다음 영업을 준비하세요.' : available ? insight.slot.label + ' 운영 점검' : '판매 기록을 기다리고 있어요.';
+    const title = insight.status === 'off_hours' ? '현재는 영업시간 밖입니다.' : available ? insight.slot.label + ' 매출 현황' : '판매 기록을 기다리고 있어요.';
     return '<article class="card insight-card v-decision-action v-dashboard-insight"><div class="v-dashboard-insight-head"><span class="v-tag">현재 매출진단</span><span>' + stamp + '</span></div>' +
       '<h2>' + title + '</h2><p class="v-dashboard-insight-lead">' + (available ? '현재 시간대의 평소 판매·통행 흐름입니다.' : insight.status === 'off_hours' ? '분석 가능한 시간대는 17~23시입니다.' : '선택 기간에 비교할 매출 자료가 없습니다.') + '</p>' +
       (available ? '<div class="v-dashboard-insight-values"><div><span>시간대 일평균 매출</span><strong>' + compact(insight.salesAverage) + '<small> 원</small></strong></div><div><span>가게 앞 일평균 통행 관측</span><strong>' + (insight.storefrontAverage == null ? '자료 없음' : number(insight.storefrontAverage) + '<small>건</small>') + '</strong></div></div>' : '') +
-      '<div class="v-dashboard-insight-point"><span>해석과 다음 행동</span><strong>' + (available ? insight.title : '재료와 정산 일정을 확인하세요.') + '</strong><p>' + (available ? insight.action : '다음 영업시간의 준비 수량과 예정 지출을 점검하세요.') + '</p>' +
+      '<div class="v-dashboard-insight-point"><span>' + (withActions ? '해석과 다음 행동' : '진단 결과') + '</span><strong>' + (available ? insight.title : '비교할 영업시간 자료가 없습니다.') + '</strong><p>' + (withActions && available ? insight.action : '시간대별 매출과 관측값은 과거 생성 자료의 평균이며 현재 실적이나 수요 예측이 아닙니다.') + '</p>' +
       (available ? '<small>하루 매출 중 이 시간대 비중 <b>' + ratioText(insight.share) + '</b></small>' : '') + '</div>' +
+      (!withActions ? button('진단에 따른 회복전략 보기 →', 'data-view="secretary"') : '') +
       '<p class="v-dashboard-insight-source">' + dateText(state.period.start) + '~' + dateText(state.period.end) + ' 기준 · 실시간 실적 아님</p>' +
       '</article>';
   }
@@ -209,52 +217,49 @@
       '<p class="v-guidance-note">' + dateText(g.period.start) + '~' + dateText(g.period.end) + ' 생성 기록 · 최근 30일 일평균<br>매출 비중 = 해당 시간 매출 ÷ 하루 매출 · 실제 수요 예측 아님</p></div>';
   }
   function homeGuidanceContent() {
-    const hour = D.seoulClock().hour;
-    const g = D.guidance(hour);
+    const clock = D.seoulClock(), hour = clock.hour, g = D.guidance(hour);
     const operating = hour >= 17 && hour < 23;
-    if (operating && g.average == null) return '<div class="v-guidance-empty"><h3>' + esc(g.title) + '</h3><p>' + esc(g.text) + '</p></div>';
-    let currentAction, nextAction, facts;
-    if (operating) {
-      currentAction = g.opening
-        ? '첫 손님을 맞이할 테이블과 주문 준비를 확인하세요.'
-        : g.quiet ? '현재 손님과 주문 대기를 살펴 역할을 나누세요.'
-          : '주력 메뉴의 준비 수량과 주문 대기를 확인하세요.';
-      const nextDay = g.nextPeak.hour <= hour;
-      const nextTime = g.nextPeak.hour + '시부터 ' + (g.nextPeak.hour + 1) + '시까지';
-      nextAction = (nextDay ? '다음 영업일 ' : '오늘 ') + nextTime + ' 운영에 맞춰 재료를 준비하세요.';
-      facts = '<div class="v-home-guide-facts" aria-label="' + hour + '시 최근 30일 참고 지표"><span>이 시간 평균 매출 <strong>' + money(g.average) + '</strong></span><span title="해당 시간 매출을 하루 매출로 나눈 비율">하루 매출 비중 <strong>' + ratioText(g.share) + '</strong></span></div>';
-    } else {
-      currentAction = hour < 6
-        ? '지난 영업의 정산 내역과 재료 보관 상태를 확인하세요.'
-        : hour < 17 ? '영업에 필요한 재료와 매장 상태를 확인하세요.'
-          : '오늘 영업을 정산하고 남은 재료의 보관 상태를 확인하세요.';
-      nextAction = (hour === 23 ? '내일' : '오늘') + ' 17시 영업에 맞춰 준비할 재료와 수량을 정하세요.';
-      facts = '';
-    }
-    const period = g.period ? dateText(g.period.start) + '부터 ' + dateText(g.period.end) + '까지의 생성 판매 기록' : '최근 30일 생성 판매 기록';
-    return '<div class="v-home-action-list"><article><span>지금 확인</span><h3>' + currentAction + '</h3></article><article><span>다음 준비</span><h3>' + nextAction + '</h3></article></div>' +
-      '<div class="v-home-guidance-bottom"><div class="v-home-guide-meta">' + facts +
-      '<p class="v-home-guidance-note" title="' + esc(period) + '">현재 시간에 맞춰 지금 확인할 사항과 다음에 준비할 일을 안내합니다.</p></div><button class="v-button v-guidance-action" type="button" data-view="analysis" aria-label="매출진단에서 자세히 보기">자세히 보기</button></div>';
+    const available = operating && g.average != null;
+    const checks = available ? g.checks : operating ? [
+      { title: '현재 시간대의 판매 기록을 확인하세요.' },
+      { title: '자료가 쌓이면 시간대에 맞는 운영 안내를 드립니다.' }
+    ] : hour < 17 ? [
+      { title: '17시 영업 전, 테이블과 첫 주문 준비 상태를 확인하세요.' },
+      { title: '재료 준비 수량과 직원별 응대 순서를 미리 맞춰 보세요.' }
+    ] : [
+      { title: '마감 결제 내역과 남은 재료를 확인하세요.' },
+      { title: '오늘의 주문 대기를 기록하고 다음 영업을 준비하세요.' }
+    ];
+    const facts = available ? '<div class="v-home-guide-facts"><span>이 시간 평균 매출 <strong>' + money(g.average) + '</strong></span><span>하루 매출 비중 <strong>' + ratioText(g.share) + '</strong></span></div>' : '';
+    const labels = [operating ? '지금 할 일' : hour < 17 ? '영업 전 준비' : '마감 점검', '다음으로 확인할 일'];
+    return '<div class="v-home-action-list">' + checks.map((check, index) => '<article><span>' + labels[index] + '</span><h3>' + esc(check.title.replace(/^(지금|다음) · /, '')) + '</h3></article>').join('') + '</div>' +
+      '<div class="v-home-guidance-bottom"><div class="v-home-guide-meta">' + facts + '<p class="v-home-guidance-note">' + (available ? '최근 30일 생성 기록 참고 · 실시간 실적이나 수요 예측이 아닙니다.' : operating ? '현재 시간대의 비교 자료가 부족합니다.' : '현재 시간에 맞춘 기본 운영 안내입니다.') + '</p></div></div>';
   }
-  function dashboardContextCard() {
-    const context = D.neighborhoodInsights();
-    const date = dateText(context.today) + ' ' + context.weekdayLabel;
-    const header = '<div class="v-dashboard-context-head"><div><span class="v-context-kicker">' + date + ' · 영업 준비 참고</span><h2>주변 상권 흐름</h2></div>' + badge('30일 패턴', 'neutral') + '</div>';
-    if (!context.slots.length) return '<article class="card v-card v-dashboard-context">' + header + '<p class="v-subtitle">최근 30일의 상권 자료가 준비되면 같은 요일의 소비·유동 패턴을 안내합니다.</p></article>';
-    const mode = state.contextMode, trafficMode = mode === 'traffic';
-    const hour = selectedGuideHour();
-    const selected = context.slots.find(row => hour >= row.hour && hour < row.hour + 2);
-    const max = Math.max(1, ...context.slots.map(row => row[mode]));
-    const unit = trafficMode ? '명' : '원';
-    const total = trafficMode ? context.traffic : context.consumption;
-    const share = total > 0 ? selected[mode] / total * 100 : null;
-    return '<article class="card v-card v-dashboard-context">' + header +
-      '<div class="v-context-tabs" aria-label="주변 상권 분석 지표"><button type="button" data-context-mode="traffic" aria-pressed="' + trafficMode + '">유동인구</button><button type="button" data-context-mode="consumption" aria-pressed="' + !trafficMode + '">소비 흐름</button></div>' +
-      '<div class="v-context-highlight"><span>운영 안내 ' + String(hour).padStart(2, '0') + ':00 선택과 연동</span><h3>' + selected.label + '</h3><p>최근 30일 중 ' + context.weekdayLabel + '의 해당 시간대 평균입니다.</p></div>' +
-      '<p class="v-context-chart-unit">선택 구간 강조 · 단위: ' + (trafficMode ? '명' : '만 원') + ' · 시간(시)</p><div class="v-context-bars" role="img" aria-label="' + context.weekdayLabel + ' 시간대별 일평균 ' + (trafficMode ? '유동인구' : '서비스 소비 흐름') + ', 선택 구간 ' + selected.label + '">' + context.slots.map(row => '<div class="' + (row.hour === selected.hour ? 'is-selected' : '') + '" title="' + row.label + ' · ' + number(row[mode]) + unit + '"><span class="v-context-bar-track"><i style="height:' + Math.max(2, row[mode] / max * 100).toFixed(1) + '%"></i></span><strong>' + (trafficMode ? number(row[mode]) : compact(row[mode]).replace('만', '')) + '</strong><small>' + row.label.replace('시', '') + '</small></div>').join('') + '</div>' +
-      '<div class="v-context-summary" aria-label="선택 구간 ' + selected.label + '의 일평균"><div><span>유동인구 · 일평균</span><strong>' + number(selected.traffic) + '명</strong></div><div><span>소비 흐름 · 일평균</span><strong>' + money(selected.consumption) + '</strong></div></div>' +
-      '<div class="v-context-action"><span>선택 시간대 운영 참고</span><p>' + (share === null ? '선택 지표의 기록을 확인한 뒤 운영을 준비하세요.' : selected.label + '에 하루 ' + (trafficMode ? '통행' : '소비') + '의 ' + ratioText(share) + '가 관측됐습니다. ' + (trafficMode ? '메뉴·가격 안내를 점검하세요.' : '재료 준비와 주문 응대를 점검하세요.')) + '</p><button class="text-button" type="button" data-view="analysis">매출진단과 함께 보기 →</button></div>' +
-      '<p class="v-context-source">' + dateText(context.period.start) + '~' + dateText(context.period.end) + ' 중 같은 요일 ' + context.count + '일 평균 · 생성 자료<br>상권 유동인구 표본 · 서비스 이용 가게 ' + context.merchantCount + '곳의 소비<br>오늘 실적·수요 예측 아님 · 날씨·행사 미연결</p></article>';
+  let neighborhoodResult = null;
+  function marketCardScope(observed, sourceLabel) {
+    const selectedDays = observed.filters?.days || [];
+    const days = selectedDays.length ? [1, 2, 3, 4, 5, 6, 0].filter(day => selectedDays.includes(day)).map(day => ['일', '월', '화', '수', '목', '금', '토'][day]).join('·') : '모든 요일';
+    return '<p class="ma-scope ma-card-scope">' + esc('기간: ' + observed.period.start + '~' + observed.period.end + ' / ' + sourceLabel + ' / 전체 시간 / ' + days) + '</p>';
+  }
+  function dashboardContextCard(marketResult) {
+    if (marketResult) neighborhoodResult = marketResult;
+    const observed = neighborhoodResult || window.IM_MARKET_DATA.analyze(diagnosisPeriod());
+    const dates = observed.dates, daySet = new Set(dates), mode = state.contextMode, trafficMode = mode === 'traffic';
+    const local = D.area.filter(row => daySet.has(row.date));
+    const merchants = D.merchantSales.filter(row => daySet.has(row.date) && row.serviceConnected && row.district === '대구 중구 시연 상권');
+    const allRows = Array.from({ length: 24 }, (_, hour) => {
+      const areaRows = local.filter(row => row.hour === hour), saleRows = merchants.filter(row => row.hour === hour);
+      const completeDates = dates.filter(date => new Set(areaRows.filter(row => row.date === date).map(row => row.minute)).size === 6 && saleRows.some(row => row.date === date));
+      const complete = new Set(completeDates);
+      return { hour, count: completeDates.length, traffic: complete.size ? areaRows.filter(row => complete.has(row.date)).reduce((sum, row) => sum + row.traffic, 0) / complete.size : null,
+        consumption: complete.size ? saleRows.filter(row => complete.has(row.date)).reduce((sum, row) => sum + row.amount, 0) / complete.size : null };
+    });
+    const rows = allRows.filter(row => row.count > 0);
+    const max = Math.max(1, ...rows.map(row => row[mode] || 0)), unit = trafficMode ? '명' : '원';
+    const timeRange = rows.length ? rows[0].hour + '~' + (rows[rows.length - 1].hour + 1) + '시 관측 구간' : '관측 자료 없음';
+    return '<article class="card v-card v-dashboard-context v-neighborhood-full"><div class="v-context-tabs" aria-label="주변상권 분석 지표"><button type="button" data-context-mode="traffic" aria-pressed="' + trafficMode + '">유동인구</button><button type="button" data-context-mode="consumption" aria-pressed="' + !trafficMode + '">소비 흐름</button></div>' +
+      '<p class="v-context-chart-unit">시간대별 일평균 · 단위: ' + (trafficMode ? '명' : '만 원') + ' · ' + timeRange + '</p>' + (rows.length ? '<div class="v-neighborhood-scroll" tabindex="0" role="region" aria-label="주변상권 관측 시간대 차트"><div class="v-context-bars v-context-bars-observed" style="--observed-hours:' + rows.length + '" role="img" aria-label="' + (trafficMode ? '유동인구' : '서비스 이용 가게 소비') + ' 시간대별 일평균. ' + timeRange + '. 관측되지 않은 시간은 생략합니다.">' + rows.map(row => '<div data-neighborhood-hour="' + row.hour + '" title="' + row.hour + '~' + (row.hour + 1) + '시 · ' + number(row[mode]) + unit + ' · ' + row.count + '일 평균"><span class="v-context-bar-track"><i style="height:' + Math.max(2, row[mode] / max * 100).toFixed(1) + '%"></i></span><strong>' + (trafficMode ? number(row[mode]) : (row[mode] / 10000).toFixed(1)) + '</strong><small>' + row.hour + '~' + (row.hour + 1) + '시</small></div>').join('') + '</div></div>' : '<p class="v-neighborhood-empty">선택한 기간·요일의 관측 자료가 없습니다.</p>') +
+      '<p class="v-context-source">선택 요일의 관측일 평균 · 생성 자료<br>주변 상권 표본과 서비스 이용 가게 4곳의 소비입니다. 자료가 없는 시간은 생략했으며, 소비·통행 0을 뜻하지 않습니다.</p>' + marketCardScope(observed, '주변상권 표본') + '</article>';
   }
   function periodOptions(selected) {
     return [
@@ -264,30 +269,29 @@
     ].map(option => '<option value="' + option[0] + '"' + (option[0] === selected ? ' selected' : '') + '>' + option[1] + '</option>').join('');
   }
   function sectionPeriodControl() {
-    return '<div class="v-section-period-control"><span>분석 기간</span><select class="v-select" id="sectionPeriodSelect" aria-label="분석 기간">' + periodOptions(state.periodMode) + '</select></div>' +
+    return '<div class="v-section-period-control"><span>상세 분석 기간</span><select class="v-select" id="sectionPeriodSelect" aria-label="상세 분석 기간">' + periodOptions(state.periodMode) + '</select></div>' +
       '<form class="v-section-custom-period" id="sectionCustomPeriod"' + (state.periodMode === 'custom' ? '' : ' hidden') + '><label>시작일<input id="sectionPeriodStart" type="date" value="' + state.period.start + '" min="2026-06-01" max="2026-09-30" required></label><label>종료일<input id="sectionPeriodEnd" type="date" value="' + state.period.end + '" min="2026-06-01" max="2026-09-30" required></label><button class="v-button" type="submit">기간 적용</button></form>';
   }
-  function sectionPeriodNodes() {
-    const holder = document.createElement('div');
-    holder.innerHTML = sectionPeriodControl();
-    return Array.from(holder.children);
-  }
   function screenGroups(view, children) {
-    if (view === 'dashboard' || view === 'secretary' || view === 'aftercare') return [children];
+    if (['dashboard', 'secretary', 'aftercare', 'policies', 'profile'].includes(view)) return [children];
     const footer = children.filter(node => node.classList.contains('v-footer'));
     const content = children.filter(node => !node.classList.contains('v-footer'));
     const groups = content.map(node => [node]);
     if (groups.length) groups[groups.length-1].push(...footer);
     return groups;
   }
+  let diagnosisFilterObserver = null;
   function sectionizeView(view) {
     const root = $('#viewRoot');
     const children = Array.from(root.children);
     if (!children.length || typeof root.querySelectorAll !== 'function') return;
+    diagnosisFilterObserver?.disconnect();
+    diagnosisFilterObserver = null;
+    const filterDock = ['analysis', 'market'].includes(view) ? root.querySelector('.v-diagnosis-filter-dock') : null;
+    filterDock?.remove();
+    root.classList.toggle('has-diagnosis-filters', Boolean(filterDock));
+    root.style.setProperty('--diagnosis-filter-height', '0px');
     const groups = screenGroups(view, children).filter(group => group.length);
-    if (view === 'analysis' && root.querySelector('#sd-period-mount')) root.querySelector('#sd-period-mount').append(...sectionPeriodNodes());
-    else if (view === 'market' && groups[0]) groups[0].unshift(...sectionPeriodNodes());
-    const filterDock = root.querySelector('#sd-filter-dock');
     const screens = groups.map((group, index) => {
       const section = document.createElement('section');
       section.className = 'v-screen-section v-screen-section--' + view + '-' + (index + 1);
@@ -300,7 +304,22 @@
       return section;
     });
     root.replaceChildren(...screens);
-    if (filterDock) root.prepend(filterDock);
+    if (filterDock) {
+      const shell = document.createElement('div');
+      shell.className = 'v-diagnosis-filter-shell';
+      shell.setAttribute('role', 'region');
+      shell.setAttribute('aria-label', views[view] + ' 분석 필터');
+      shell.append(filterDock);
+      root.prepend(shell);
+      const syncFilterHeight = () => {
+        if (shell.isConnected) root.style.setProperty('--diagnosis-filter-height', Math.ceil(shell.getBoundingClientRect().height) + 'px');
+      };
+      syncFilterHeight();
+      if (typeof ResizeObserver === 'function') {
+        diagnosisFilterObserver = new ResizeObserver(syncFilterHeight);
+        diagnosisFilterObserver.observe(shell);
+      }
+    }
     root.scrollTop = 0;
     if (window.IM_SMOOTH_SCROLL) window.IM_SMOOTH_SCROLL.mount(root);
   }
@@ -326,9 +345,9 @@
     const comparison = previousTemperature !== null
       ? '<div class="v-finance-thermo-compare" aria-label="직전 기간 ' + previousTemperatureText.replace('°', '도') + '에서 현재 ' + currentTemperatureText.replace('°', '도') + '로 변화"><span><small>직전 기간</small><strong>' + previousTemperatureText + '</strong></span><i aria-hidden="true">→</i><span class="current"><small>현재</small><strong>' + currentTemperatureText + '</strong></span></div>'
       : '<p class="v-finance-thermo-empty">연결 데이터를 확인한 뒤 참고 온도를 표시합니다.</p>';
-    return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 금융신호 한눈에 보기</p><h2 id="financeThermoTitle">나의 금융 체온계</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
+    return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 상태 한눈에 보기</p><h2 id="financeThermoTitle">나의 가게 온도</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
       '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월 일별 이동평균 지수</p></div>' +
-      '<div class="v-finance-thermo-summary"><span title="자료 기준 ' + esc(financeIndex.asOf || '없음') + ' · 지수 갱신 ' + esc(financeIndex.today) + '">현재 나의 금융지수</span><h3>나의 금융 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
+      '<div class="v-finance-thermo-summary"><span title="자료 기준 ' + esc(financeIndex.asOf || '없음') + ' · 지수 갱신 ' + esc(financeIndex.today) + '">현재 나의 가게 지수</span><h3>나의 가게 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
       '<p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
   }
   function weatherIcon(night) {
@@ -374,20 +393,20 @@
       ' · 생성 집계 · 결제 건수는 구매자 수와 다를 수 있습니다.';
   }
   function recoveryDashboardCard(marketResult) {
-    const observed = marketResult || window.IM_MARKET_DATA.analyze(state.period);
+    const observed = marketResult || window.IM_MARKET_DATA.analyze(diagnosisPeriod());
     const c = observed.current;
-    if (!c.count) return card(head('통행에서 결제까지')+note('선택 조건에 분석 가능한 관측 자료가 없습니다.'),'v-conversion-summary');
+    if (!c.count) return card(head('통행에서 결제까지')+note('선택 조건에 분석 가능한 관측 자료가 없습니다.')+marketCardScope(observed, '매장 앞 CCTV · POS'),'v-conversion-summary');
     const r = {passersby:c.passers, entrants:c.entrants, validPayments:c.validPayments};
     const entry = r.passersby ? r.entrants/r.passersby*100:null;
     const conversion = r.entrants ? r.validPayments/r.entrants*100:null;
-    return '<article class="card v-card v-conversion-summary"><div class="v-row v-between"><h2>통행에서 결제까지</h2>'+badge('같은 매장 · 시연 집계')+'</div><div class="v-conversion-metrics"><div><span>통행</span><strong>'+number(r.passersby)+'건</strong></div><i>→</i><div><span>입장</span><strong>'+number(r.entrants)+'건</strong></div><i>→</i><div><span>유효 결제</span><strong>'+number(r.validPayments)+'건</strong></div></div><div class="v-transfer-kpis">'+metric('유입률',ratioText(entry),undefined,'입장 관측 ÷ 통행 관측')+metric('결제 전환율 · 추정',ratioText(conversion),undefined,'유효 결제 ÷ 입장 관측')+'</div><p class="v-metadata">'+state.period.start+' ~ '+state.period.end+' · 결제 건수는 구매 인원과 다릅니다. 입장과 결제 사이의 시간 차이가 있어 기간 합산 추정치로 봅니다.</p></article>';
+    return '<article class="card v-card v-conversion-summary"><div class="v-row v-between">'+badge('같은 매장 · 시연 집계')+'</div><div class="v-conversion-metrics"><div><span>통행</span><strong>'+number(r.passersby)+'건</strong></div><i>→</i><div><span>입장</span><strong>'+number(r.entrants)+'건</strong></div><i>→</i><div><span>유효 결제</span><strong>'+number(r.validPayments)+'건</strong></div></div><div class="v-transfer-kpis">'+metric('유입률',ratioText(entry),undefined,'입장 관측 ÷ 통행 관측')+metric('결제 전환율 · 추정',ratioText(conversion),undefined,'유효 결제 ÷ 입장 관측')+'</div><p class="v-metadata">결제 건수는 구매 인원과 다릅니다. 입장과 결제 사이의 시간 차이가 있어 기간 합산 추정치로 봅니다.</p>'+marketCardScope(observed, '매장 앞 CCTV · POS')+'</article>';
   }
   function dashboard() { return dashboardLead(); }
   function relocatedSales() {
-    return '<div class="v-relocated-sales"><h2>영업 준비와 시간대별 안내</h2><div class="v-grid2">'+card(guidanceCard(),'v-dashboard-guidance v-decision-action')+dashboardInsight()+'</div></div>';
+    return '';
   }
-  function relocatedMarket(marketResult) {
-    return '<div class="v-relocated-market">'+recoveryDashboardCard(marketResult)+'<details class="v-related-analysis"><summary>주변 소비 흐름과 우리 가게 매출 함께 보기</summary><p class="v-metadata">주변 상권은 최근 30일의 같은 요일 패턴, 비교 그래프는 선택 기간의 모든 요일 기준입니다. 위 상권 요일 필터와 별도로 표시합니다.</p><div class="v-grid2">'+dashboardContextCard()+card(head('상권과 우리 가게의 흐름')+comparisonChart(),'v-evidence-panel')+'</div><p class="v-metadata">통행·입장은 매장 전면 관측이며, 주변 상권과 서비스 이용 가게 소비는 별도 시연 표본입니다.</p></details></div>';
+  function relocatedMarket(marketResult, section) {
+    return section === 'surroundings' ? '<div class="v-neighborhood-layout">' + dashboardContextCard(marketResult) + (window.IM_NEARBY_EVENTS ? window.IM_NEARBY_EVENTS.render() : '') + '</div>' : section === 'conversion' ? recoveryDashboardCard(marketResult) : '';
   }
   function market() {
     const max = Math.max(1, ...analysis.byWeekday.map(r => r.sales || 0));
@@ -422,54 +441,123 @@
       '</tbody></table></div><p class="v-metadata v-space">취소 ' + number(analysis.cancellations) + '개 차감 · 실 DB/POS 기기 미연결</p>') + '</div>';
   }
   function combinedAnalysis() {
-    if (window.IM_SALES_DIAGNOSIS) return window.IM_SALES_DIAGNOSIS.render(state.period);
-    return market() + finance();
+    if (window.IM_SALES_DIAGNOSIS) return window.IM_SALES_DIAGNOSIS.render(diagnosisPeriod());
+    return note('매출진단 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
   }
   function marketAnalysis() {
-    return window.IM_MARKET_ANALYSIS ? window.IM_MARKET_ANALYSIS.render(state.period) : note('상권분석 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
+    return window.IM_MARKET_ANALYSIS ? window.IM_MARKET_ANALYSIS.render(diagnosisPeriod()) : note('상권분석 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
   }
   function matchPolicy(p) {
-    const profile = state.profile;
-    return [
-      { name: '지역', status: !profile.region ? '확인 필요' : profile.region.includes(p.region) ? '일치' : '불일치' },
-      { name: '업종', status: p.industry === '전체 업종' || profile.industry === p.industry ? '일치' : '불일치' },
-      { name: '직원 수', status: p.maxEmployees == null ? '예시 조건 없음' : profile.employees === '' ? '확인 필요' : Number(profile.employees) <= p.maxEmployees ? '일치' : '불일치' },
-      { name: '나이', status: p.ageMin == null ? '예시 조건 없음' : profile.age === '' ? '확인 필요' : Number(profile.age) >= p.ageMin && Number(profile.age) <= p.ageMax ? '일치' : '불일치' }
-    ];
+    return window.IM_POLICY_MATCHING.matches(p, state.profile);
   }
+  function policyData() { return window.IM_POLICY_DATA || { checkedAt: '', items: [] }; }
+  function selectedPolicies() { return window.IM_POLICY_MATCHING ? window.IM_POLICY_MATCHING.recommendations(policyData().items, state.profile, policyData().checkedAt) : []; }
   function filteredPolicies() {
-    return D.policies.filter(p => (state.category === 'all' || p.category === state.category) && p.title.includes(state.keyword) &&
-      (state.policyView === 'all' || !matchPolicy(p).some(r => r.status === '불일치'))).slice(0, state.policyView === 'all' ? D.policies.length : 10);
+    const pool = state.policyView === 'all' ? policyData().items : selectedPolicies();
+    return window.IM_POLICY_MATCHING ? window.IM_POLICY_MATCHING.filter(pool, state.keyword, state.category) : [];
+  }
+  function policyStatus(p) {
+    const value = window.IM_POLICY_MATCHING.availability(p, policyData().checkedAt);
+    return '<span class="v-policy-status ' + value.tone + '">' + esc(value.label) + '</span>';
+  }
+  function policyReason(p) {
+    const locality = p.regionScope === 'daegu' ? '대구 사업장 대상' : '전국 사업장 대상';
+    return locality + ' · ' + (p.conditions?.industries?.length ? p.industry : '업종별 제외 조건 확인');
+  }
+  function policySource(p, label) {
+    const url = /^https:\/\//.test(p.sourceUrl || '') ? p.sourceUrl : '';
+    return url ? '<a class="v-button v-policy-source" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (label || '원문 공고') + ' <span aria-hidden="true">↗</span></a>' : '';
+  }
+  function policyCard(p, index) {
+    return '<article class="card v-policy" data-policy-card="' + esc(p.id) + '" aria-label="추천 공고 ' + (index + 1) + '"><div class="v-policy-card-top">' + badge(p.category) + policyStatus(p) + '</div>' +
+      '<div class="v-policy-title"><h3>' + esc(p.title) + '</h3><p>' + esc(p.agency) + '</p></div>' +
+      '<p class="v-policy-benefit">' + esc(p.benefit || p.summary) + '</p><dl class="v-policy-facts"><div><dt>접수기간</dt><dd>' + esc(p.periodLabel) + '</dd></div><div><dt>지원대상</dt><dd>' + esc(p.target) + '</dd></div></dl>' +
+      '<div class="v-policy-match"><span>추천 이유</span><p>' + esc(policyReason(p)) + '</p><small>세부 신청 요건은 추가 확인이 필요합니다.</small></div>' +
+      '<div class="v-policy-actions">' + button('상세 보기', 'data-policy="' + esc(p.id) + '"') + policySource(p) + '</div></article>';
+  }
+  function policyListItem(p) {
+    return '<article class="v-policy-list-item" data-policy-row="' + esc(p.id) + '"><div class="v-policy-list-content"><div class="v-policy-list-meta">' + badge(p.category) + policyStatus(p) + '<span>' + esc(p.agency) + '</span></div><h3><button type="button" data-policy="' + esc(p.id) + '">' + esc(p.title) + '</button></h3><p>' + esc(p.summary || p.benefit) + '</p><div class="v-policy-list-period"><span>' + esc(p.region) + '</span><span>접수 ' + esc(p.periodLabel) + '</span></div></div><div class="v-policy-list-actions">' + button('상세 보기', 'data-policy="' + esc(p.id) + '"') + policySource(p) + '</div></article>';
   }
   function policyResults() {
     const rows = filteredPolicies();
-    state.offset = Math.max(0, Math.min(state.offset, Math.max(0, rows.length - 3)));
-    if (!rows.length) return '<div class="v-empty">조건에 맞는 예시가 없습니다.<br>검색어나 옵션을 바꾸어 주세요.</div>';
-    return '<div class="v-row v-between" style="margin-bottom:16px"><span class="v-subtitle">예시 ' + rows.length + '개 · ' + (state.offset + 1) + '~' + Math.min(rows.length, state.offset + 3) + '번째 표시</span><div class="v-row">' +
-      button('‹ 이전', 'data-action="policy-prev"' + (state.offset === 0 ? ' disabled' : '')) +
-      button('다음 ›', 'data-action="policy-next"' + (state.offset >= rows.length - 3 ? ' disabled' : '')) + '</div></div><div class="v-policy-grid">' +
-      rows.slice(state.offset, state.offset + 3).map(p => '<article class="card v-policy"><div class="v-row">' + badge(p.category) + badge('실제 공고 아님', 'neutral') +
-        '</div><h3>' + p.title + '</h3><p class="v-subtitle">' + p.region + ' · ' + p.industry + '</p><div class="v-list">' +
-        matchPolicy(p).map(r => '<div class="v-row v-between"><span class="v-metadata">' + r.name + '</span><span class="v-tag ' + (r.status === '일치' ? '' : 'neutral') + '">' + r.status + '</span></div>').join('') +
-        '</div><p class="v-metadata">적합도 % 미산정 · 산식 미정</p>' + button('예시 조건 보기', 'data-policy="' + p.id + '"') + '</article>').join('') + '</div>';
+    const size = policyPageSize(), pages = Math.ceil(rows.length / size);
+    state.offset = Math.max(0, Math.min(Math.floor(state.offset / size) * size, Math.max(0, (pages - 1) * size)));
+    const recommended = state.policyView === 'recommended';
+    const selected = recommended ? selectedPolicies().length : 0;
+    const heading = '<div class="v-policy-results-head"><div><h2>' + (recommended ? '내 가게 추천 공고' : '전체 공고') + ' <span>' + rows.length + '</span></h2><p>' +
+      (recommended ? '지역·업종과 접수 상태를 살펴 선정한 ' + selected + '개입니다.' + (selected < 10 ? ' 조건에 맞는 공고만 표시합니다.' : ' 선정된 10개 안에서 검색합니다.') : '확인한 실제 공고 ' + policyData().items.length + '개를 모두 모았습니다. 마감 공고도 함께 볼 수 있습니다.') + '</p></div>' +
+      '<span class="v-policy-range" role="status" aria-live="polite">' + (rows.length ? recommended ? (state.offset + 1) + '–' + Math.min(rows.length, state.offset + size) + ' / ' + rows.length + '개' : '총 ' + rows.length + '개' : '검색 결과 0개') + '</span></div>';
+    if (!rows.length) return heading + '<div class="v-empty">조건에 맞는 공고가 없습니다.<br>검색어나 지원 분야를 바꾸어 주세요.</div>';
+    if (!recommended) return heading + '<div class="v-policy-list" id="policyNoticeList" role="region" tabindex="0" aria-label="전체 공고 목록" data-lenis-prevent>' + rows.map(policyListItem).join('') + '</div>';
+    const arrow = (direction, disabled) => '<button type="button" class="v-policy-arrow" data-action="policy-' + direction + '" aria-label="' + (direction === 'prev' ? '이전' : '다음') + ' 공고 ' + size + '개 보기" aria-controls="policyCardList"' + (disabled ? ' disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (direction === 'prev' ? 'm14 6-6 6 6 6' : 'm10 6 6 6-6 6') + '"/></svg></button>';
+    return heading + '<div class="v-policy-carousel" role="region" aria-roledescription="캐러셀" aria-label="추천 공고">' + arrow('prev', state.offset === 0) +
+      '<div class="v-policy-grid" id="policyCardList" style="--policy-columns:' + size + '">' + rows.slice(state.offset, state.offset + size).map((p, index) => policyCard(p, state.offset + index)).join('') + '</div>' + arrow('next', state.offset + size >= rows.length) + '</div>' +
+      '<div class="v-policy-pagination" aria-label="공고 페이지">' + Array.from({ length: pages }, (_, index) => '<button type="button" data-policy-page="' + index + '" aria-label="공고 ' + (index + 1) + '페이지"' + (index === state.offset / size ? ' aria-current="page"' : '') + '><span></span></button>').join('') + '</div>';
   }
+  function policyPageSize() { return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1050px)').matches ? 1 : 3; }
+  function updatePolicyResults(focusAction) {
+    $('#policyResults').innerHTML = policyResults();
+    if (focusAction) {
+      const preferred = $('#policyResults [data-action="' + focusAction + '"]');
+      const fallback = $('#policyResults [data-action="' + (focusAction === 'policy-next' ? 'policy-prev' : 'policy-next') + '"]');
+      (preferred && !preferred.disabled ? preferred : fallback)?.focus({ preventScroll: true });
+    }
+  }
+  if (typeof window.matchMedia === 'function') window.matchMedia('(max-width: 1050px)').addEventListener?.('change', () => {
+    if (state.view === 'policies') updatePolicyResults();
+  });
+  function policyGuide() { return '<p class="v-subtitle">추천은 신청 가능성을 살펴볼 공고 목록입니다. 자격 충족이나 선정을 보장하지 않습니다.</p><div class="v-plan-list"><div class="v-plan-item"><span>01</span><div><strong>지역·업종 일치 여부</strong><p>내 프로필의 사업장 소재지와 업종을 확인합니다.</p></div></div><div class="v-plan-item"><span>02</span><div><strong>세부 신청 요건</strong><p>매출·업력·상시근로자 산정 기준과 제외 업종을 살펴봅니다.</p></div></div><div class="v-plan-item"><span>03</span><div><strong>원문 공고 최종 확인</strong><p>접수기간·남은 예산·첨부 서류는 원문에서 확인합니다.</p></div></div></div><button class="v-button primary v-plan-start" type="button" data-view="profile">내 조건 확인하기 →</button>'; }
+  function policyDetail(p) {
+    const facts = [['지원기관', p.agency], ['접수기간', p.periodLabel], ['지원내용', p.benefit || p.summary], ['지원대상', p.target]];
+    return '<div class="v-policy-detail-meta">' + badge(p.category) + policyStatus(p) + '<span>' + esc(dateText(policyData().checkedAt)) + ' 확인</span></div><dl class="v-policy-detail-facts">' + facts.map(([label, value]) => '<div><dt>' + esc(label) + '</dt><dd>' + esc(value) + '</dd></div>').join('') + '</dl>' +
+      '<h3 class="v-policy-detail-heading">내 가게 조건 확인</h3><dl class="v-policy-detail-checks">' + matchPolicy(p).map(row => '<div><dt>' + esc(row.name) + '</dt><dd><strong class="' + (row.status === '불일치' ? 'is-mismatch' : '') + '">' + esc(row.status) + '</strong><span>' + esc(row.detail) + '</span></dd></div>').join('') + '</dl>' +
+      '<div class="v-policy-detail-note"><strong>신청 전 확인</strong><ul>' + [...new Set([...(p.eligibility || []), ...(p.checks || []), ...(p.checks?.length ? [] : [p.eligibilityNote]), p.employeeRule].filter(Boolean))].map(text => '<li>' + esc(text) + '</li>').join('') + '</ul></div><div class="v-policy-detail-footer"><p>확인일 이후 변경 사항과 첨부 서류는 공식 원문을 확인해 주세요.</p>' + policySource(p, '공식 공고 확인') + '</div>';
+  }
+  function policyBasis() { return '<div class="v-policy-basis-body"><div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div>' +
+      '<dl class="v-definition-list"><div><dt>선정 범위</dt><dd>마감 공고와 확인된 조건이 다른 공고를 제외하고 최대 10개를 선정합니다. 미입력 조건은 신청 전에 확인합니다.</dd></div><div><dt>표시 순서</dt><dd>매장 운영에 관련된 지원내용, 대구 대상 여부, 확인된 접수기간을 함께 살펴봅니다. 기존 지원 이력 등 추가 요건이 많으면 뒤에 표시하며, 적합도 점수는 산정하지 않습니다.</dd></div><div><dt>검색 범위</dt><dd>맞춤 추천은 선정된 공고 안에서, 전체 공고는 수집된 모든 공고에서 검색합니다.</dd></div><div><dt>판단 기준</dt><dd>직원 수와 법정 상시근로자 수는 다를 수 있습니다. 지원 자격·접수 여부는 원문 공고로 확인합니다.</dd></div></dl>' + button('내 조건 수정하기', 'data-view="profile"') + '</div>'; }
   function policies() {
-    const candidates = filteredPolicies();
-    const reviewCount = candidates.filter(policy => matchPolicy(policy).some(result => result.status === '확인 필요')).length;
-    const categoryCount = new Set(candidates.map(policy => policy.category)).size;
-    return '<div class="v-decision-layout v-policy-decision"><div class="card v-card v-evidence-panel"><div class="v-tabs" role="tablist" aria-label="정책 목록 종류"><button type="button" role="tab" data-policy-view="recommended" aria-selected="' + (state.policyView === 'recommended') + '" class="' + (state.policyView === 'recommended' ? 'active' : '') + '">오늘의 추천공고</button><button type="button" role="tab" data-policy-view="all" aria-selected="' + (state.policyView === 'all') + '" class="' + (state.policyView === 'all' ? 'active' : '') + '">전체 리스트</button></div>' +
-      '<div class="v-row v-space"><input class="v-search" id="policySearch" type="search" placeholder="공고 제목 검색" aria-label="공고 제목 검색" value="' + esc(state.keyword) + '"><select class="v-select" id="policyCategory" aria-label="지원 분야"><option value="all">전체 분야</option><option value="금융"' + (state.category === '금융' ? ' selected' : '') + '>금융</option><option value="창업"' + (state.category === '창업' ? ' selected' : '') + '>창업</option></select></div>' +
-      '<p class="v-metadata v-space">수집 계획: 금융·창업 분야 + 제목에 소상공인/골목/전통시장 포함. 현재는 실제 수집 없이 예시 순서로 표시합니다. 추천은 불일치 예시를 제외한 목록이며, 미확인 조건이 남아 있을 수 있습니다.</p>' +
-      '<div class="v-policy-criteria" aria-label="현재 추천 판단 기준"><div><span>사업장 소재지</span><strong>' + esc(state.profile.region || '미입력') + '</strong></div><div><span>업종</span><strong>' + esc(state.profile.industry || '미입력') + '</strong></div><div><span>직원 수</span><strong>' + (state.profile.employees === '' ? '미입력' : number(Number(state.profile.employees)) + '명') + '</strong></div><div><span>나이</span><strong>' + (state.profile.age === '' ? '미입력 · 확인 필요' : number(Number(state.profile.age)) + '세') + '</strong></div></div>' +
-      '<div class="v-policy-overview" aria-label="현재 조건 매칭 현황"><div class="v-row v-between"><h3>현재 조건 매칭 현황</h3>' + badge('생성 예시', 'neutral') + '</div><div><span>추천 후보<strong>' + number(candidates.length) + '개</strong></span><span>추가 확인 필요<strong>' + number(reviewCount) + '개</strong></span><span>포함 분야<strong>' + number(categoryCount) + '개</strong></span></div></div></div>' +
-      '<aside class="card v-card v-decision-action"><div class="v-row v-between"><div><h2>지원사업 확인 순서</h2><p class="v-subtitle">추천 목록에서 신청 판단까지 필요한 확인 항목입니다.</p></div>' + badge('신청 전 확인', 'neutral') + '</div><div class="v-plan-list"><div class="v-plan-item"><span>01</span><div><small>내 조건</small><strong>지역·업종 일치 여부</strong><p>사업장 소재지와 업종을 먼저 비교합니다.</p></div></div><div class="v-plan-item"><span>02</span><div><small>추가 확인</small><strong>직원 수·나이 조건</strong><p>미입력 항목은 적합으로 단정하지 않습니다.</p></div></div><div class="v-plan-item"><span>03</span><div><small>신청 전</small><strong>원문 공고 최종 확인</strong><p>접수기간·지원금·제외 조건은 실제 공고에서 확인합니다.</p></div></div></div><button class="v-button primary v-plan-start" type="button" data-view="profile">내 조건 확인하기 →</button><p class="v-metadata">현재 목록은 조건 매칭을 확인하기 위한 가상 공고이며 실제 신청 가능한 사업이 아닙니다.</p></aside></div>' +
-      '<div id="policyResults" class="v-space">' + policyResults() + '</div>';
+    const categories = [...new Set(policyData().items.map(p => p.category))];
+    return '<div class="v-policy-workspace"><header class="v-policy-heading"><div><h1>지원사업</h1><p>내 가게의 조건을 확인하고, 필요한 지원을 살펴보세요.</p></div>' + badge('공고 확인일 ' + dateText(policyData().checkedAt), 'neutral') + '</header>' +
+      '<div class="v-policy-controls"><div class="v-tabs" aria-label="공고 목록 선택"><button type="button" data-policy-view="recommended" aria-pressed="' + (state.policyView === 'recommended') + '" class="' + (state.policyView === 'recommended' ? 'active' : '') + '">맞춤 추천</button><button type="button" data-policy-view="all" aria-pressed="' + (state.policyView === 'all') + '" class="' + (state.policyView === 'all' ? 'active' : '') + '">전체 공고</button></div>' +
+      '<div class="v-policy-search"><input class="v-search" id="policySearch" type="search" placeholder="공고명·기관 검색" aria-label="공고명·기관 검색" value="' + esc(state.keyword) + '"><select class="v-select" id="policyCategory" aria-label="지원 분야"><option value="all">전체 분야</option>' + categories.map(category => '<option value="' + esc(category) + '"' + (state.category === category ? ' selected' : '') + '>' + esc(category) + '</option>').join('') + '</select></div></div>' +
+      '<div id="policyResults">' + policyResults() + '</div>' +
+      '<footer class="v-policy-footer"><p>공고 확인일 ' + esc(dateText(policyData().checkedAt)) + ' · 자동 갱신되지 않습니다. 접수·신청 요건은 원문 확인</p><div>' + button('추천 기준', 'data-action="open-policy-basis"') + button('이용 안내', 'data-action="open-policy-guide"') + '</div></footer></div>';
   }
   const reportPrompts = ['고깃집 매출과 지출을 함께 분석해 주세요.', '저녁 시간대 운영 준비를 정리해 주세요.', '오늘 실행할 행동지침을 알려 주세요.'];
+  function recoveryContexts() {
+    const period = diagnosisPeriod();
+    return [window.IM_SALES_DIAGNOSIS, window.IM_MARKET_ANALYSIS].map((module, index) =>
+      module?.getRecoveryContext ? module.getRecoveryContext(period) : {
+        source: index ? 'market' : 'sales', title: index ? '상권분석' : '매출진단', scope: period.start + ' ~ ' + period.end,
+        findings: [], reason: '진단 자료를 불러오지 못했습니다. 분석 화면에서 자료 상태를 확인해 주세요.'
+      });
+  }
+  function syncRecoveryContext() {
+    const contexts = recoveryContexts();
+    const signature = JSON.stringify(contexts);
+    if (state.recoverySignature && state.recoverySignature !== signature) invalidateReport();
+    state.recoverySignature = signature;
+  }
+  function recoveryView() {
+    syncRecoveryContext();
+    const strategy = state.recoveryTab === 'strategy';
+    const tabs = [['strategy', '회복전략'], ['aftercare', '사후관리']].map(([id, label]) => '<button type="button" id="recoveryTab-' + id + '" role="tab" data-recovery-tab="' + id + '" aria-selected="' + (state.recoveryTab === id) + '" aria-controls="recoveryPanel-' + id + '" tabindex="' + (state.recoveryTab === id ? '0' : '-1') + '">' + label + '</button>').join('');
+    return '<div class="v-recovery-workspace"><header class="v-recovery-header"><h1>회복전략</h1><div class="v-recovery-tabs" role="tablist" aria-label="회복전략과 사후관리">' + tabs + '</div></header><div id="recoveryPanel-' + state.recoveryTab + '" class="v-recovery-panel" role="tabpanel" aria-labelledby="recoveryTab-' + state.recoveryTab + '">' +
+      (strategy ? secretary() : aftercare()) + '</div><div id="recoveryPanel-' + (strategy ? 'aftercare' : 'strategy') + '" role="tabpanel" aria-labelledby="recoveryTab-' + (strategy ? 'aftercare' : 'strategy') + '" hidden></div></div>';
+  }
+  function executionChoices() {
+    return Array.from(new Map(state.secretaryActions.map(action => [action.id, action])).values());
+  }
+  function refreshDiagnosis() {
+    const signature = JSON.stringify(recoveryContexts());
+    if (state.recoverySignature && state.recoverySignature !== signature) invalidateReport();
+    state.recoverySignature = signature;
+    render();
+  }
   function secretary() {
-    return '<article class="card v-card v-secretary-main"><div class="v-row v-between"><div><span class="v-tag">고깃집 시연 데이터 분석</span><h1>'+esc(state.profile.name)+'님의 iM비서</h1></div><button class="v-button" type="button" data-action="open-document-guide">분석에서 문서까지 ↗</button></div><p class="v-subtitle">'+esc(state.profile.storeName)+' · '+state.period.start+' ~ '+state.period.end+'의 자료에서 근거와 다음 행동을 정리합니다.</p><div class="v-report-chat" id="reportMessages" role="log" aria-live="polite">'+(state.reportMessages.length?state.reportMessages.map(m=>'<div class="ai-message '+m.type+'">'+esc(m.text)+'</div>').join(''):'<div class="ai-message bot">어떤 부분을 살펴볼까요? 매출·지출과 저녁 운영에 관해 질문해 주세요. 시연 데이터를 읽어 답변합니다.</div>')+'</div><div class="v-report-suggestions" aria-label="추천 질문">'+reportPrompts.map(q=>button(esc(q),'data-report-question="'+esc(q)+'"')).join('')+'</div><form class="v-compose" id="reportForm"><textarea id="reportInput" maxlength="500" required placeholder="분석하고 싶은 내용을 적어 주세요" aria-label="iM비서 분석 질문"></textarea><button class="v-button primary" type="submit">분석하기</button></form>'+
-      (state.secretaryActions.length?'<section class="v-secretary-actions"><div class="v-row v-between"><h2>확인한 뒤 실행할 행동지침</h2><button class="v-button" data-action="record-execution">실행 기록하기 →</button></div>'+state.secretaryActions.map((a,i)=>'<div class="v-list-item"><span class="v-number">'+(i+1)+'</span><div><strong>'+esc(a.title)+'</strong><p>'+esc(a.evidence)+'</p></div></div>').join('')+'<p class="v-metadata">실제로 수행한 날짜와 시간을 직접 기록하세요. 이 안내를 읽은 것만으로 실행 처리하지 않습니다.</p></section>':'')+
-      '<div id="reportResult"'+(state.reportReady?'':' hidden')+' class="v-report-result"><h2>분석 내용을 문서로 보관하세요</h2><p class="v-subtitle">매출·지출, 근거와 운영 점검 제안을 PDF로 정리합니다.</p>'+button(state.pdfBusy?'리포트 생성 중…':'회복전략 리포트 PDF 만들기','data-action="make-pdf" id="makePdfButton"'+(state.pdfBusy?' disabled':''),true)+'<div id="pdfDownload"'+(state.reportBlobUrl?'':' hidden')+'><a class="v-download" id="pdfLink"'+(state.reportBlobUrl?' href="'+state.reportBlobUrl+'"':'')+' download="iM파트너_회복전략_리포트.pdf">리포트 PDF 다운로드</a></div></div></article>';
+    const actions = state.secretaryActions.length ? '<section class="v-secretary-actions"><div class="v-row v-between"><h3>확인한 뒤 실행할 행동지침</h3><button class="v-button" type="button" data-action="record-execution">실행 기록하기 →</button></div>' + state.secretaryActions.map((a,i)=>'<div class="v-list-item"><span class="v-number">'+(i+1)+'</span><div><strong>'+esc(a.title)+'</strong><p>'+esc(a.evidence)+'</p></div></div>').join('') + '<p class="v-metadata">실제로 수행한 날짜와 시간을 기록하세요. 안내를 읽은 것만으로 실행 처리하지 않습니다.</p></section>' : '';
+    return '<article class="card v-card v-secretary-main"><header class="v-report-head"><div><span class="v-tag">질문으로 더 살펴보기</span><h2>회복전략 상세 분석 · 리포트</h2></div><button class="v-button" type="button" data-action="open-document-guide">이용 안내</button></header><p class="v-report-scope">'+esc(state.profile.storeName)+' · '+state.period.start+' ~ '+state.period.end+' · 전체 품목·요일 · 생성 자료 기준</p><div class="v-report-chat" id="reportMessages" role="log" aria-label="회복전략 분석 대화" aria-live="polite" tabindex="0">'+(state.reportMessages.length?state.reportMessages.map(m=>'<div class="ai-message '+m.type+'">'+esc(m.text)+'</div>').join(''):'<div class="ai-message bot">어떤 부분을 살펴볼까요? 매출·지출과 운영에 관해 질문해 주세요. 시연 데이터를 읽어 답변합니다.</div>')+actions+'</div><div class="v-report-suggestions" aria-label="추천 질문">'+reportPrompts.map(q=>button(esc(q),'data-report-question="'+esc(q)+'"')).join('')+'</div><form class="v-compose" id="reportForm"><textarea id="reportInput" maxlength="500" required placeholder="분석하고 싶은 내용을 적어 주세요" aria-label="회복전략 분석 질문">'+esc(state.reportDraft)+'</textarea><button class="v-button primary" type="submit">분석하기</button></form>'+
+      '<div id="reportResult"'+(state.reportReady?'':' hidden')+' class="v-report-result">'+button(state.pdfBusy?'리포트 생성 중…':'리포트 PDF 만들기','data-action="make-pdf" id="makePdfButton"'+(state.pdfBusy?' disabled':''),true)+'<div id="pdfDownload"'+(state.reportBlobUrl?'':' hidden')+'><a class="v-download" id="pdfLink"'+(state.reportBlobUrl?' href="'+state.reportBlobUrl+'"':'')+' download="iM파트너_회복전략_리포트.pdf">PDF 다운로드 ↓</a></div><small>분석 내용과 실행 제안을 보관하세요.</small></div></article>';
   }
   function executionActions(question) {
     const actions=[];
@@ -481,10 +569,11 @@
     }
     return actions;
   }
-  function openExecutionDialog() {
-    if (!state.secretaryActions.length) return;
+  function openExecutionDialog(selectedId) {
+    const actions = executionChoices();
+    if (!actions.length) return;
     const modal=$('#executionModal');
-    $('#executionActionOptions').innerHTML=state.secretaryActions.map(a=>'<label class="v-execution-option"><input type="checkbox" name="action" value="'+esc(a.id)+'" checked><span>'+esc(a.title)+'</span></label>').join('');
+    $('#executionActionOptions').innerHTML=actions.map(a=>'<label class="v-execution-option"><input type="checkbox" name="action" value="'+esc(a.id)+'"'+(!selectedId || a.id === selectedId ? ' checked' : '')+'><span>'+esc(a.title)+'</span></label>').join('');
     $('#executionDate').value='2026-09-03';
     $('#executionNote').value=''; $('#executionError').textContent='';
     modal.showModal();
@@ -494,7 +583,7 @@
     return '<label class="v-field">' + label + '<input name="' + name + '" type="' + (type || 'text') + '" value="' + esc(state.profile[name]) + '" ' + (extra || '') + '></label>';
   }
   function profile() {
-    return note('프로필 입력값은 화면 표기·가상 공고 조건 확인에만 적용되고 새로고침하면 초기화됩니다. 생성 POS·상권 자료는 예시 음식점의 고정 자료입니다. 실제 개인정보를 입력할 필요가 없으며, 계정 생성·DB 저장은 하지 않습니다.') +
+    return note('프로필 입력값은 화면 표기·지원사업 조건 확인에 적용되고 새로고침하면 초기화됩니다. 생성 POS·상권 자료는 예시 음식점의 고정 자료입니다. 실제 개인정보를 입력할 필요가 없으며, 계정 생성·DB 저장은 하지 않습니다.') +
       '<form id="profileForm"><div class="v-grid2">' + card(head('사용자 정보', badge('화면 입력 시안', 'neutral')) + '<div class="v-form-grid">' +
       field('이름', 'name', 'text', 'required maxlength="40"') + field('나이 · 시연 인물은 50대', 'age', 'number', 'min="0" max="120" placeholder="정확한 나이는 미입력"') +
       field('전화번호', 'phone', 'tel', 'maxlength="30" placeholder="입력하지 않아도 됩니다"') + field('이메일', 'email', 'email', 'maxlength="100" placeholder="입력하지 않아도 됩니다"') +
@@ -584,6 +673,10 @@
   function render() {
     state.chartSeries = [];
     const dashboardView = state.view === 'dashboard';
+    document.documentElement.classList.toggle('policies-fixed-layout', state.view === 'policies');
+    $('.app-shell').classList.toggle('policies-fixed-view', state.view === 'policies');
+    document.documentElement.classList.toggle('recovery-fixed-layout', state.view === 'secretary');
+    $('.app-shell').classList.toggle('recovery-fixed-view', state.view === 'secretary');
     $('#mainContent').classList.toggle('dashboard-view', dashboardView);
     $('.app-shell').classList.toggle('home-view', dashboardView);
     $('#pageHeading').hidden = true;
@@ -591,7 +684,8 @@
     $('#pageTitle').textContent = captions[state.view];
     $('#viewEyebrow').textContent = views[state.view];
     $('#pageContext').textContent = state.profile.name + '님 · ' + state.profile.region + ' · ' + state.profile.industry;
-    $('#periodContext').textContent = state.period.start + ' ~ ' + state.period.end + ' · ' + state.period.comparison;
+    const contextPeriod = ['analysis', 'market'].includes(state.view) ? diagnosisPeriod() : state.period;
+    $('#periodContext').textContent = contextPeriod.start + ' ~ ' + contextPeriod.end + ' · ' + contextPeriod.comparison;
     $('#profileName').textContent = state.profile.name;
     $('#profileInitials').textContent = avatarName(state.profile.name);
     $('#profileStoreName').textContent = state.profile.storeName;
@@ -603,9 +697,11 @@
     $('#storeContext').textContent = state.profile.storeName + ' · ' + state.profile.industry;
     $('#aiContext').hidden = true;
     document.querySelectorAll('[data-view]').forEach(el => { el.classList.toggle('active', el.dataset.view === state.view); if (el.classList.contains('nav-item')) { if (el.dataset.view === state.view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); } });
-    const renders = { dashboard, analysis: combinedAnalysis, market: marketAnalysis, policies, secretary, profile, aftercare };
+    const renders = { dashboard, analysis: combinedAnalysis, market: marketAnalysis, policies, secretary: recoveryView, profile };
+    $('#viewRoot').dataset.currentView = state.view;
     $('#viewRoot').innerHTML = renders[state.view]() + sourceFoot;
     sectionizeView(state.view);
+    if (state.view === 'market') window.IM_NEARBY_EVENTS?.mount();
     $('#periodSelect').value = state.periodMode;
     $('#customPeriod').hidden = true;
     if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
@@ -614,12 +710,16 @@
     updateBanner();
   }
   function navigate(view) {
+    const aftercareTarget = ['aftercare', 'recovery/aftercare', 'secretary/aftercare'].includes(view);
     view = normalizeView(view);
     if (!views[view]) return;
+    if (view === 'secretary') state.recoveryTab = aftercareTarget ? 'aftercare' : 'strategy';
+    if ($('#policyModal').open) $('#policyModal').close();
     state.view = view; setProfileMenu(false); render();
     $('#sidebar').classList.remove('open'); $('#navBackdrop').classList.remove('visible');
     $('#menuButton').setAttribute('aria-expanded', 'false');
-    if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
+    const hash = view === 'secretary' ? '#recovery' + (state.recoveryTab === 'aftercare' ? '/aftercare' : '') : '#' + view;
+    if (location.hash !== hash) history.replaceState(null, '', hash);
     const root = $('#viewRoot');
     if (typeof root.scrollTo === 'function') root.scrollTo({ top: 0, behavior: 'auto' });
     else root.scrollTop = 0;
@@ -642,9 +742,9 @@
     const salesResult = window.IM_SALES_DATA.analyze(D, state.period, {comparison:'weekday'});
     const peak = salesResult.slots.filter(row=>row.sales>0).slice().sort((a,b)=>b.sales-a.sales)[0];
     const scope = state.period.start + ' ~ ' + state.period.end + ' · 전체 메뉴·요일 · 17~23시';
-    if (/(프로필|내 이름|내 정보|가입|비밀번호)/.test(question)) return { known: true, text: '현재 화면 프로필은 ' + state.profile.name + '님, ' + state.profile.region + ' 소재 ' + state.profile.industry + '입니다.\n프로필 수정은 표시·가상 공고 조건 확인에만 적용됩니다. 생성 POS는 예시 음식점 자료이며 실제 계정 생성·비밀번호 저장은 제공하지 않습니다.' };
-    if (/(날씨|뉴스|행사|축제|캘린더|달력)/.test(question)) return { known: true, text: '홈은 대구 중구의 9월 3일 26°C, 맑음을 가정한 시연 날씨입니다. 실제 현재 날씨가 아닙니다.\n더운 날 저녁 영업의 환기와 음료 준비 상태를 점검하세요. 날씨를 매출 변화의 확정 원인으로 해석하지 않습니다.' };
-    if (/(정책|지원|공고)/.test(question)) return { known: true, text: '근거: 현재는 실제 공고 대신 화면 구성용 예시만 있습니다.\n확인: 지역·업종·직원 수·나이 조건을 구분합니다. 적합도 % 산식은 미정입니다.\n행동: 지원사업 메뉴에서 예시 조건을 확인하세요. 실제 신청 자격은 확정할 수 없습니다.' };
+    if (/(프로필|내 이름|내 정보|가입|비밀번호)/.test(question)) return { known: true, text: '현재 화면 프로필은 ' + state.profile.name + '님, ' + state.profile.region + ' 소재 ' + state.profile.industry + '입니다.\n프로필 수정은 표시·지원사업 조건 확인에 적용됩니다. 생성 POS는 예시 음식점 자료이며 실제 계정 생성·비밀번호 저장은 제공하지 않습니다.' };
+    if (/(날씨|뉴스|행사|축제|캘린더|달력)/.test(question)) return { known: true, text: '홈은 대구 중구의 9월 3일 26°C, 맑음을 가정한 시연 날씨입니다. 실제 현재 날씨가 아닙니다.\n날씨를 매출 변화의 확정 원인으로 해석하지 않습니다. 운영 제안은 회복전략에서 확인할 수 있습니다.' };
+    if (/(정책|지원|공고)/.test(question)) return { known: true, text: '근거: 지원사업은 공식 공고를 확인해 정리한 자료입니다.\n확인: 지역·업종과 접수 상태를 살펴 최대 10개를 추천하며, 전체 공고에서는 수집된 모든 공고를 볼 수 있습니다.\n행동: 각 공고의 확인일·세부 요건을 살펴본 뒤 원문 공고에서 접수 여부를 확인해 주세요.' };
     if (/(고객|직장|연령|나이)/.test(question)) return { known: true, text: '근거: 연령대·직장인 비중 자료는 연결되지 않았습니다.\n해석: 특정 고객층을 추천할 근거가 부족합니다.\n행동: 방문·소비 고객층 자료를 확보한 뒤 메뉴와 홍보 대상을 정하세요.' };
     if (/(CCTV|통행|체류|입장|유입|구매전환|객단가|전환율)/i.test(question)) return { known: true, text: '기준: '+scope+'\n근거: '+(r.count?'통행 관측 '+number(r.passers)+'건, 입장 관측 '+number(r.entrants)+'건, 유효 결제 '+number(r.validPayments)+'건입니다. 입장률 '+ratioText(r.entryRate)+', 결제 전환율 추정 '+ratioText(r.estimatedPurchaseRate)+', 객단가 '+(r.customerAverage==null?'계산 불가':money(r.customerAverage))+'입니다.':'분석 가능한 관측 자료가 없습니다.')+'\n해석: 결제는 인원수가 아니며, 입장과 결제 사이에 시간 차이가 있습니다. 같은 매장의 생성 자료를 기간 합산한 값입니다.\n행동: 매장 앞 메뉴·가격 안내와 주문 대기 기록을 함께 점검하세요.' };
     if (/(현금|자금|잔액|대출|금융|체온)/.test(question)) return { known: true, text: '근거: 매출 ' + money(analysis.sales) + ', 지출 ' + money(analysis.expense) + '입니다.\n해석: 이 차이는 현재 현금이나 영업이익이 아닙니다. 금융지수는 일별 매출·지출 참고 지수의 최근 30일 평균이며 종합 신용점수가 아닙니다. 현금보유량·미정산 매출·예정 지출은 미연결입니다.\n행동: 보유 현금, 정산일, 예정 출금을 확인하세요. 대출 심사·신청은 제공하지 않습니다.' };
@@ -654,6 +754,21 @@
     if (/(매출|왜|떨어|변화|소비|유동|상권)/.test(question)) return { known: true, text: '근거: ' + causeText() + '\n해석: 실제 관측이 아닌 생성 자료이며, 매출 변화의 확정 원인은 아닙니다.\n행동: ' + analysis.action };
     return { known: false, text: '현재 데이터로는 답변하기 어렵습니다. 매출·지출, 시간대, 회복전략, 지원사업 조건에 관해 간단히 질문해 주세요.\n상담원과 연결 채널은 아직 미정이어서 지금 연결해 드릴 수 없습니다.' };
   }
+  function serviceAnswer(question) {
+    const q = question.replace(/\s+/g, '');
+    if (/(사후관리|실행기록)/.test(q)) return '사후관리는 실행한 행동과 날짜를 기록하고 전후 매출 변화를 살펴보는 기능입니다. 회복전략 메뉴의 사후관리 탭에서 이용할 수 있습니다.';
+    if (/(회복전략|행동지침|행동제안)/.test(q)) return '회복전략은 매출진단과 상권분석 결과를 바탕으로 해볼 만한 행동을 정리해 주는 기능입니다. 실행한 내용은 같은 메뉴의 사후관리 탭에서 기록할 수 있습니다.';
+    if (/(매출진단|매출분석)/.test(q)) return '매출진단에서는 지난달의 매출과 품목·요일·시간대별 판매 흐름을 확인할 수 있습니다. 결과에 따른 행동 제안은 회복전략에서 볼 수 있습니다.';
+    if (/(상권분석|CCTV|통행|체류|입장)/i.test(q)) return '상권분석은 가게 앞의 최근 10분 통행과 입장 상황, 주변상권 흐름, 지난달 분석 요약을 보여주는 기능입니다.';
+    if (/(지원사업|지원금|공고|정책)/.test(q)) return '지원사업에서는 공식 공고 중 가게의 지역·업종과 접수 상태를 살펴 최대 10개를 추천합니다. 전체 공고에서는 수집한 모든 공고를 볼 수 있고, 각 공고에서 지원내용·접수기간·원문을 확인할 수 있습니다. 접수 상태는 표시된 확인일 기준입니다.';
+    if (/(요일|복수선택|시간대|필터)/.test(q)) return '요일은 하나씩 선택하며, 복수 선택을 켜면 여러 요일을 함께 볼 수 있습니다. 매출진단의 시간대는 2시간 단위로 선택하고, 월간 분석은 지난달 자료를 사용합니다.';
+    if (/(금융|온도|체온계|지수)/.test(q)) return '금융 체온계는 연결된 가게 자료를 이해하기 쉽게 보여주는 참고 지표입니다. 현재는 매출 대비 지출 비율을 바탕으로 표시하며 신용점수나 대출심사 결과는 아닙니다.';
+    if (/(프로필|계정|내정보)/.test(q)) return '좌측 아래 프로필에서 가게의 기본 정보를 확인할 수 있습니다. 입력한 지역과 업종 등은 지원사업 조건을 살펴볼 때 사용됩니다.';
+    if (/(리포트|PDF|문서)/i.test(q)) return '회복전략의 상세 분석에서 질문한 내용을 리포트로 정리하고 PDF로 내려받을 수 있습니다.';
+    if (/(홈|첫화면|날씨)/.test(q)) return '홈에서는 주요 메뉴, 현재 시간에 맞는 운영 안내, 금융 체온계와 날씨를 한눈에 볼 수 있습니다. 현재 날씨는 시연용 자료입니다.';
+    if (/(비서|챗봇|도움|안녕|서비스|파트너)/.test(q)) return 'iM비서는 메뉴와 서비스 이용 방법을 간단히 안내합니다. 매출진단, 상권분석, 회복전략 중 궁금한 기능을 물어보세요.';
+    return '저는 서비스 이용 방법을 안내합니다. 가게의 수치와 진단은 매출진단·상권분석에서, 행동 제안은 회복전략에서 확인해 주세요.';
+  }
   function appendChat(text, type) {
     const el = document.createElement('div'); el.className = 'ai-message ' + type; el.textContent = text;
     $('#aiMessages').append(el); $('#aiMessages').scrollTop = $('#aiMessages').scrollHeight;
@@ -661,7 +776,8 @@
   }
   function ask(question) {
     const q = question.trim(); if (!q) return;
-    setChat(true); appendChat(q, 'user'); appendChat(answer(q).text, 'bot'); $('#aiInput').value = '';
+    setChat(true); appendChat(q, 'user'); appendChat(serviceAnswer(q), 'bot');
+    $('#aiInput').value = '';
   }
   function askReport(question) {
     const q = question.trim(); if (!q) return;
@@ -670,30 +786,26 @@
     state.reportMessages.push({ type: 'user', text: q }, { type: 'bot', text: reply.text });
     if (state.reportMessages.length > 16) state.reportMessages = state.reportMessages.slice(-16);
     if (reply.known) { state.reportReady = true; state.secretaryActions = executionActions(q); }
-    state.view = 'secretary'; render();
+    state.reportDraft = ''; state.view = 'secretary'; state.recoveryTab = 'strategy'; render();
     $('#reportMessages').scrollTop = $('#reportMessages').scrollHeight;
   }
   const banners = [
     { view: 'analysis', kicker: '매출진단 · 우리 가게의 판매 흐름',
       title: '잘 팔린 메뉴와 시간,\n매출에서 답을 찾아요',
-      text: '매출 변화와 품목·시간대별 흐름을 살펴보고,\n오늘 영업에서 점검할 부분을 찾아보세요.',
+      text: '지난달의 매출과 품목별 판매 흐름을 살펴보고,\n요일과 시간대에 따른 차이를 확인해 보세요.',
       action: '매출진단 살펴보기 →', theme: 'sales', image: './assets/dashboard-banners/feature-sales.svg' },
-    { view: 'market', kicker: '상권분석 · 매장 앞에서 시작하는 관찰',
+    { view: 'market', kicker: '상권분석 · 매장 앞 상권흐름',
       title: '가게 앞 사람들의 흐름,\n방문으로 이어지는 순간',
-      text: '통행·체류·입장 흐름을 시간대별로 비교하고,\n우리 가게 앞에서 생기는 기회를 살펴보세요.',
+      text: '매장 앞 통행과 입장을 살펴보고,\n주변상권 흐름과 상권 분석 결과를 확인해 보세요.',
       action: '상권분석 살펴보기 →', theme: 'market', image: './assets/dashboard-banners/feature-market.svg' },
     { view: 'policies', kicker: '지원사업 · 내 가게의 조건부터',
       title: '우리 가게에 맞는 지원,\n필요한 조건부터 확인해요',
       text: '업종과 지역 등 가게의 조건을 바탕으로\n지원사업과 신청 전 확인할 항목을 살펴보세요.',
       action: '지원사업 살펴보기 →', theme: 'support', image: './assets/dashboard-banners/feature-support.svg' },
-    { view: 'secretary', kicker: 'iM비서 · 질문에서 행동까지',
-      title: '궁금한 점은 물어보고,\n오늘 할 일을 정리해요',
-      text: '가게 데이터로 궁금한 점을 살펴보고,\n행동지침과 분석 결과를 문서로 남겨보세요.',
-      action: 'iM비서에게 물어보기 →', theme: 'secretary', image: './assets/dashboard-banners/feature-secretary.svg' },
-    { view: 'aftercare', kicker: '사후관리 · 실행 이후의 변화',
-      title: '실천한 일을 기록하고,\n가게의 변화를 살펴봐요',
-      text: '실행한 행동과 날짜를 기록하고,\n실행 전후 7일의 매출을 비교해 보세요.',
-      action: '사후관리 살펴보기 →', theme: 'aftercare', image: './assets/dashboard-banners/feature-aftercare.svg' }
+    { view: 'secretary', kicker: '회복전략 · 진단에서 행동까지',
+      title: '매출과 상권의 진단을 모아,\n오늘 할 일을 정리해요',
+      text: '진단 근거에 맞는 행동을 순서대로 살펴보고,\n사후관리에서 실행 기록과 전후 변화를 확인하세요.',
+      action: '회복전략 살펴보기 →', theme: 'secretary', image: './assets/dashboard-banners/feature-secretary.svg' }
   ];
   function updateBanner() {
     if (!$('#bannerTitle')) return;
@@ -726,7 +838,7 @@
   }
   function invalidateReport() {
     clearPdf();
-    state.reportReady = false; state.reportMessages = []; state.secretaryActions = [];
+    state.reportReady = false; state.reportMessages = []; state.secretaryActions = []; state.reportDraft = '';
     $('#aiMessages').replaceChildren();
     appendChat('분석 조건이 바뀌었습니다. 새 조건을 기준으로 질문해 주세요.', 'bot');
   }
@@ -764,7 +876,7 @@
     try {
       const blob = await window.IM_REPORT_PDF.generate({
         profile: Object.assign({}, state.profile), analysis, cause: causeText(), cost: costText(),
-        discussion: state.reportMessages.filter(r => r.type === 'user').map(r => r.text).slice(-3), actions: state.secretaryActions.map(row=>({...row}))
+        discussion: state.reportMessages.filter(r => r.type === 'user').map(r => r.text).slice(-3), actions: executionChoices().map(row=>({...row}))
       });
       if (revision !== state.reportRevision) return;
       if (state.reportBlobUrl) URL.revokeObjectURL(state.reportBlobUrl);
@@ -837,17 +949,21 @@
       selectGuideHour(el.dataset.guideHour);
       return;
     }
+    if (el.dataset.recoveryTab && !el.dataset.view) {
+      event.preventDefault(); navigate(el.dataset.recoveryTab === 'aftercare' ? 'aftercare' : 'secretary');
+      $('#recoveryTab-' + state.recoveryTab)?.focus({ preventScroll: true }); return;
+    }
     if (el.dataset.view) { event.preventDefault?.(); navigate(el.dataset.view); }
     if (el.dataset.question) ask(el.dataset.question);
     if (el.dataset.reportQuestion) { $('#reportInput').value = el.dataset.reportQuestion; $('#reportInput').focus(); }
     if (el.dataset.bannerIndex !== undefined) { state.bannerIndex = Math.max(0, Math.min(banners.length - 1, Number(el.dataset.bannerIndex))); updateBanner(); }
-    if (el.dataset.policyView) { state.policyView = el.dataset.policyView; state.offset = 0; render(); }
+    if (el.dataset.policyView) { state.policyView = el.dataset.policyView; state.offset = 0; render(); $('[data-policy-view="' + state.policyView + '"]')?.focus({ preventScroll: true }); }
+    if (el.dataset.policyPage !== undefined) { state.offset = Number(el.dataset.policyPage) * policyPageSize(); updatePolicyResults(); $('[data-policy-page="' + el.dataset.policyPage + '"]')?.focus({ preventScroll: true }); }
     if (el.dataset.policy) {
-      const p = D.policies.find(row => row.id === Number(el.dataset.policy));
+      const p = policyData().items.find(row => String(row.id) === el.dataset.policy);
+      if (!p) return;
       $('#policyModalTitle').textContent = p.title;
-      $('#policyModalContent').innerHTML = '<p class="v-subtitle">이것은 실제 지원사업이 아닌 조건 확인용 예시입니다.</p><div class="v-list">' +
-        matchPolicy(p).map(r => '<p>' + r.name + ': <strong>' + r.status + '</strong></p>').join('') +
-        '</div><p class="v-subtitle">창업일·규모의 세부 산정 기준은 원문 확인이 필요합니다. 적합도 %·접수기간·지원금액·신청 링크는 제공하지 않습니다.</p>';
+      $('#policyModalContent').innerHTML = policyDetail(p);
       $('#policyModal').showModal();
     }
     switch (el.dataset.action) {
@@ -858,19 +974,22 @@
       case 'banner-detail': navigate(banners[state.bannerIndex].view); break;
       case 'weather-prev': changeWeatherPage(state.weatherPage - 1); break;
       case 'weather-next': changeWeatherPage(state.weatherPage + 1); break;
-      case 'policy-prev': state.offset--; $('#policyResults').innerHTML = policyResults(); break;
-      case 'policy-next': state.offset++; $('#policyResults').innerHTML = policyResults(); break;
+      case 'policy-prev': state.offset -= policyPageSize(); updatePolicyResults('policy-prev'); break;
+      case 'policy-next': state.offset += policyPageSize(); updatePolicyResults('policy-next'); break;
       case 'make-pdf': makePdf(); break;
       case 'open-document-guide': $('#documentGuideModal').showModal(); break;
       case 'close-document-guide': $('#documentGuideModal').close(); break;
       case 'record-execution': openExecutionDialog(); break;
       case 'close-execution': $('#executionModal').close(); break;
+      case 'open-policy-basis': $('#policyModalTitle').textContent = '추천 기준 확인'; $('#policyModalContent').innerHTML = policyBasis(); $('#policyModal').showModal(); break;
+      case 'open-policy-guide': $('#policyModalTitle').textContent = '지원사업 확인 순서'; $('#policyModalContent').innerHTML = policyGuide(); $('#policyModal').showModal(); break;
       case 'close-modal': $('#policyModal').close(); break;
     }
   });
   function showChartTooltip(event) {
     const hit=event.target.closest?.('[data-chart-index]'); if(!hit)return;
-    const wrap=hit.closest('.v-comparison-chart'), row=(state.chartMode==='weekday'?analysis.weekdaySlots:analysis.slots)[Number(hit.dataset.chartIndex)];
+    const chartAnalysis = D.analyze(state.view === 'market' ? diagnosisPeriod() : state.period);
+    const wrap=hit.closest('.v-comparison-chart'), row=(state.chartMode==='weekday'?chartAnalysis.weekdaySlots:chartAnalysis.slots)[Number(hit.dataset.chartIndex)];
     if(!row)return;
     const fields=[['traffic','상권 유동인구','명'],['storefront','우리 가게 앞 통행 관측','건'],['card','카드 소비','원'],['sales','우리 가게 매출','원']].filter(([key])=>!state.chartSeries.length||state.chartSeries.includes(key));
     const tip=wrap.querySelector('.v-chart-tooltip'); tip.innerHTML='<strong>'+esc(row.label)+'</strong>'+fields.map(([key,label,unit])=>'<span>'+label+' <b>'+(row[key]==null?'자료 없음':number(row[key])+unit)+'</b></span>').join(''); tip.hidden=false;
@@ -879,11 +998,12 @@
   document.addEventListener('focusin',showChartTooltip);
   document.addEventListener('click',showChartTooltip);
   document.addEventListener('input', event => {
-    if (event.target.id === 'policySearch') { state.keyword = event.target.value.trim(); state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
+    if (event.target.id === 'reportInput') state.reportDraft = event.target.value;
+    if (event.target.id === 'policySearch') { state.keyword = event.target.value.trim(); state.offset = 0; updatePolicyResults(); }
   });
   document.addEventListener('change', event => {
     const el = event.target;
-    if (el.id === 'policyCategory') { state.category = el.value; state.offset = 0; $('#policyResults').innerHTML = policyResults(); }
+    if (el.id === 'policyCategory') { state.category = el.value; state.offset = 0; updatePolicyResults(); }
     if (el.id === 'periodSelect' || el.id === 'sectionPeriodSelect') {
       state.periodMode = el.value;
       $('#periodSelect').value = state.periodMode;
@@ -912,7 +1032,7 @@
       event.preventDefault();
       const formData=new FormData(form);
       const ids=formData.getAll('action');
-      const record={id:'execution-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),date:String(formData.get('date')),startHour:Number(formData.get('startHour')),endHour:Number(formData.get('endHour')),note:String(formData.get('note')||'').trim(),actions:state.secretaryActions.filter(a=>ids.includes(a.id)),analysisPeriod:{...state.period},sourceType:'synthetic_demo'};
+      const record={id:'execution-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),date:String(formData.get('date')),startHour:Number(formData.get('startHour')),endHour:Number(formData.get('endHour')),note:String(formData.get('note')||'').trim(),actions:executionChoices().filter(a=>ids.includes(a.id)),analysisPeriod:{...state.period},sourceType:'synthetic_demo'};
       try { window.IM_AFTERCARE.save(record); $('#executionModal').close(); navigate('aftercare'); notice('이 브라우저에 시연 실행 기록을 저장했습니다.'); }
       catch(error) { $('#executionError').textContent=error.message; }
     }
@@ -1019,6 +1139,11 @@
     setChatWidth(event.key === 'Home' ? 320 : event.key === 'End' ? 560 : width + (event.key === 'ArrowLeft' ? 10 : -10));
   });
   document.addEventListener('keydown', event => {
+    if (event.target.matches?.('[role="tab"][data-recovery-tab]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'strategy' : event.key === 'End' ? 'aftercare' : state.recoveryTab === 'strategy' ? 'aftercare' : 'strategy';
+      navigate(next === 'aftercare' ? 'aftercare' : 'secretary'); $('#recoveryTab-' + next)?.focus({ preventScroll: true }); return;
+    }
     const line = event.target.closest('[data-chart-line]');
     if (line && ['Enter', ' '].includes(event.key)) { event.preventDefault(); highlightChartSeries(line.dataset.series); }
   });
@@ -1036,7 +1161,15 @@
     const key = clock.date + ':' + clock.hour + ':' + clock.minute;
     if (key === clockKey) return;
     const hourChanged = clockKey.split(':').slice(0, 2).join(':') !== [clock.date, clock.hour].join(':');
+    const dayChanged = Boolean(clockKey) && clockKey.split(':')[0] !== clock.date;
     clockKey = key;
+    if (dayChanged) invalidateReport();
+    if (((dayChanged || hourChanged) && ['analysis', 'secretary'].includes(state.view)) || (state.view === 'market' && dayChanged)) {
+      if (state.view === 'secretary' && $('#reportInput')) state.reportDraft = $('#reportInput').value;
+      const root = $('#viewRoot'), top = root.scrollTop, pageY = window.scrollY;
+      render(); root.scrollTop = top; window.scrollTo({ top: pageY, behavior: 'instant' });
+    }
+    if (state.view === 'market') window.IM_MARKET_ANALYSIS?.refreshLive?.();
     if (financeIndex.today !== clock.date) {
       financeIndex = D.financialIndex();
       const contextCard = document.querySelector('.v-dashboard-context');
@@ -1046,22 +1179,23 @@
       syncProfileFinance();
     }
     const guide = document.querySelector('.v-dashboard-guidance');
-    if (guide && hourChanged && (state.view === 'dashboard' || state.guideHour === null)) {
+    if (guide && (state.view === 'dashboard' || hourChanged && state.guideHour === null)) {
       guide.innerHTML = guidanceCard(state.view === 'dashboard');
       const contextCard = document.querySelector('.v-dashboard-context');
       if (contextCard) contextCard.outerHTML = dashboardContextCard();
     }
     const insight = document.querySelector('.v-dashboard-insight');
-    if (insight) insight.outerHTML = dashboardInsight();
+    if (insight) insight.outerHTML = dashboardInsight(state.view === 'secretary');
   }
   setInterval(refreshCurrentIndicators, 15000);
   document.addEventListener('visibilitychange', refreshCurrentIndicators);
-  window.addEventListener('hashchange', () => { const view = normalizeView(location.hash.slice(1)); if (views[view]) navigate(view); });
+  window.addEventListener('hashchange', () => navigate(location.hash.slice(1)));
   const initialView = normalizeView(location.hash.slice(1));
+  state.recoveryTab = ['aftercare', 'recovery/aftercare', 'secretary/aftercare'].includes(location.hash.slice(1)) ? 'aftercare' : 'strategy';
   state.view = views[initialView] ? initialView : 'dashboard';
-  if (location.hash && location.hash !== '#' + state.view) history.replaceState(null, '', '#' + state.view);
-  if (window.IM_SALES_DIAGNOSIS) { window.IM_SALES_DIAGNOSIS.bind(render); window.IM_SALES_DIAGNOSIS.setExtrasRenderer?.(relocatedSales); }
+  if (location.hash) history.replaceState(null, '', state.view === 'secretary' ? '#recovery' + (state.recoveryTab === 'aftercare' ? '/aftercare' : '') : '#' + state.view);
+  if (window.IM_SALES_DIAGNOSIS) { window.IM_SALES_DIAGNOSIS.bind(refreshDiagnosis); window.IM_SALES_DIAGNOSIS.setExtrasRenderer?.(relocatedSales); }
   if (window.IM_AFTERCARE) window.IM_AFTERCARE.bind(render);
-  if (window.IM_MARKET_ANALYSIS) { window.IM_MARKET_ANALYSIS.bind(render); window.IM_MARKET_ANALYSIS.setExtrasRenderer?.(relocatedMarket); }
+  if (window.IM_MARKET_ANALYSIS) { window.IM_MARKET_ANALYSIS.bind(refreshDiagnosis); window.IM_MARKET_ANALYSIS.setExtrasRenderer?.(relocatedMarket); }
   render();
 })();

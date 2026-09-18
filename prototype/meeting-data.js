@@ -24,7 +24,7 @@
     { id: 'soft-drink', name: '음료', price: 2000, unit: '병', category: 'drink', categoryLabel: '음료', subcategory: 'soft', subcategoryLabel: '음료' }
   ];
   const materials = [
-    { id: 'pork', name: '돼지고기', unit: 'kg', price: 16000, amount: 14 },
+    { id: 'pork', name: '돼지고기', unit: 'kg', price: 20000, amount: 20 },
     { id: 'vegetable', name: '채소류', unit: 'kg', price: 4800, amount: 9 },
     { id: 'rice', name: '쌀', unit: 'kg', price: 2700, amount: 5 },
     { id: 'seasoning', name: '양념류', unit: 'kg', price: 6000, amount: 3 }
@@ -84,7 +84,8 @@
       expenses.push({ date, category: 'purchase', amount, sourceType: 'synthetic_demo' });
     });
     const monthDays = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)), 0)).getUTCDate();
-    [['rent', 2300000], ['maintenance', 650000], ['labor', 8500000], ['other', 1600000]].forEach(([category, total]) => {
+    // Explicit fictional operating costs, not market averages or inferred costs from filtered sales.
+    [['rent', 2300000], ['maintenance', 1100000], ['labor', 12000000], ['other', 2400000]].forEach(([category, total]) => {
       expenses.push({ date, category, amount: Math.floor(total / monthDays) + (d <= total % monthDays ? 1 : 0), sourceType: 'synthetic_demo', allocation: '월 시연지출의 날짜별 배치; 품목·시간별 원가가 아님' });
     });
   }
@@ -352,6 +353,7 @@
     profile: { name: '이소현', storeName: '소현이네 고기굽는집', region: '대구 중구', industry: '음식점', employees: 3, age: '', ageBand: '50대', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     business: { fictional: true, description: '50대 이소현 사장님이 운영하는 가상의 동네 고깃집', openingHours: '매일 17:00~23:00', openingDays: [1, 2, 3, 4, 5, 6, 0], detailedAddress: null, priceNote: '메뉴와 가격은 기능 시연을 위한 가상 설정입니다.' },
     generatedLabel: '가상 고깃집 시연 자료', referenceDate: '2026-09-03',
+    expenseScenario: { sourceType: 'synthetic_demo', note: '가상의 고깃집 운영비 설정이며 업종 평균이 아닙니다. 매입량·단가와 월 고정지출을 원자료에 반영합니다.', monthlyFixed: { rent: 2300000, maintenance: 1100000, labor: 12000000, other: 2400000 } },
     sources: { pos: '가상 고깃집 10분 결제·판매 자료', expenses: '가상 지출·매입 자료; 매출원가·순이익 아님', area: '가상 주변 상권 자료', cctv: '공통 시연자료의 10분 통행·체류·입장 집계', recovery: '동일 고깃집 시연자료의 CCTV·결제 합산', policies: '화면 구성용 가상 공고' }
   };
   root.IM_MEETING_DEMO = api;

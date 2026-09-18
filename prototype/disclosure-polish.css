@@ -1,0 +1,57 @@
+/* Calculation notes, evidence and supporting details use one disclosure style. */
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis) {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #dbe7e2;
+  border-radius: 12px;
+  background: #f8fbf9;
+  color: #526b61;
+  font-size: 13px;
+  line-height: 1.7;
+}
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis) > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 12px 16px;
+  color: #345e50;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  list-style: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+#viewRoot:not([data-current-view="dashboard"]) details > summary::-webkit-details-marker { display: none; }
+#viewRoot:not([data-current-view="dashboard"]) details > summary::marker { content: ''; }
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis) > summary::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin: -4px 3px 0 8px;
+  border-right: 1.5px solid #547b6c;
+  border-bottom: 1.5px solid #547b6c;
+  transform: rotate(45deg);
+}
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis)[open] > summary::after { margin-top: 4px; transform: rotate(225deg); }
+#viewRoot:not([data-current-view="dashboard"]) details > summary:focus-visible { outline: 2px solid #137c78; outline-offset: 3px; border-radius: 10px; }
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis) > :not(summary) { margin: 0 16px 16px; }
+#viewRoot:not([data-current-view="dashboard"]) :is(details.sd-definitions, details.sd-weekday-detail, details.ma-definitions, details.ne-detail, details.v-policy-basis) :is(p, dd) { color: #526b61; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
+#viewRoot:not([data-current-view="dashboard"]) :is(details.ne-detail > div, .v-policy-basis-body, .ma-definition-body) { padding: 0; }
+#viewRoot:not([data-current-view="dashboard"]) .v-policy-basis > summary > [aria-hidden="true"] { display: none; }
+#viewRoot .v-definition-list { display: grid; gap: 0; padding: 0; }
+#viewRoot .v-definition-list > div { display: grid; grid-template-columns: minmax(100px, 150px) minmax(0, 1fr); gap: 12px 20px; padding: 12px 0; }
+#viewRoot .v-definition-list > div + div { border-top: 1px solid #e4ece7; }
+#viewRoot .v-definition-list dt { margin: 0; color: #345e50; font-weight: 600; }
+#viewRoot .v-definition-list dd { margin: 0; }
+#viewRoot .v-definition-list dd p { margin: 0; }
+#viewRoot .v-definition-list dd p + p { margin-top: 6px; }
+@media (max-width: 760px) {
+  #viewRoot .v-definition-list > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  #viewRoot:not([data-current-view="dashboard"]) .v-policy-basis > summary > :nth-child(2) { font-size: 11px; }
+}

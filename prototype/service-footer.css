@@ -1,0 +1,29 @@
+/* Keep the common notice inside each fixed workspace without adding page scroll. */
+:is(.recovery-fixed-view, .policies-fixed-view) #viewRoot .v-screen-inner {
+  flex-direction: column;
+}
+:is(.recovery-fixed-view, .policies-fixed-view) #viewRoot :is(.v-recovery-workspace, .v-policy-workspace) {
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+:is(.recovery-fixed-view, .policies-fixed-view) #viewRoot .v-footer {
+  flex: 0 0 auto;
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px), (max-height: 740px) {
+  :is(.recovery-fixed-view, .policies-fixed-view) #viewRoot .v-footer {
+    margin-top: 6px;
+    font-size: 10px;
+  }
+}
+@media (min-width: 761px) and (max-height: 760px) {
+  .policies-fixed-view #viewRoot[data-current-view="policies"] .v-policy {
+    padding: 12px 14px;
+    gap: 5px;
+  }
+}

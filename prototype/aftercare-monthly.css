@@ -1,0 +1,68 @@
+/* Calendar-month comparison stays inside the existing fixed recovery card. */
+.recovery-fixed-view .v-aftercare-monthly .v-aftercare-head .v-tag { display: none; }
+.recovery-fixed-view .v-aftercare-monthly .v-aftercare-head h2 { margin-top: 0; }
+.recovery-fixed-view .v-aftercare-monthly .v-aftercare-monthly-body {
+  display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; min-width: 0;
+  gap: clamp(12px, 2vh, 22px); margin-top: clamp(12px, 2vh, 22px); overflow: hidden;
+}
+.v-aftercare-monthly .v-month-change { display: flex; align-items: end; justify-content: space-between; flex: 0 0 auto; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid #e1ebe6; }
+.v-aftercare-monthly .v-month-change > div { display: flex; align-items: baseline; gap: 20px; }
+.v-aftercare-monthly .v-month-change span { color: #62786e; font-size: 14px; font-weight: 600; }
+.v-aftercare-monthly .v-month-change strong { color: #314e45; font-size: clamp(28px, 3.5vw, 42px); line-height: 1.2; letter-spacing: -.04em; white-space: nowrap; }
+.v-aftercare-monthly .v-month-change strong.is-up { color: #268264; }
+.v-aftercare-monthly .v-month-change strong.is-down { color: #b75f4c; }
+.v-aftercare-monthly .v-month-change p { margin: 0 0 4px; color: #557065; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.v-aftercare-monthly .v-month-chart { display: flex; flex-direction: column; justify-content: center; flex: 1 1 0; min-height: 0; min-width: 0; width: 100%; margin: 0; padding: 0; }
+.v-aftercare-monthly .v-month-chart figcaption { display: flex; flex: 0 0 auto; justify-content: space-between; align-items: center; gap: 10px; color: #37584b; font-size: 15px; font-weight: 700; }
+.v-aftercare-monthly .v-month-chart figcaption > span { color: #7a8d84; font-size: 11px; font-weight: 400; }
+.v-aftercare-monthly .v-month-bars { display: grid; grid-template-rows: auto auto; align-content: center; flex: 0 0 auto; gap: clamp(16px, 2vh, 24px); margin-top: clamp(14px, 2vh, 22px); }
+.v-aftercare-monthly .v-month-row { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.v-aftercare-monthly .v-month-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.v-aftercare-monthly .v-month-row-head > div { display: flex; align-items: baseline; gap: 12px; }
+.v-aftercare-monthly .v-month-row-head strong { color: #314f42; font-size: 22px; line-height: 1.3; }
+.v-aftercare-monthly .v-month-row-head span { color: #73867d; font-size: 12px; }
+.v-aftercare-monthly .v-month-row-head b { color: #314f42; font-size: clamp(18px, 2vw, 26px); line-height: 1.3; letter-spacing: -.025em; white-space: nowrap; }
+.v-aftercare-monthly .v-month-track { position: relative; flex: 0 0 auto; height: clamp(22px, 3vh, 32px); width: 100%; border-radius: 6px; background: repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), #dbe6df calc(25% - 1px), #dbe6df 25%), #f0f5f1; }
+.v-aftercare-monthly .v-month-bar { position: absolute; display: block; inset: 0 auto 0 0; border-radius: 6px; background: #a9c5b5; }
+.v-aftercare-monthly .is-current .v-month-bar { background: #388c6d; }
+.v-aftercare-monthly .is-current .v-month-row-head :is(strong, b) { color: #267458; }
+.v-aftercare-monthly .v-month-row > small { color: #7b8c83; font-size: 11px; line-height: 1.4; }
+.v-aftercare-monthly .v-month-axis { display: flex; justify-content: space-between; flex: 0 0 auto; gap: 10px; margin-top: 12px; padding-top: 8px; border-top: 1px solid #dce7e0; color: #829188; font-size: 11px; }
+.v-aftercare-monthly .v-month-bottom { display: flex; flex: 0 0 auto; justify-content: space-between; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e1ebe6; }
+.v-aftercare-monthly .v-month-bottom > p { margin: 0; color: #75867d; font-size: 11px; line-height: 1.5; }
+.v-aftercare-monthly .v-month-bottom > .v-button { flex: 0 0 auto; min-height: 36px; padding: 7px 12px; font-size: 12px; }
+.v-aftercare-dialog .v-aftercare-select { margin: 18px 0; }
+@media (max-width: 760px) {
+  .recovery-fixed-view .v-aftercare-monthly .v-aftercare-monthly-body { gap: 14px; margin-top: 14px; }
+  .v-aftercare-monthly .v-month-change { gap: 8px; padding-bottom: 12px; align-items: center; }
+  .v-aftercare-monthly .v-month-change > div { flex-direction: column; gap: 7px; }
+  .v-aftercare-monthly .v-month-change span, .v-aftercare-monthly .v-month-change p { font-size: 11px; }
+  .v-aftercare-monthly .v-month-change strong { font-size: 30px; }
+  .v-aftercare-monthly .v-month-chart { padding: 0 0 4px; }
+  .v-aftercare-monthly .v-month-chart figcaption { font-size: 12px; }
+  .v-aftercare-monthly .v-month-chart figcaption > span { font-size: 10px; }
+  .v-aftercare-monthly .v-month-bars { gap: 20px; margin-top: 18px; max-height: 300px; }
+  .v-aftercare-monthly .v-month-row { gap: 8px; }
+  .v-aftercare-monthly .v-month-row-head { gap: 8px; }
+  .v-aftercare-monthly .v-month-row-head > div { gap: 7px; }
+  .v-aftercare-monthly .v-month-row-head strong { font-size: 18px; }
+  .v-aftercare-monthly .v-month-row-head span { font-size: 10px; }
+  .v-aftercare-monthly .v-month-row-head b { font-size: 16px; }
+  .v-aftercare-monthly .v-month-track { height: 25px; }
+  .v-aftercare-monthly .v-month-row > small { font-size: 10px; }
+  .v-aftercare-monthly .v-month-axis { margin-top: 14px; padding-top: 8px; font-size: 10px; }
+  .v-aftercare-monthly .v-month-bottom { gap: 8px; margin-top: 10px; padding-top: 10px; }
+  .v-aftercare-monthly .v-month-bottom > p { max-width: 155px; font-size: 10px; }
+  .v-aftercare-monthly .v-month-bottom > .v-button { min-height: 34px; padding: 6px 8px; font-size: 10px; }
+}
+@media (max-height: 760px) {
+  .recovery-fixed-view .v-aftercare-monthly .v-aftercare-monthly-body { gap: 10px; margin-top: 10px; }
+  .v-aftercare-monthly .v-month-change { padding-bottom: 10px; }
+  .v-aftercare-monthly .v-month-change strong { font-size: 28px; }
+  .v-aftercare-monthly .v-month-chart { padding: 0; }
+  .v-aftercare-monthly .v-month-bars { gap: 12px; margin-top: 8px; }
+  .v-aftercare-monthly .v-month-row { gap: 6px; }
+  .v-aftercare-monthly .v-month-track { height: 22px; }
+  .v-aftercare-monthly .v-month-axis { margin-top: 8px; padding-top: 6px; }
+  .v-aftercare-monthly .v-month-bottom { margin-top: 8px; padding-top: 8px; }
+}

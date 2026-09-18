@@ -1,0 +1,108 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require('playwright');
+const data = require('../policy-data.js');
+const matching = require('../policy-matching.js');
+const profile = require('../meeting-data.js').profile;
+const selected = matching.recommendations(data.items, profile, data.checkedAt);
+const expectedIds = selected.map(p => p.id);
+const url = process.env.IM_PREVIEW_URL ? new URL('prototype/main-screen.html', process.env.IM_PREVIEW_URL).href : pathToFileURL(path.resolve(__dirname, '../main-screen.html')).href;
+const out = process.env.IM_QA_DIR || path.resolve(__dirname, '../../tmp/policies-carousel-qa');
+const settle = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+const ids = page => page.locator('[data-policy-card]').evaluateAll(cards => cards.map(card => card.dataset.policyCard));
+
+(async () => {
+  fs.mkdirSync(out, { recursive: true });
+  const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+  const errors = [];
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(url + '?policy-official-qa#policies');
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    assert.ok(data.items.length > 10, 'the whole official corpus is larger than ten');
+    assert.equal(selected.length, 10, 'default profile has ten candidates');
+    assert.equal(await page.locator('#policyResults').count(), 1);
+    assert.match(await page.locator('.v-policy-heading').innerText(), /공고 확인일/);
+    assert.doesNotMatch(await page.locator('#viewRoot').innerText(), /가상 공고|예시 공고|실제 신청 불가/);
+    assert.deepEqual(await ids(page), expectedIds.slice(0, 3));
+    assert.match(await page.locator('.v-policy-range').innerText(), /1–3 \/ 10개/);
+    assert.ok(await page.locator('[data-action="policy-prev"]').isDisabled());
+    const placement = await page.evaluate(() => {
+      const rect = selector => document.querySelector(selector).getBoundingClientRect();
+      const left = rect('[data-action="policy-prev"]'), right = rect('[data-action="policy-next"]');
+      const cards = [...document.querySelectorAll('[data-policy-card]')].map(card => card.getBoundingClientRect());
+      return { leftOutside: left.right <= cards[0].left, rightOutside: right.left >= cards[2].right, leftCenter: left.y + left.height / 2, cardCenter: cards[0].y + cards[0].height / 2, sizes: cards.map(card => [card.width, card.height]) };
+    });
+    assert.ok(placement.leftOutside && placement.rightOutside, 'arrows beside card ends');
+    assert.ok(Math.abs(placement.leftCenter - placement.cardCenter) < 1, 'arrows vertically centered');
+    assert.ok(placement.sizes.every(size => Math.abs(size[0] - placement.sizes[0][0]) < 1 && Math.abs(size[1] - placement.sizes[0][1]) < 1), 'equivalent cards share size');
+    await page.screenshot({ path: path.join(out, 'policies-desktop.png'), fullPage: true });
+    const seen = await ids(page);
+    for (let offset = 3; offset < selected.length; offset += 3) {
+      await page.locator('[data-action="policy-next"]').click();
+      assert.deepEqual(await ids(page), expectedIds.slice(offset, offset + 3));
+      seen.push(...await ids(page));
+    }
+    assert.deepEqual(seen, expectedIds, 'every selected recommendation appears once');
+    assert.ok(await page.locator('[data-action="policy-next"]').isDisabled());
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'policy-prev');
+    await page.keyboard.press('Enter');
+    assert.deepEqual(await ids(page), expectedIds.slice(6, 9));
+    await page.locator('[data-policy-page="0"]').click();
+    await page.locator('[data-policy="' + selected[0].id + '"]').click();
+    assert.ok(await page.locator('#policyModal').evaluate(dialog => dialog.open));
+    assert.match(await page.locator('#policyModalContent').innerText(), /내 가게 조건 확인/);
+    assert.equal(await page.locator('#policyModalContent .v-policy-source').getAttribute('href'), selected[0].sourceUrl);
+    assert.doesNotMatch(await page.locator('#policyModal').innerText(), /예시 공고|실제 지원사업이 아닌/);
+    await page.keyboard.press('Escape');
+    const candidateOutsideTopTen = data.items.find(item => !expectedIds.includes(item.id));
+    await page.locator('#policySearch').fill(candidateOutsideTopTen.title);
+    assert.equal(await page.locator('[data-policy-card]').count(), 0, 'search does not inject a new candidate');
+    await page.locator('[data-policy-view="all"]').click();
+    assert.equal(await page.locator('[data-policy-row]').count(), 1, 'all notices search reaches outside top ten');
+    await page.locator('#policySearch').fill('');
+    assert.equal(await page.locator('[data-policy-row]').count(), data.items.length, 'all official notices are listed without ten-item cap');
+    assert.equal(await page.locator('.v-policy-carousel').count(), 0, 'all notices uses vertical list, not recommendation carousel');
+    const rows = await page.locator('[data-policy-row]').evaluateAll(items => items.map(item => { const r = item.getBoundingClientRect(); return { x: r.x, y: r.y, bottom: r.bottom, width: r.width }; }));
+    assert.ok(rows.slice(1).every((r, i) => r.y >= rows[i].bottom - 1 && r.x === rows[0].x && r.width === rows[0].width));
+    assert.ok(await page.locator('#policyNoticeList .v-policy-status.closed').count() > 0, 'closed notices retained in all list');
+    await page.screenshot({ path: path.join(out, 'policies-all-desktop.png'), fullPage: false });
+    await page.locator('#policyCategory').selectOption(selected[0].category);
+    assert.equal(await page.locator('[data-policy-row]').count(), data.items.filter(p => p.category === selected[0].category).length);
+    await page.locator('#policyCategory').selectOption('all');
+    await page.locator('[data-policy-view="recommended"]').click();
+    await page.locator('#policyCategory').selectOption(selected[0].category);
+    const categoryExpected = selected.filter(p => p.category === selected[0].category).map(p => p.id);
+    assert.deepEqual(await ids(page), categoryExpected.slice(0, 3));
+    await page.locator('#policyCategory').selectOption('all');
+    await page.locator('[data-action="open-policy-basis"]').click();
+    assert.ok(await page.locator('#policyModal').evaluate(dialog => dialog.open));
+    assert.match(await page.locator('#policyModalContent').innerText(), /적합도 점수는 산정하지 않습니다/);
+    assert.match(await page.locator('.v-policy-footer').innerText(), /자동 갱신되지 않습니다/);
+    await page.keyboard.press('Escape');
+    await page.locator('[data-action="open-policy-guide"]').click();
+    assert.match(await page.locator('#policyModalContent').innerText(), /원문 공고 최종 확인/);
+    await page.keyboard.press('Escape');
+    for (const [width, height] of [[1280, 720], [1100, 800], [768, 900], [390, 844], [360, 640]]) {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+      assert.equal((await ids(page)).length, width > 1050 ? 3 : 1, 'responsive page size ' + width);
+      const overflow = await page.evaluate(() => ({ document: document.documentElement.scrollWidth > innerWidth + 1, root: document.querySelector('#viewRoot').scrollWidth > document.querySelector('#viewRoot').clientWidth + 1, card: [...document.querySelectorAll('[data-policy-card]')].some(card => card.scrollWidth > card.clientWidth + 1) }));
+      assert.deepEqual(overflow, { document: false, root: false, card: false }, 'no horizontal overflow ' + width);
+      if (width === 390 || width === 1100) await page.screenshot({ path: path.join(out, 'policies-' + width + '.png'), fullPage: true });
+    }
+    await page.locator('[data-action="policy-next"]').click();
+    assert.deepEqual(await ids(page), expectedIds.slice(1, 2));
+    await page.locator('[data-policy-view="all"]').click();
+    assert.equal(await page.locator('[data-policy-row]').count(), data.items.length);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'mobile all-list fits');
+    await page.screenshot({ path: path.join(out, 'policies-all-mobile.png'), fullPage: false });
+    assert.deepEqual(errors, []);
+    console.log('PASS official policies: ' + data.items.length + ' complete list, 10 selected carousel, search boundaries, source modal, equal cards, 6 screen sizes');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -42,9 +42,10 @@ check('Local assets exist and no external script/style dependency', () => {
   assert.match(css, /\.v-decision-action > \.v-guidance-time \{ z-index: 10; \}/);
   assert.ok(!html.includes('class="top-nav"'));
   assert.ok(!html.includes('class="data-chip"'));
-  assert.match(html, /<div class="demo-label">생성 데이터 기반<br>프로토타입<\/div>/);
+  assert.ok(!html.includes('class="demo-label"'));
   assert.ok(!html.includes('iM 파트너'));
-  assert.ok(html.includes('AI챗봇'));
+  assert.ok(html.includes('iM비서'));
+  assert.ok(!html.includes('AI챗봇'));
   assert.ok(!code.includes("addEventListener('wheel'"));
   assert.ok(!code.includes('handleSectionWheel'));
   assert.match(html, /vendor\/lenis\/lenis\.min\.js/);
@@ -78,9 +79,10 @@ check('Date validation, short periods and missing comparison', () => {
   assert.equal(D.analyze(D.customPeriod('2026-08-01', '2026-08-01')).comparisonAvailable, true);
   assert.equal(D.guidance(2).average, null); assert.ok(D.guidance(19).average > 0);
 });
-check('Generated policies and undefined metrics remain explicit', () => {
-  assert.equal(D.policies.length, 10);
-  assert.ok(D.policies.every(p => p.sourceType === 'synthetic_demo' && p.score === null));
+check('Official policies are separate from synthetic sales and undefined metrics', () => {
+  assert.ok(!code.includes('D.policies'));
+  assert.match(code, /IM_POLICY_DATA/);
+  assert.match(code, /자동 갱신되지 않습니다/);
   assert.ok(!code.includes('650000')); assert.ok(!/fetch\(|XMLHttpRequest|localStorage|sessionStorage/.test(code));
 });
 check('CCTV and POS recovery scenario reconciles without invented outcomes', () => {
@@ -125,6 +127,7 @@ class Element {
   remove() { this.parent.children = this.parent.children.filter(e => e !== this); this.isConnected = false; }
   replaceChildren() { this.children = []; }
   get firstElementChild() { return this.children[0]; }
+  get lastElementChild() { return this.children.at(-1); }
   get childElementCount() { return this.children.length; }
   get scrollHeight() { return this.children.length * 70; }
   closest() { return this; }
@@ -173,6 +176,8 @@ function submit(id, values) { const form = nodes.get(id); form.values = values; 
 function askChat(question) { click({ question }); nodes.get('aiInput').value = question; submit('aiForm'); }
 function askReport(question) { click({ reportQuestion: question }); assert.equal(nodes.get('reportInput').value, question); submit('reportForm'); }
 context.window.IM_SALES_DATA = require('../sales-diagnosis-data.js');
+vm.runInNewContext(fs.readFileSync(path.join(root, 'policy-data.js'), 'utf8'), context);
+vm.runInNewContext(fs.readFileSync(path.join(root, 'policy-matching.js'), 'utf8'), context);
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sales-diagnosis.js'), 'utf8'), context);
 context.window.IM_SALES_DIAGNOSIS.bind = () => {};
 vm.runInNewContext(fs.readFileSync(path.join(root, 'aftercare.js'), 'utf8'), context);
@@ -182,10 +187,11 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(root, 'market-analy
 context.window.IM_MARKET_ANALYSIS.bind = () => {};
 vm.runInNewContext(code, context, { filename: 'meeting-ui.js' });
 check('Initial render and the consolidated navigation targets', () => {
-  assert.match(nodes.get('viewRoot').innerHTML, /<h2 id="financeThermoTitle">나의 금융 체온계<\/h2>/);
-  assert.doesNotMatch(nodes.get('viewRoot').innerHTML, /지금 할 일|매일 17시부터 23시까지 영업합니다\./);
-  assert.match(nodes.get('viewRoot').innerHTML, /지금 확인/);
-  assert.match(nodes.get('viewRoot').innerHTML, /다음 준비/);
+  assert.match(nodes.get('viewRoot').innerHTML, /<h2 id="financeThermoTitle">나의 가게 온도<\/h2>/);
+  assert.match(nodes.get('viewRoot').innerHTML, /지금 할 일|영업 전 준비|마감 점검/);
+  assert.doesNotMatch(nodes.get('viewRoot').innerHTML, /\d{2}:\d{2} 현재|>회복전략 보기 →/);
+  assert.match(nodes.get('viewRoot').innerHTML, /다음으로 확인할 일/);
+  assert.match(nodes.get('viewRoot').innerHTML, /확인하세요|준비하세요|점검하세요|맞이하세요/);
   assert.match(nodes.get('viewRoot').innerHTML, /시연 날씨/);
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="guideHourButton"'));
   assert.equal(nodes.get('pageHeading').hidden, true);
@@ -201,25 +207,31 @@ check('Initial render and the consolidated navigation targets', () => {
   assert.match(nodes.get('mainNavigation').innerHTML, />매출진단</);
   assert.match(nodes.get('mainNavigation').innerHTML, />상권분석</);
   assert.match(nodes.get('mainNavigation').innerHTML, />지원사업</);
-  assert.match(nodes.get('mainNavigation').innerHTML, /aria-label="iM비서"/);
-  assert.match(nodes.get('mainNavigation').innerHTML, /class="im-product-name"/);
+  assert.match(nodes.get('mainNavigation').innerHTML, />회복전략</);
+
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('상권·시간 분석'));
   assert.ok(!nodes.get('mainNavigation').innerHTML.includes('매출·지출 분석'));
-  assert.match(nodes.get('mainNavigation').innerHTML, />사후관리</);
+  assert.doesNotMatch(nodes.get('mainNavigation').innerHTML, />사후관리</);
   for (const view of ['dashboard', 'analysis', 'market', 'policies', 'aftercare', 'secretary', 'profile']) {
-    click({ view }); assert.equal(location.hash, '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
+    click({ view }); assert.equal(location.hash, view === 'secretary' ? '#recovery' : view === 'aftercare' ? '#recovery/aftercare' : '#' + view); assert.ok(nodes.get('viewRoot').innerHTML.length > 100);
   }
   click({ view: 'analysis' });
-  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="sd-panel"/g) || []).length, 4);
+  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="sd-panel"/g) || []).length, 6);
   assert.match(nodes.get('viewRoot').innerHTML, /총지출/);
-  assert.match(nodes.get('viewRoot').innerHTML, /id="guideHourButton"/);
-  assert.match(nodes.get('viewRoot').innerHTML, /현재 매출진단/);
-  click({ guideHour: '19' });
-  assert.match(nodes.get('guidanceContent').innerHTML, /저녁 운영 · 19:00/);
+  assert.doesNotMatch(nodes.get('viewRoot').innerHTML, /id="guideHourButton"/);
+  click({ view: 'secretary' });
+  assert.match(nodes.get('viewRoot').innerHTML, /회복전략 상세 분석 · 리포트/);
+  assert.doesNotMatch(nodes.get('viewRoot').innerHTML, /id="guideHourButton"|v-recovery-sequence|v-recovery-timing|v-recovery-period|data-recovery-source/);
+  assert.equal((nodes.get('viewRoot').innerHTML.match(/class="card v-card v-secretary-main"/g) || []).length, 1);
   click({ view: 'market' });
   assert.equal(location.hash, '#market');
   click({ view: 'policies' });
-  assert.ok(nodes.get('viewRoot').innerHTML.includes('class="v-policy-criteria"'));
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('class="v-plan-list"'));
+  click({ action: 'open-policy-guide' });
+  assert.equal(nodes.get('policyModal').open, true);
+  assert.match(nodes.get('policyModalContent').innerHTML, /지역·업종 일치 여부/);
+  click({ action: 'close-modal' });
+  assert.equal(nodes.get('policyModal').open, false);
   assert.equal(nodes.get('pageHeading').hidden, true);
   assert.equal(nodes.get('dataNotice').hidden, true);
 });
@@ -227,7 +239,7 @@ check('Finance thermometer uses the declared partial formula without calling it 
   click({ view: 'dashboard' });
   const markup = nodes.get('viewRoot').innerHTML;
   assert.match(markup, /class="v-finance-thermometer"/);
-  assert.match(markup, /<h2 id="financeThermoTitle">나의 금융 체온계<\/h2>/);
+  assert.match(markup, /<h2 id="financeThermoTitle">나의 가게 온도<\/h2>/);
   assert.match(markup, /최근 1개월 일별 이동평균 지수/);
   assert.ok(markup.includes(D.financialIndex().value.toFixed(1) + '°'));
   assert.match(markup, /class="v-finance-thermo-compare"/);
@@ -249,16 +261,19 @@ check('Profile avatar shows the given name for common Korean name lengths', () =
   assert.equal(nodes.get('profileMenuInitials').textContent, '수');
   click({ view: 'profile' }); submit('profileForm', Object.assign({ name: '이소현' }, base));
 });
-check('Chatbot answers follow period changes and do not invent absent data', () => {
-  askChat('현재 매출이 왜 떨어졌나요?');
-  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.month).salesRate.toFixed(1) + '%'));
+check('Service FAQ remains concise, independent of periods and restricted to product help', () => {
+  askChat('회복전략은 어떤 기능인가요?');
+  const first = nodes.get('aiMessages').lastElementChild.textContent;
+  assert.match(first, /회복전략은 매출진단과 상권분석 결과/);
+  assert.match(first, /사후관리 탭/);
   change('periodSelect', 'week');
+  askChat('회복전략은 어떤 기능인가요?');
+  assert.equal(nodes.get('aiMessages').lastElementChild.textContent, first);
   askChat('현재 매출이 왜 떨어졌나요?');
-  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.week).salesRate.toFixed(1) + '%'));
-  askChat('어떤 고객층을 노려야 하나요?');
-  assert.ok(nodes.get('aiMessages').textContent.includes('근거가 부족'));
+  assert.match(nodes.get('aiMessages').lastElementChild.textContent, /서비스 이용 방법을 안내합니다/);
+  assert.doesNotMatch(nodes.get('aiMessages').lastElementChild.textContent, /[0-9]+%|[0-9,]+원/);
   askChat('양자컴퓨터 알려주세요');
-  assert.ok(nodes.get('aiMessages').textContent.includes('연결 채널은 아직 미정'));
+  assert.match(nodes.get('aiMessages').lastElementChild.textContent, /서비스 이용 방법을 안내합니다/);
   assert.equal(nodes.get('aiPanel').inert, false);
 });
 check('Report prompts, sidebar, chat controls, calendar and policy modal', () => {
@@ -271,29 +286,43 @@ check('Report prompts, sidebar, chat controls, calendar and policy modal', () =>
   nodes.get('sidebarToggle').events.click(); assert.ok(shell.classList.contains('sidebar-collapsed'));
   nodes.get('logoutLink').events.click({ preventDefault() {}, currentTarget: nodes.get('logoutLink') }); assert.equal(replacedUrl, './login-preview/index.html?signed_out=1');
   nodes.get('aiClose').events.click(); assert.equal(nodes.get('aiPanel').inert, true);
-  click({ view: 'policies' }); click({ policy: '1' }); assert.equal(nodes.get('policyModal').open, true);
+  click({ view: 'policies' }); click({ policy: String(context.window.IM_POLICY_DATA.items[0].id) }); assert.equal(nodes.get('policyModal').open, true);
+  assert.match(nodes.get('policyModalContent').innerHTML, /공식 공고 확인/);
   click({ action: 'close-modal' }); assert.equal(nodes.get('policyModal').open, false);
   click({ view: 'secretary' }); click({ action: 'open-document-guide' });
   assert.equal(nodes.get('documentGuideModal').open, true);
   click({ action: 'close-document-guide' }); assert.equal(nodes.get('documentGuideModal').open, false);
 });
-check('Market route replaces recovery while secretary chatbot retains its current source', () => {
+check('Recovery owns strategy and aftercare tabs while market retains observation analysis', () => {
   click({ view: 'recovery' });
+  assert.equal(location.hash, '#recovery');
+  assert.match(nodes.get('viewRoot').innerHTML, /role="tablist"/);
+  assert.match(nodes.get('viewRoot').innerHTML, /id="recoveryTab-strategy"/);
+  assert.match(nodes.get('viewRoot').innerHTML, /id="recoveryTab-aftercare"/);
+  click({ view: 'aftercare' });
+  assert.equal(location.hash, '#recovery/aftercare');
+  assert.match(nodes.get('viewRoot').innerHTML, /월간 매출 비교/);
+  assert.match(nodes.get('viewRoot').innerHTML, /2026\.07\.01 ~ 2026\.07\.31/);
+  assert.match(nodes.get('viewRoot').innerHTML, /2026\.08\.01 ~ 2026\.08\.31/);
+  click({ view: 'market' });
   assert.equal(location.hash, '#market');
   assert.equal((nodes.get('viewRoot').innerHTML.match(/class="ma-panel"/g) || []).length, 4);
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('id="ma-observation"'));
-  assert.match(nodes.get('viewRoot').innerHTML, /통행에서 결제까지/);
+  assert.match(nodes.get('viewRoot').innerHTML, /방문·결제 진단/);
   assert.ok(!nodes.get('viewRoot').innerHTML.includes('실행 기록 시안 시작하기'));
   askChat('CCTV 유입률과 구매전환율을 알려주세요');
-  assert.ok(nodes.get('aiMessages').textContent.includes(D.analyze(D.periods.week).entryRate.toFixed(1) + '%'));
-  assert.ok(nodes.get('aiMessages').textContent.includes(D.periods.week.start));
+  assert.match(nodes.get('aiMessages').lastElementChild.textContent, /상권분석은 가게 앞의 최근 10분 통행과 입장 상황/);
+  assert.doesNotMatch(nodes.get('aiMessages').lastElementChild.textContent, /[0-9]+%|[0-9,]+원/);
 });
 check('Profile strings are escaped and region mismatch is excluded', () => {
   click({ view: 'profile' });
-  submit('profileForm', { name: '<img src=x onerror=alert(1)>', storeName: '테스트', region: '부산', industry: '음식점', employees: '3' });
+  submit('profileForm', { name: '<img src=x onerror=alert(1)>', storeName: '<img src=x onerror=alert(1)>', region: '부산', industry: '음식점', employees: '3' });
   click({ view: 'secretary' }); assert.ok(!nodes.get('viewRoot').innerHTML.includes('<img'));
   assert.ok(nodes.get('viewRoot').innerHTML.includes('&lt;img'));
-  click({ view: 'policies' }); assert.ok(nodes.get('viewRoot').innerHTML.includes('조건에 맞는 예시가 없습니다'));
+  click({ view: 'policies' });
+  const supported = context.window.IM_POLICY_MATCHING.recommendations(context.window.IM_POLICY_DATA.items, { region: '부산', industry: '음식점', employees: '3', age: '' }, context.window.IM_POLICY_DATA.checkedAt);
+  assert.ok(supported.every(p => p.regionScope === 'nationwide'), 'outside Daegu only nationwide notices remain');
+  assert.ok(!nodes.get('viewRoot').innerHTML.includes('예시 공고'));
   click({ view: 'dashboard' });
   assert.match(nodes.get('viewRoot').innerHTML, /시연/);
   assert.equal(nodes.get('profileMenuTemperatureBadge').textContent, '측정 전');
@@ -311,7 +340,8 @@ async function asyncChecks() {
   assert.ok(pendingPdfOptions.actions.every(action => nodes.get('viewRoot').innerHTML.includes(action.title)));
   const drawn = [];
   const fakeCanvas = () => {
-    const ctx = { fillRect() {}, fillText(text) { drawn.push(String(text)); }, measureText(text) { return { width: String(text).length * 10 }; }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} };
+    // Repeated page headers/footers must not interrupt a body passage spanning pages.
+    const ctx = { fillRect() {}, fillText(text, x, y) { if (y > 111 && y < 1657) drawn.push(String(text)); }, measureText(text) { return { width: String(text).length * 10 }; }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} };
     return { getContext: () => ctx };
   };
   require('../report-pdf.js').renderCanvases(pendingPdfOptions, fakeCanvas);
@@ -319,7 +349,7 @@ async function asyncChecks() {
     assert.ok(drawn.join('').includes(action.title), 'PDF includes the displayed action title');
     assert.ok(drawn.join('').includes(action.evidence), 'PDF includes the displayed action evidence');
   }
-  console.log('PASS PDF renderer uses the same action titles and evidence shown by iM비서'); passed++;
+  console.log('PASS PDF renderer uses the same action titles and evidence shown by 회복전략'); passed++;
   assert.equal(nodes.get('pdfLink').href, 'blob:test-report');
   assert.equal(nodes.get('pdfDownload').hidden, false);
   console.log('PASS PDF completion enables actual download URL'); passed++;

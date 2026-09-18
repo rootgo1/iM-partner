@@ -1,5 +1,4 @@
 /* Home: generous feature banner, compact guidance and a shared narrow widget column. */
-.sidebar .demo-label { font-size: 12px; line-height: 1.65; font-weight: 600; }
 #profileStoreName, #profileMenuStore { white-space: normal; overflow-wrap: anywhere; }
 .v-home-board { display: grid; grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 390px); gap: 22px; min-width: 0; }
 .v-home-primary, .v-home-secondary { display: grid; min-width: 0; min-height: 0; gap: 22px; }
@@ -26,7 +25,7 @@
 .v-home-board .v-finance-thermo-head p { font-size: 11px; padding-right: 82px; }
 .v-home-board .v-finance-thermo-head h2 { font-size: 23px; margin-top: 12px; }
 .v-home-board .v-finance-thermo-head > span { position: absolute; top: -2px; right: 0; font-size: 10px; padding: 5px 7px; }
-.v-home-board .v-finance-thermo-main { flex: 1; min-height: 0; grid-template-columns: minmax(82px, .85fr) minmax(0, 1.15fr); grid-template-rows: minmax(0, 1fr); gap: 15px; margin: 18px 0; }
+.v-home-board .v-finance-thermo-main { flex: 1; min-height: 0; grid-template-columns: minmax(84px, .9fr) minmax(0, 1.1fr); grid-template-rows: minmax(0, 1fr); gap: 15px; margin: 18px 0; }
 .v-home-board .v-finance-thermo-gauge { min-height: 0; height: auto; align-self: stretch; grid-template-rows: minmax(0, 1fr) auto auto; align-content: stretch; padding: 14px 6px; gap: 9px; }
 .v-home-board .v-finance-thermometer { height: 100%; max-height: 320px; min-height: 0; }
 .v-home-board .v-finance-thermometer-tube { height: calc(100% - 32px); }
@@ -34,13 +33,14 @@
 .v-home-board .v-finance-thermo-gauge-label { flex-wrap: wrap; column-gap: 4px; row-gap: 0; }
 .v-home-board .v-finance-thermo-gauge-label small { font-size: 10px; }
 .v-home-board .v-finance-thermo-basis { font-size: 11px; }
+.v-home-board .v-finance-thermo-summary { text-align: center; }
 .v-home-board .v-finance-thermo-summary > span:first-child { font-size: 11px; }
 .v-home-board .v-finance-thermo-summary h3 { font-size: 14px; line-height: 1.6; }
 .v-home-board .v-finance-thermo-summary h3 strong { font-size: clamp(34px, 2.8vw, 49px); line-height: 1.2; margin-top: 6px; }
-.v-home-board .v-finance-thermo-compare { width: fit-content; grid-template-columns: max-content 14px max-content; gap: 9px; margin-top: 14px; padding: 9px 10px; }
+.v-home-board .v-finance-thermo-compare { width: 100%; grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr); gap: 9px; margin-top: 14px; padding: 9px 10px; }
 .v-home-board .v-finance-thermo-compare small { font-size: 10px; }
 .v-home-board .v-finance-thermo-compare strong { font-size: 14px; margin-top: 3px; }
-.v-home-board .v-finance-thermo-change { margin-top: 10px; font-size: 11px; }
+.v-home-board .v-finance-thermo-change { justify-content: center; margin: 10px auto 0; font-size: 11px; }
 .v-home-board .v-finance-thermo-notice { margin-top: 0; font-size: 11px; line-height: 1.6; }
 .v-home-guidance.v-card { margin: 0; padding: 17px 26px; border: 1px solid #dce8e5; border-radius: 22px; color: #344f46; background: #fff; box-shadow: 0 8px 24px #22483b07; overflow: visible; }
 .v-home-guidance::after { display: none; }
@@ -191,6 +191,9 @@
   .v-home-board .v-finance-thermo-main { min-height: 250px; }
   .v-home-guidance .v-guidance-content { flex: 0 0 auto; min-height: auto; justify-content: flex-start; }
   .v-home-guidance-bottom { margin-top: 12px; }
+}
+@media (min-width: 761px) and (max-width: 900px) {
+  .v-home-secondary { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   .v-home-primary, .v-home-secondary, .v-home-board { gap: 16px; }
