@@ -1211,6 +1211,7 @@
   <link rel="stylesheet" href="./home-dashboard.css">
   <link rel="stylesheet" href="./diagnosis-layout.css">
   <link rel="stylesheet" href="./nearby-events.css">
+  <link rel="stylesheet" href="./nearby-businesses.css">
   <link rel="stylesheet" href="./profile-finance-preview/profile-finance.css">
   <link rel="stylesheet" href="./final-polish.css">
   <link rel="stylesheet" href="./diagnosis-filters.css">
@@ -1234,12 +1235,12 @@
       <div class="nav-title">MY BUSINESS</div>
       <nav class="nav-list" id="mainNavigation" aria-label="파트너 메뉴"></nav>
       <div class="sidebar-bottom">
-        <div class="sidebar-footer">분석 대상<br><strong id="storeContext">소현이네 고기굽는집</strong><br>실제 POS · DB 미연결</div>
+        <div class="sidebar-footer">분석 대상<br><strong id="storeContext">달구벌 고기마당</strong><br>실제 POS · DB 미연결</div>
         <div class="sidebar-account">
           <div class="sidebar-account-menu" id="profileMenu" role="menu" aria-labelledby="profileMenuButton" hidden>
             <div class="sidebar-account-summary" role="none">
               <span class="sidebar-account-avatar" id="profileMenuInitials" aria-hidden="true">소현</span>
-              <span class="sidebar-account-summary-copy"><span class="sidebar-account-name-row"><strong id="profileMenuName">이소현</strong><span class="ipf-profile-finance-badge" id="profileMenuTemperatureBadge" data-status="partial" aria-label="나의 가게 온도 51.9도">51.9°</span></span><small id="profileMenuStore">소현이네 고기굽는집</small></span>
+              <span class="sidebar-account-summary-copy"><span class="sidebar-account-name-row"><strong id="profileMenuName">이소현</strong><span class="ipf-profile-finance-badge" id="profileMenuTemperatureBadge" data-status="partial" aria-label="나의 가게 온도 51.9도">51.9°</span></span><small id="profileMenuStore">달구벌 고기마당</small></span>
             </div>
             <div id="profileMenuFinanceMount" role="none"></div>
             <button class="sidebar-account-action" type="button" data-view="profile" role="menuitem">
@@ -1253,7 +1254,7 @@
           </div>
           <button class="sidebar-account-trigger" id="profileMenuButton" type="button" aria-label="이소현 프로필 메뉴" aria-haspopup="menu" aria-controls="profileMenu" aria-expanded="false">
             <span class="sidebar-account-avatar" id="profileInitials" aria-hidden="true">소현</span>
-            <span class="sidebar-account-copy"><span class="sidebar-account-name-row"><strong id="profileName">이소현</strong><span class="ipf-profile-finance-badge" id="profileTemperatureBadge" data-status="partial" aria-hidden="true">51.9°</span></span><small id="profileStoreName">소현이네 고기굽는집</small></span>
+            <span class="sidebar-account-copy"><span class="sidebar-account-name-row"><strong id="profileName">이소현</strong><span class="ipf-profile-finance-badge" id="profileTemperatureBadge" data-status="partial" aria-hidden="true">51.9°</span></span><small id="profileStoreName">달구벌 고기마당</small></span>
             <svg class="sidebar-account-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"></path></svg>
           </button>
         </div>
@@ -1288,7 +1289,7 @@
           <label for="periodEnd" class="v-metadata">종료일</label><input id="periodEnd" type="date" value="2026-08-31" min="2026-06-01" max="2026-09-30" required>
           <button class="v-button" type="submit">기간 적용</button>
         </form>
-        <div class="v-data-notice" id="dataNotice"><span class="v-tag">생성 데이터 기반 시연</span><span>소현이네 고기굽는집 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
+        <div class="v-data-notice" id="dataNotice"><span class="v-tag">생성 데이터 기반 시연</span><span>달구벌 고기마당 고정 예시 · 2026.07.01~09.02 · 실제 원자료 및 외부 AI 미연결</span></div>
         <div id="viewRoot" tabindex="-1"></div>
         <noscript><p class="v-note">이 시안의 메뉴·분석·iM비서를 확인하려면 JavaScript를 허용해 주세요.</p></noscript>
       </div>
@@ -1333,6 +1334,7 @@
   <script src="./market-analysis.js"></script>
   <script src="./map-config.js"></script>
   <script src="./nearby-events.js"></script>
+  <script src="./nearby-businesses.js"></script>
   <script src="./report-pdf.js"></script>
   <script src="./vendor/lenis/lenis.min.js"></script>
   <script src="./smooth-scroll.js"></script>

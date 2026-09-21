@@ -350,7 +350,7 @@
     records, transactions, cctvRows, coverage, expenses, purchases, area, merchantSales, storefront, periods, categories, menu, materials, policies, recoveryScenario,
     analyze, analyzeRecovery, customPeriod, guidance, operatingPeriod, neighborhoodInsights, salesInsight, shift, rate, seoulClock, financialIndex,
     timeSlots, hours, twoHourStarts, dataStart, dataEnd, completeDates,
-    profile: { name: '이소현', storeName: '소현이네 고기굽는집', region: '대구 중구', industry: '음식점', employees: 3, age: '', ageBand: '50대', address: '', phone: '', email: '', businessNumber: '', opened: '' },
+    profile: { name: '이소현', storeName: '달구벌 고기마당', region: '대구 중구', industry: '음식점', employees: 3, age: '', ageBand: '50대', address: '', phone: '', email: '', businessNumber: '', opened: '' },
     business: { fictional: true, description: '50대 이소현 사장님이 운영하는 가상의 동네 고깃집', openingHours: '매일 17:00~23:00', openingDays: [1, 2, 3, 4, 5, 6, 0], detailedAddress: null, priceNote: '메뉴와 가격은 기능 시연을 위한 가상 설정입니다.' },
     generatedLabel: '가상 고깃집 시연 자료', referenceDate: '2026-09-03',
     expenseScenario: { sourceType: 'synthetic_demo', note: '가상의 고깃집 운영비 설정이며 업종 평균이 아닙니다. 매입량·단가와 월 고정지출을 원자료에 반영합니다.', monthlyFixed: { rent: 2300000, maintenance: 1100000, labor: 12000000, other: 2400000 } },

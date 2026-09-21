@@ -243,7 +243,7 @@ check('Finance thermometer uses the declared partial formula without calling it 
   assert.match(markup, /최근 1개월 일별 이동평균 지수/);
   assert.ok(markup.includes(D.financialIndex().value.toFixed(1) + '°'));
   assert.match(markup, /class="v-finance-thermo-compare"/);
-  assert.match(markup, /\(참고용 지표\) 신용평가·대출심사 결과와는 무관합니다\./);
+  assert.match(markup, /참고용 지표로, 신용평가·대출심사 결과와는 무관합니다\./);
   assert.ok(!markup.includes('class="v-finance-thermo-sources"'));
   assert.ok(!markup.includes('class="v-finance-thermo-action"'));
   assert.ok(!markup.includes('data-action="thermo-evidence"'));

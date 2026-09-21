@@ -54,7 +54,8 @@ check("guest entry matches the existing product flow", () => {
   assert.ok(!/service-preview|login-dashboard/.test(html));
   assert.match(html, /매출진단<\/strong><small>매출·지출과 상권 흐름을 한눈에 확인하세요/);
   assert.match(html, /상권분석<\/strong><small>CCTV 관측으로 거리의 통행·체류·입장 흐름을 확인하세요/);
-  assert.match(html, /iM비서<\/strong><small>경영 질문부터 분석 보고서까지 간편하게 확인하세요/);
+  assert.match(html, /지원사업<\/strong><small>내 가게에 맞는 지원사업과 신청 조건을 확인하세요/);
+  assert.match(html, /회복전략<\/strong><small>분석 결과를 바탕으로 가게 회복을 위한 실행 방법을 확인하세요/);
   assert.ok(!/flow-strip|flowTitle|서비스 이용 흐름/.test(html));
   assert.ok(!/\.flow-strip|\.site-footer/.test(css));
 });

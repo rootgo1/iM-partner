@@ -348,7 +348,7 @@
     return '<article class="v-finance-thermo-card" data-status="' + summary.status + '" aria-labelledby="financeThermoTitle"><div class="v-finance-thermo-head"><div><p>가게 상태 한눈에 보기</p><h2 id="financeThermoTitle">나의 가게 온도</h2></div><span>연결 데이터 ' + measuredCount + '/' + totalCount + '</span></div>' +
       '<div class="v-finance-thermo-main"><div class="v-finance-thermo-gauge" style="--v-thermo-level:' + thermometerLevel.toFixed(1) + '%" aria-hidden="true"><div class="v-finance-thermometer"><div class="v-finance-thermometer-tube"><span></span></div><div class="v-finance-thermometer-bulb"><span></span></div><div class="v-finance-thermometer-marks"><i></i><i></i><i></i><i></i></div></div><div class="v-finance-thermo-gauge-label"><strong>' + measuredCount + '/' + totalCount + '</strong><small>데이터 연결도</small></div><p class="v-finance-thermo-basis">최근 1개월 일별 이동평균 지수</p></div>' +
       '<div class="v-finance-thermo-summary"><span title="자료 기준 ' + esc(financeIndex.asOf || '없음') + ' · 지수 갱신 ' + esc(financeIndex.today) + '">현재 나의 가게 지수</span><h3>나의 가게 온도<br><strong>' + currentTemperatureText + '</strong></h3>' + comparison + '<span class="v-finance-thermo-change ' + deltaClass + '">' + (temperatureDelta > 0 ? '▲ ' : temperatureDelta < 0 ? '▼ ' : '') + deltaText + '</span></div></div>' +
-      '<p class="v-finance-thermo-notice">(참고용 지표) 신용평가·대출심사 결과와는 무관합니다.</p></article>';
+      '<p class="v-finance-thermo-notice">참고용 지표로, 신용평가·대출심사 결과와는 무관합니다.</p></article>';
   }
   function weatherIcon(night) {
     return '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true">' + (night
@@ -406,7 +406,7 @@
     return '';
   }
   function relocatedMarket(marketResult, section) {
-    return section === 'surroundings' ? '<div class="v-neighborhood-layout">' + dashboardContextCard(marketResult) + (window.IM_NEARBY_EVENTS ? window.IM_NEARBY_EVENTS.render() : '') + '</div>' : section === 'conversion' ? recoveryDashboardCard(marketResult) : '';
+    return section === 'surroundings' ? '<div class="v-neighborhood-layout">' + dashboardContextCard(marketResult) + (window.IM_NEARBY_BUSINESSES ? window.IM_NEARBY_BUSINESSES.render({ profile: state.profile }) : '') + '</div>' : section === 'conversion' ? recoveryDashboardCard(marketResult) : '';
   }
   function market() {
     const max = Math.max(1, ...analysis.byWeekday.map(r => r.sales || 0));
@@ -701,7 +701,7 @@
     $('#viewRoot').dataset.currentView = state.view;
     $('#viewRoot').innerHTML = renders[state.view]() + sourceFoot;
     sectionizeView(state.view);
-    if (state.view === 'market') window.IM_NEARBY_EVENTS?.mount();
+    if (state.view === 'market') window.IM_NEARBY_BUSINESSES?.mount();
     $('#periodSelect').value = state.periodMode;
     $('#customPeriod').hidden = true;
     if ($('#sectionPeriodSelect')) $('#sectionPeriodSelect').value = state.periodMode;
